@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alto Translate</title>
+  <link rel="stylesheet" href="../utils/tailwind.css">
+  <link rel="stylesheet" href="popup.css">
+
+  <link rel="preconnect" href="https://rsms.me/">
+  <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 min-h-screen">
+  <div class="w-80 bg-white dark:bg-gray-800 shadow-lg">
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-lg font-semibold">Alto Translate</h1>
+          <p class="text-blue-100 text-sm">Select text to translate</p>
+        </div>
+        <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center hover:bg-blue-400 transition-colors duration-200 cursor-pointer">
+          <span class="text-white font-bold text-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-option-icon lucide-option" viewBox="0 0 24 24"><path d="M3 3h6l6 18h6M14 3h7"/></svg>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="p-4">
+      <!-- Quick Status -->
+      <div class="mb-4">
+        <div class="bg-gray-100 dark:bg-gray-700 rounded-lg p-3">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Current Settings</span>
+            <button id="settingsBtn" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-sm font-medium">
+              Settings
+            </button>
+          </div>
+          <div class="space-y-1 text-xs text-gray-600 dark:text-gray-400">
+            <div>API: <span id="currentApi" class="font-medium">Loading...</span></div>
+            <div>Target: <span id="currentTarget" class="font-medium">Loading...</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Instructions -->
+      <div class="mb-4">
+        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+          <h3 class="text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">How to use:</h3>
+          <ol class="text-xs text-blue-800 dark:text-blue-200 space-y-1">
+            <li>1. Select any text on a webpage</li>
+            <li>2. Click the "⌥" icon that appears</li>
+            <li>3. View the translation in the popup</li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- API Status -->
+      <div class="mb-4">
+        <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">API Status</h3>
+        <div class="space-y-2">
+          <div class="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded">
+            <span class="text-sm text-gray-600 dark:text-gray-400">Gemini API</span>
+            <div id="geminiStatus" class="flex items-center">
+              <div class="w-2 h-2 bg-gray-400 rounded-full mr-2"></div>
+              <span class="text-xs text-gray-500 dark:text-gray-400">Checking...</span>
+            </div>
+          </div>
+          <div class="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded">
+            <span class="text-sm text-gray-600 dark:text-gray-400">OpenRouter API</span>
+            <div id="openrouterStatus" class="flex items-center">
+              <div class="w-2 h-2 bg-gray-400 rounded-full mr-2"></div>
+              <span class="text-xs text-gray-500 dark:text-gray-400">Checking...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="space-y-2">
+        <button id="openSettingsBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors">
+          Open Settings
+        </button>
+        <button id="testTranslationBtn" class="w-full bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-300 py-2 px-4 rounded-lg text-sm font-medium transition-colors">
+          Test Translation
+        </button>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="border-t border-gray-200 dark:border-gray-700 p-3 bg-gray-50 dark:bg-gray-700">
+      <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+        <span>Version 1.0.0</span>
+        <a href="#" id="helpLink" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">Help</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+  <script src="dark-mode.js"></script>
+</body>
+</html>
