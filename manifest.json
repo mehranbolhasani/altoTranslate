@@ -5,8 +5,7 @@
   "description": "A minimal Chrome extension for translating selected text using Gemini and OpenRouter APIs",
   "permissions": [
     "storage",
-    "activeTab",
-    "scripting"
+    "activeTab"
   ],
   "host_permissions": [
     "https://generativelanguage.googleapis.com/*",
