@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Alto Translate",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A minimal Chrome extension for translating selected text using Gemini, OpenRouter, and MyMemory APIs",
   "permissions": [
     "storage",
