@@ -4,7 +4,6 @@
 if (process?.env?.NODE_ENV === 'development' || window.location.hostname === 'localhost') {
   // Watch for file changes and reload extension
   chrome.runtime.onInstalled.addListener(() => {
-    console.log('Extension installed/updated - hot reload active');
   });
 
   // Listen for messages from content scripts to reload

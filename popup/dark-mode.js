@@ -7,18 +7,14 @@ function applyDarkMode() {
   
   if (isDarkMode) {
     document.documentElement.classList.add('dark');
-    console.log('Dark mode applied');
   } else {
     document.documentElement.classList.remove('dark');
-    console.log('Light mode applied');
   }
 }
 
 // Toggle dark mode manually
 function toggleDarkMode() {
   document.documentElement.classList.toggle('dark');
-  const isDark = document.documentElement.classList.contains('dark');
-  console.log('Dark mode toggled:', isDark ? 'ON' : 'OFF');
 }
 
 // Apply dark mode on page load

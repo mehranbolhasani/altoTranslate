@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="options.css">
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 min-h-screen">
-  <div class="max-w-4xl mx-auto p-6">
+  <div class="max-w-5xl mx-auto p-6">
     <!-- Header -->
     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md/50 dark:shadow-lg/50 mb-6 fade-in">
       <div class="p-6 border-b border-gray-200 dark:border-gray-700">
@@ -42,304 +42,414 @@
 
     <!-- Settings Form -->
     <form id="settingsForm" class="space-y-6">
-      <!-- API Selection -->
+      <!-- Tab Navigation -->
       <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md/50 dark:shadow-lg/50 mb-6">
-        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
-          <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 m-0">Translation API</h2>
-          <p class="text-sm text-gray-400 dark:text-gray-500 m-0">Choose which translation service to use</p>
+        <div class="border-b border-gray-200 dark:border-gray-700">
+          <nav class="flex px-2 pt-2" aria-label="Tabs">
+            <button type="button" data-tab="api" class="tab-button active px-4 py-3 text-sm font-medium transition-all duration-200 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 border-b-2 border-blue-600 dark:border-blue-400 bg-white dark:bg-gray-800 cursor-pointer">
+              <span class="flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                API Settings
+              </span>
+            </button>
+            <button type="button" data-tab="languages" class="tab-button px-4 py-3 text-sm font-medium transition-all duration-200 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 bg-white dark:bg-gray-800 cursor-pointer">
+              <span class="flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+                </svg>
+                Languages
+              </span>
+            </button>
+            <button type="button" data-tab="theme" class="tab-button px-4 py-3 text-sm font-medium transition-all duration-200 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 bg-white dark:bg-gray-800 cursor-pointer">
+              <span class="flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                </svg>
+                Theme
+              </span>
+            </button>
+            <button type="button" data-tab="cache" class="tab-button px-4 py-3 text-sm font-medium transition-all duration-200 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 bg-white dark:bg-gray-800 cursor-pointer">
+              <span class="flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
+                </svg>
+                Cache
+              </span>
+            </button>
+            <button type="button" data-tab="test" class="tab-button px-4 py-3 text-sm font-medium transition-all duration-200 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 bg-white dark:bg-gray-800 cursor-pointer">
+              <span class="flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+                Test
+              </span>
+            </button>
+          </nav>
         </div>
+
+        <!-- Tab Content -->
         <div class="p-6">
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
-            <div class="flex items-center border border-gray-200 dark:border-gray-600 rounded-lg p-2 gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-              <input type="radio" id="apiGemini" name="apiPreference" value="gemini" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 dark:bg-gray-700">
-              <label for="apiGemini" class="ml-3 cursor-pointer">
-                <div class="text-sm font-medium text-gray-900 dark:text-gray-100">Google Gemini</div>
-                <div class="text-xs text-gray-400 dark:text-gray-500">Free tier available, high quality translations</div>
-              </label>
-            </div>
-            <div class="flex items-center border border-gray-200 dark:border-gray-600 rounded-lg p-2 gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-              <input type="radio" id="apiOpenRouter" name="apiPreference" value="openrouter" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 dark:bg-gray-700">
-              <label for="apiOpenRouter" class="ml-3 cursor-pointer">
-                <div class="text-sm font-medium text-gray-900 dark:text-gray-100">OpenRouter</div>
-                <div class="text-xs text-gray-400 dark:text-gray-500">Unified API with 500+ models and automatic fallback</div>
-              </label>
-            </div>
-            <div class="flex items-center border border-gray-200 dark:border-gray-600 rounded-lg p-2 gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-              <input type="radio" id="apiLibreTranslate" name="apiPreference" value="libretranslate" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 dark:bg-gray-700">
-              <label for="apiLibreTranslate" class="ml-3 cursor-pointer">
-                <div class="text-sm font-medium text-gray-900 dark:text-gray-100">MyMemory API</div>
-                <div class="text-xs text-gray-400 dark:text-gray-500">Free, no API key required, excellent for Persian</div>
-              </label>
-            </div>
-            <div class="flex items-center border border-gray-200 dark:border-gray-600 rounded-lg p-2 gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-              <input type="radio" id="apiAll" name="apiPreference" value="both" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 dark:bg-gray-700">
-              <label for="apiAll" class="ml-3 cursor-pointer">
-                <div class="text-sm font-medium text-gray-900 dark:text-gray-100">All (with fallback)</div>
-                <div class="text-xs text-gray-400 dark:text-gray-500">Use all APIs, fallback if one fails</div>
-              </label>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- API Keys -->
-      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md/50 dark:shadow-lg/50 mb-6">
-        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
-          <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 m-0">API Keys</h2>
-          <p class="text-sm text-gray-400 dark:text-gray-500 m-0">Enter your API keys for the selected services</p>
-        </div>
-        <div class="p-6 flex flex-col justify-between gap-6">
-          <!-- Gemini API Key -->
-          <div class="flex-1">
-            <label for="geminiApiKey" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Gemini API Key
-            </label>
-            <div class="relative flex items-center gap-2">
-              <input type="password" id="geminiApiKey" name="geminiApiKey" 
-                     class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-blue-500 focus:border-blue-500 h-10"
-                     placeholder="Enter your Gemini API key">
-              <button type="button" id="toggleGeminiKey" class="inset-y-0 flex items-center h-10 w-10 justify-center rounded-lg bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-eye-icon lucide-eye text-gray-600 dark:text-gray-400"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>
-              </button>
-            </div>
-            <p class="text-xs text-gray-400 dark:text-gray-500 mt-2 mb-2">
-              Get your free API key from <a href="https://makersuite.google.com/app/apikey" target="_blank" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">Google AI Studio</a>
-            </p>
-            <button type="button" id="validateGeminiBtn" class="mt-2 text-xs text-gray-500 dark:text-gray-400 rounded-lg bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 px-4 py-2 transition-colors">
-              Validate API Key
-            </button>
-          </div>
-
-          <!-- OpenRouter API Key -->
-          <div class="flex-1 mt-0">
-            <label for="openrouterApiKey" name="openrouterApiKey" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              OpenRouter API Key
-            </label>
-            <div class="relative flex items-center gap-2">
-              <input type="password" id="openrouterApiKey" name="openrouterApiKey"
-                     class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                     placeholder="Enter your OpenRouter API key">
-              <button type="button" id="toggleOpenRouterKey" class="inset-y-0 flex items-center h-10 w-10 justify-center rounded-lg bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-eye-icon lucide-eye text-gray-600 dark:text-gray-400"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>
-              </button>
-            </div>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              Get your API key from <a href="https://openrouter.ai/" target="_blank" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">OpenRouter</a>
-            </p>
-            <button type="button" id="validateOpenRouterBtn" class="mt-2 text-xs text-gray-500 dark:text-gray-400 rounded-lg bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 px-4 py-2 transition-colors">
-              Validate API Key
-            </button>
-          </div>
-
-          <!-- MyMemory API Status -->
-          <div class="flex-1 mt-0">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              MyMemory API Status
-            </label>
-            <div class="flex items-center gap-2">
-              <div class="px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700 text-green-700 dark:text-green-300 text-sm">
-                ✓ No API key required - Always available
+          <!-- API Settings Tab -->
+          <div id="tab-api" class="tab-content">
+            <!-- API Selection -->
+            <div class="mb-6">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Translation API</h3>
+              <p class="text-sm text-gray-400 dark:text-gray-500 mb-4">Choose which translation service to use</p>
+              <div class="flex gap-3 options-tabs-container">
+                <label for="apiGemini" class="flex items-center border border-gray-400 dark:border-gray-600 rounded-lg p-3 gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer w-full">
+                  <input type="radio" id="apiGemini" name="apiPreference" value="gemini" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 dark:bg-gray-700">
+                  <div class="flex-1">
+                    <div class="text-sm font-medium text-gray-900 dark:text-gray-100">Google Gemini</div>
+                    <div class="text-xs text-gray-400 dark:text-gray-500">Free tier available</div>
+                  </div>
+                </label>
+                <label for="apiOpenRouter" class="flex items-center border border-gray-400 dark:border-gray-600 rounded-lg p-3 gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer w-full">
+                  <input type="radio" id="apiOpenRouter" name="apiPreference" value="openrouter" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 dark:bg-gray-700">
+                  <div class="flex-1">
+                    <div class="text-sm font-medium text-gray-900 dark:text-gray-100">OpenRouter</div>
+                    <div class="text-xs text-gray-400 dark:text-gray-500">500+ models</div>
+                  </div>
+                </label>
+                <label for="apiLibreTranslate" class="flex items-center border border-gray-400 dark:border-gray-600 rounded-lg p-3 gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer w-full">
+                  <input type="radio" id="apiLibreTranslate" name="apiPreference" value="libretranslate" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 dark:bg-gray-700">
+                  <div class="flex-1">
+                    <div class="text-sm font-medium text-gray-900 dark:text-gray-100">MyMemory API</div>
+                    <div class="text-xs text-gray-400 dark:text-gray-500">Free, no key</div>
+                  </div>
+                </label>
+                <label for="apiAll" class="flex items-center border border-gray-400 dark:border-gray-600 rounded-lg p-3 gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer w-full">
+                  <input type="radio" id="apiAll" name="apiPreference" value="both" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 dark:bg-gray-700">
+                  <div class="flex-1">
+                    <div class="text-sm font-medium text-gray-900 dark:text-gray-100">All (fallback)</div>
+                    <div class="text-xs text-gray-400 dark:text-gray-500">Try all APIs</div>
+                  </div>
+                </label>
               </div>
-              <button type="button" id="validateLibreTranslateBtn" class="text-xs text-gray-500 dark:text-gray-400 rounded-lg bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 px-4 py-2 transition-colors">
-                Test Connection
-              </button>
             </div>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              MyMemory API is a free translation service with 1000 requests/day limit
-            </p>
+
+            <!-- API Keys -->
+            <div class="space-y-6">
+              <div>
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">API Keys</h3>
+                
+                <!-- Gemini API Key -->
+                <div class="mb-6">
+                  <label for="geminiApiKey" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Gemini API Key
+                  </label>
+                  <div class="relative flex items-center gap-2">
+                    <input type="password" id="geminiApiKey" name="geminiApiKey" 
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-blue-500 focus:border-blue-500 h-10"
+                           placeholder="Enter your Gemini API key">
+                    <button type="button" id="toggleGeminiKey" class="inset-y-0 flex items-center h-10 w-10 justify-center rounded-lg bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-eye-icon lucide-eye text-gray-600 dark:text-gray-400"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>
+                    </button>
+                  </div>
+                  <div class="flex items-center gap-2 mt-2">
+                    <a href="https://makersuite.google.com/app/apikey" target="_blank" class="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">Get API key</a>
+                    <button type="button" id="validateGeminiBtn" class="text-xs text-gray-500 dark:text-gray-400 rounded-lg bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 px-3 py-1 transition-colors">
+                      Validate
+                    </button>
+                  </div>
+                </div>
+
+                <!-- OpenRouter API Key -->
+                <div class="mb-6">
+                  <label for="openrouterApiKey" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    OpenRouter API Key
+                  </label>
+                  <div class="relative flex items-center gap-2">
+                    <input type="password" id="openrouterApiKey" name="openrouterApiKey"
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-blue-500 focus:border-blue-500 h-10"
+                           placeholder="Enter your OpenRouter API key">
+                    <button type="button" id="toggleOpenRouterKey" class="inset-y-0 flex items-center h-10 w-10 justify-center rounded-lg bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-eye-icon lucide-eye text-gray-600 dark:text-gray-400"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>
+                    </button>
+                  </div>
+                  <div class="flex items-center gap-2 mt-2">
+                    <a href="https://openrouter.ai/" target="_blank" class="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">Get API key</a>
+                    <button type="button" id="validateOpenRouterBtn" class="text-xs text-gray-500 dark:text-gray-400 rounded-lg bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 px-3 py-1 transition-colors">
+                      Validate
+                    </button>
+                  </div>
+                </div>
+
+                <!-- MyMemory API Status -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    MyMemory API Status
+                  </label>
+                  <div class="flex items-center gap-2">
+                    <div class="px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700 text-green-700 dark:text-green-300 text-sm">
+                      ✓ No API key required
+                    </div>
+                    <button type="button" id="validateLibreTranslateBtn" class="text-xs text-gray-500 dark:text-gray-400 rounded-lg bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 px-3 py-1 transition-colors">
+                      Test Connection
+                    </button>
+                  </div>
+                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                    Free translation service with 1000 requests/day limit
+                  </p>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Theme Tab -->
+          <div id="tab-theme" class="tab-content hidden">
+            <div>
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Popup Theme</h3>
+              <p class="text-sm text-gray-400 dark:text-gray-500 mb-6">Choose a color theme for the translation popup</p>
+              
+              <div id="themeSelector" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                <!-- Themes will be loaded dynamically -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Languages Tab -->
+          <div id="tab-languages" class="tab-content hidden">
+            <div>
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Language Settings</h3>
+              <p class="text-sm text-gray-400 dark:text-gray-500 mb-6">Configure source and target languages</p>
+              
+              <div class="flex gap-6">
+                <!-- Source Language -->
+                <div class="w-full">
+                  <label for="sourceLanguage" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Source Language
+                  </label>
+                  <select id="sourceLanguage" name="sourceLanguage" 
+                          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-blue-500 focus:border-blue-500 h-10">
+                    <option value="auto">Auto-detect</option>
+                    <option value="en">English</option>
+                    <option value="es">Spanish</option>
+                    <option value="fr">French</option>
+                    <option value="de">German</option>
+                    <option value="it">Italian</option>
+                    <option value="pt">Portuguese</option>
+                    <option value="ru">Russian</option>
+                    <option value="zh">Chinese</option>
+                    <option value="ja">Japanese</option>
+                    <option value="ko">Korean</option>
+                    <option value="ar">Arabic</option>
+                    <option value="fa">Persian/Farsi</option>
+                    <option value="hi">Hindi</option>
+                    <option value="ur">Urdu</option>
+                    <option value="bn">Bengali</option>
+                    <option value="ta">Tamil</option>
+                    <option value="te">Telugu</option>
+                    <option value="ml">Malayalam</option>
+                    <option value="kn">Kannada</option>
+                    <option value="gu">Gujarati</option>
+                    <option value="pa">Punjabi</option>
+                    <option value="mr">Marathi</option>
+                    <option value="th">Thai</option>
+                    <option value="vi">Vietnamese</option>
+                    <option value="id">Indonesian</option>
+                    <option value="ms">Malay</option>
+                    <option value="tl">Filipino</option>
+                    <option value="he">Hebrew</option>
+                    <option value="uk">Ukrainian</option>
+                    <option value="cs">Czech</option>
+                    <option value="sk">Slovak</option>
+                    <option value="hu">Hungarian</option>
+                    <option value="ro">Romanian</option>
+                    <option value="bg">Bulgarian</option>
+                    <option value="hr">Croatian</option>
+                    <option value="sr">Serbian</option>
+                    <option value="sl">Slovenian</option>
+                    <option value="et">Estonian</option>
+                    <option value="lv">Latvian</option>
+                    <option value="lt">Lithuanian</option>
+                    <option value="el">Greek</option>
+                    <option value="is">Icelandic</option>
+                    <option value="mt">Maltese</option>
+                    <option value="cy">Welsh</option>
+                    <option value="ga">Irish</option>
+                    <option value="eu">Basque</option>
+                    <option value="ca">Catalan</option>
+                    <option value="nl">Dutch</option>
+                    <option value="sv">Swedish</option>
+                    <option value="da">Danish</option>
+                    <option value="no">Norwegian</option>
+                    <option value="fi">Finnish</option>
+                    <option value="pl">Polish</option>
+                    <option value="tr">Turkish</option>
+                  </select>
+                </div>
+
+                <!-- Target Language -->
+                <div class="w-full">
+                  <label for="targetLanguage" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Target Language
+                  </label>
+                  <select id="targetLanguage" name="targetLanguage"
+                          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-blue-500 focus:border-blue-500 h-10">
+                    <option value="en">English</option>
+                    <option value="es">Spanish</option>
+                    <option value="fr">French</option>
+                    <option value="de">German</option>
+                    <option value="it">Italian</option>
+                    <option value="pt">Portuguese</option>
+                    <option value="ru">Russian</option>
+                    <option value="zh">Chinese</option>
+                    <option value="ja">Japanese</option>
+                    <option value="ko">Korean</option>
+                    <option value="ar">Arabic</option>
+                    <option value="fa">Persian/Farsi</option>
+                    <option value="hi">Hindi</option>
+                    <option value="ur">Urdu</option>
+                    <option value="bn">Bengali</option>
+                    <option value="ta">Tamil</option>
+                    <option value="te">Telugu</option>
+                    <option value="ml">Malayalam</option>
+                    <option value="kn">Kannada</option>
+                    <option value="gu">Gujarati</option>
+                    <option value="pa">Punjabi</option>
+                    <option value="mr">Marathi</option>
+                    <option value="th">Thai</option>
+                    <option value="vi">Vietnamese</option>
+                    <option value="id">Indonesian</option>
+                    <option value="ms">Malay</option>
+                    <option value="tl">Filipino</option>
+                    <option value="he">Hebrew</option>
+                    <option value="uk">Ukrainian</option>
+                    <option value="cs">Czech</option>
+                    <option value="sk">Slovak</option>
+                    <option value="hu">Hungarian</option>
+                    <option value="ro">Romanian</option>
+                    <option value="bg">Bulgarian</option>
+                    <option value="hr">Croatian</option>
+                    <option value="sr">Serbian</option>
+                    <option value="sl">Slovenian</option>
+                    <option value="et">Estonian</option>
+                    <option value="lv">Latvian</option>
+                    <option value="lt">Lithuanian</option>
+                    <option value="el">Greek</option>
+                    <option value="is">Icelandic</option>
+                    <option value="mt">Maltese</option>
+                    <option value="cy">Welsh</option>
+                    <option value="ga">Irish</option>
+                    <option value="eu">Basque</option>
+                    <option value="ca">Catalan</option>
+                    <option value="nl">Dutch</option>
+                    <option value="sv">Swedish</option>
+                    <option value="da">Danish</option>
+                    <option value="no">Norwegian</option>
+                    <option value="fi">Finnish</option>
+                    <option value="pl">Polish</option>
+                    <option value="tr">Turkish</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Cache Tab -->
+          <div id="tab-cache" class="tab-content hidden">
+            <div>
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Translation Cache</h3>
+              <p class="text-sm text-gray-400 dark:text-gray-500 mb-6">Manage cached translations for faster performance</p>
+              
+              <!-- Cache Statistics -->
+              <div id="cacheStats" class="flex gap-4 mb-6">
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 w-full">
+                  <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">Total Entries</div>
+                  <div id="cacheTotalEntries" class="text-2xl font-bold text-gray-900 dark:text-gray-100">-</div>
+                  <div class="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                    <span id="cacheMemoryEntries" class="text-blue-600 dark:text-blue-400">-</span> in memory
+                  </div>
+                </div>
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 w-full">
+                  <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">Valid Entries</div>
+                  <div id="cacheValidEntries" class="text-2xl font-bold text-green-600 dark:text-green-400">-</div>
+                  <div class="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                    <span id="cacheExpiredEntries" class="text-red-600 dark:text-red-400">-</span> expired
+                  </div>
+                </div>
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 w-full">
+                  <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">Cache Size</div>
+                  <div id="cacheSize" class="text-2xl font-bold text-gray-900 dark:text-gray-100">-</div>
+                  <div class="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                    <span id="cacheUsagePercent" class="font-medium">-</span> of <span id="cacheMaxSize">-</span>
+                  </div>
+                </div>
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 w-full">
+                  <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">TTL</div>
+                  <div id="cacheTTL" class="text-2xl font-bold text-gray-900 dark:text-gray-100">-</div>
+                  <div class="text-xs text-gray-400 dark:text-gray-500 mt-1">Auto-expires</div>
+                </div>
+              </div>
+              
+              <!-- Cache Actions -->
+              <div class="flex gap-3">
+                <button type="button" id="refreshCacheStatsBtn" 
+                        class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm">
+                  Refresh Stats
+                </button>
+                <button type="button" id="clearCacheBtn" 
+                        class="px-4 py-2 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-800 rounded-lg font-medium transition-colors text-sm">
+                  Clear Cache
+                </button>
+              </div>
+              
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-4">
+                Cached translations expire after 7 days. Clearing the cache will remove all stored translations.
+              </p>
+            </div>
+          </div>
+
+          <!-- Test Tab -->
+          <div id="tab-test" class="tab-content hidden">
+            <div>
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Test Translation</h3>
+              <p class="text-sm text-gray-400 dark:text-gray-500 mb-6">Test your configuration with a sample translation</p>
+              
+              <div class="space-y-4">
+                <div>
+                  <label for="testText" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Test Text
+                  </label>
+                  <textarea id="testText" rows="4" 
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-blue-500 focus:border-blue-500 resize-none"
+                            placeholder="Enter text to translate...">Hello, world! This is a test translation.</textarea>
+                </div>
+                <button type="button" id="testBtn" 
+                        class="bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800 py-2 px-4 rounded-lg font-medium transition-colors">
+                  Test Translation
+                </button>
+                <div id="testResult" class="hidden p-4 bg-gray-50 dark:bg-gray-700 rounded-lg min-h-20">
+                  <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Result:</div>
+                  <div id="testResultText" class="text-sm text-gray-600 dark:text-gray-400"></div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Language Settings -->
-      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md/50 dark:shadow-lg/50 mb-6">
-        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
-          <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mt-0 mb-0">Language Settings</h2>
-          <p class="text-sm text-gray-400 dark:text-gray-500 m-0">Configure source and target languages</p>
-        </div>
-        <div class="p-6 flex justify-between gap-6">
-          <!-- Source Language -->
-          <div class="flex-1 m-0">
-            <label for="sourceLanguage" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Source Language
-            </label>
-            <select id="sourceLanguage" name="sourceLanguage" 
-                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-blue-500 focus:border-blue-500 h-10">
-              <option value="auto">Auto-detect</option>
-              <option value="en">English</option>
-              <option value="es">Spanish</option>
-              <option value="fr">French</option>
-              <option value="de">German</option>
-              <option value="it">Italian</option>
-              <option value="pt">Portuguese</option>
-              <option value="ru">Russian</option>
-              <option value="zh">Chinese</option>
-              <option value="ja">Japanese</option>
-              <option value="ko">Korean</option>
-              <option value="ar">Arabic</option>
-              <option value="fa">Persian/Farsi</option>
-              <option value="hi">Hindi</option>
-              <option value="ur">Urdu</option>
-              <option value="bn">Bengali</option>
-              <option value="ta">Tamil</option>
-              <option value="te">Telugu</option>
-              <option value="ml">Malayalam</option>
-              <option value="kn">Kannada</option>
-              <option value="gu">Gujarati</option>
-              <option value="pa">Punjabi</option>
-              <option value="mr">Marathi</option>
-              <option value="th">Thai</option>
-              <option value="vi">Vietnamese</option>
-              <option value="id">Indonesian</option>
-              <option value="ms">Malay</option>
-              <option value="tl">Filipino</option>
-              <option value="he">Hebrew</option>
-              <option value="uk">Ukrainian</option>
-              <option value="cs">Czech</option>
-              <option value="sk">Slovak</option>
-              <option value="hu">Hungarian</option>
-              <option value="ro">Romanian</option>
-              <option value="bg">Bulgarian</option>
-              <option value="hr">Croatian</option>
-              <option value="sr">Serbian</option>
-              <option value="sl">Slovenian</option>
-              <option value="et">Estonian</option>
-              <option value="lv">Latvian</option>
-              <option value="lt">Lithuanian</option>
-              <option value="el">Greek</option>
-              <option value="is">Icelandic</option>
-              <option value="mt">Maltese</option>
-              <option value="cy">Welsh</option>
-              <option value="ga">Irish</option>
-              <option value="eu">Basque</option>
-              <option value="ca">Catalan</option>
-              <option value="nl">Dutch</option>
-              <option value="sv">Swedish</option>
-              <option value="da">Danish</option>
-              <option value="no">Norwegian</option>
-              <option value="fi">Finnish</option>
-              <option value="pl">Polish</option>
-              <option value="tr">Turkish</option>
-            </select>
-          </div>
-
-          <!-- Target Language -->
-          <div class="flex-1 m-0">
-            <label for="targetLanguage" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Target Language
-            </label>
-            <select id="targetLanguage" name="targetLanguage"
-                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-blue-500 focus:border-blue-500 h-10">
-              <option value="en">English</option>
-              <option value="es">Spanish</option>
-              <option value="fr">French</option>
-              <option value="de">German</option>
-              <option value="it">Italian</option>
-              <option value="pt">Portuguese</option>
-              <option value="ru">Russian</option>
-              <option value="zh">Chinese</option>
-              <option value="ja">Japanese</option>
-              <option value="ko">Korean</option>
-              <option value="ar">Arabic</option>
-              <option value="fa">Persian/Farsi</option>
-              <option value="hi">Hindi</option>
-              <option value="ur">Urdu</option>
-              <option value="bn">Bengali</option>
-              <option value="ta">Tamil</option>
-              <option value="te">Telugu</option>
-              <option value="ml">Malayalam</option>
-              <option value="kn">Kannada</option>
-              <option value="gu">Gujarati</option>
-              <option value="pa">Punjabi</option>
-              <option value="mr">Marathi</option>
-              <option value="th">Thai</option>
-              <option value="vi">Vietnamese</option>
-              <option value="id">Indonesian</option>
-              <option value="ms">Malay</option>
-              <option value="tl">Filipino</option>
-              <option value="he">Hebrew</option>
-              <option value="uk">Ukrainian</option>
-              <option value="cs">Czech</option>
-              <option value="sk">Slovak</option>
-              <option value="hu">Hungarian</option>
-              <option value="ro">Romanian</option>
-              <option value="bg">Bulgarian</option>
-              <option value="hr">Croatian</option>
-              <option value="sr">Serbian</option>
-              <option value="sl">Slovenian</option>
-              <option value="et">Estonian</option>
-              <option value="lv">Latvian</option>
-              <option value="lt">Lithuanian</option>
-              <option value="el">Greek</option>
-              <option value="is">Icelandic</option>
-              <option value="mt">Maltese</option>
-              <option value="cy">Welsh</option>
-              <option value="ga">Irish</option>
-              <option value="eu">Basque</option>
-              <option value="ca">Catalan</option>
-              <option value="nl">Dutch</option>
-              <option value="sv">Swedish</option>
-              <option value="da">Danish</option>
-              <option value="no">Norwegian</option>
-              <option value="fi">Finnish</option>
-              <option value="pl">Polish</option>
-              <option value="tr">Turkish</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <!-- Test Section -->
-      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md/50 dark:shadow-lg/50 mb-6">
-        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
-          <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mt-0 mb-0">Test Translation</h2>
-          <p class="text-sm text-gray-400 dark:text-gray-500 m-0">Test your configuration with a sample translation</p>
-        </div>
-        <div class="p-6 flex flex-col gap-4 items-start">
-          <div class="m-0 w-full">
-            <label for="testText" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Test Text
-            </label>
-            <textarea id="testText" rows="4" 
-                      class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-blue-500 focus:border-blue-500 resize-none"
-                      placeholder="Enter text to translate...">Hello, world! This is a test translation.</textarea>
-          </div>
-          <button type="button" id="testBtn" 
-                  class="bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800 py-2 px-4 rounded-lg font-medium h-10 transition-colors">
-            Test Translation
+      <!-- Save Button (Fixed at bottom) -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md/50 dark:shadow-lg/50 p-6">
+        <div class="flex justify-end space-x-3">
+          <button type="button" id="resetBtn" 
+                  class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+            Reset to Defaults
           </button>
-          <div id="testResult" class="hidden p-4 bg-gray-50 dark:bg-gray-700 rounded-lg h-20 w-full">
-            <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Result:</div>
-            <div id="testResultText" class="text-sm text-gray-600 dark:text-gray-400"></div>
-          </div>
+          <button type="submit" id="saveBtn"
+                  class="px-6 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-medium transition-all duration-200 transform hover:scale-105 shadow-md">
+            Save Settings
+          </button>
         </div>
-      </div>
-
-      <!-- Save Button -->
-      <div class="flex justify-end space-x-3">
-        <button type="button" id="resetBtn" 
-                class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-          Reset to Defaults
-        </button>
-        <button type="submit" id="saveBtn"
-                class="px-6 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-medium transition-all duration-200 transform hover:scale-105 shadow-md">
-          Save Settings
-        </button>
       </div>
     </form>
 
-    <!-- Status Messages -->
-    <div id="statusMessage" class="fixed top-4 right-4 max-w-sm hidden">
-      <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-4">
-        <div class="flex items-center">
-          <div id="statusIcon" class="w-5 h-5 mr-3"></div>
-          <div>
-            <div id="statusTitle" class="text-sm font-medium text-gray-900 dark:text-gray-100"></div>
-            <div id="statusText" class="text-sm text-gray-600 dark:text-gray-400"></div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <!-- Toast Container (Fixed Top Right) -->
+    <div id="toastContainer" class="fixed top-4 right-4 z-50 flex flex-col gap-3 pointer-events-none"></div>
   </div>
 
   <script src="options.js"></script>

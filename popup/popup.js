@@ -23,7 +23,7 @@ class PopupManager {
   async loadSettings() {
     try {
       const response = await chrome.runtime.sendMessage({ action: 'getSettings' });
-      if (response.success) {
+      if (response?.success) {
         this.settings = response.settings;
       }
     } catch (error) {
@@ -71,7 +71,7 @@ class PopupManager {
   async checkApiStatus() {
     // Check Gemini API
     this.updateApiStatus('gemini', 'checking');
-    if (this.settings && this.settings.geminiApiKey) {
+    if (this.settings?.geminiApiKey) {
       try {
         const response = await chrome.runtime.sendMessage({
           action: 'translate',
@@ -79,7 +79,7 @@ class PopupManager {
           targetLanguage: 'en',
           sourceLanguage: 'auto'
         });
-        this.updateApiStatus('gemini', response.success ? 'connected' : 'disconnected');
+        this.updateApiStatus('gemini', response?.success ? 'connected' : 'disconnected');
       } catch (error) {
         this.updateApiStatus('gemini', 'disconnected');
       }
@@ -89,7 +89,7 @@ class PopupManager {
 
     // Check OpenRouter API
     this.updateApiStatus('openrouter', 'checking');
-    if (this.settings && this.settings.openrouterApiKey) {
+    if (this.settings?.openrouterApiKey) {
       try {
         // Note: This is a placeholder - actual OpenRouter API testing would go here
         this.updateApiStatus('openrouter', 'disconnected'); // Placeholder
@@ -217,15 +217,15 @@ class PopupManager {
           sourceLanguage: 'auto'
         });
 
-        if (response.success) {
-          testResultText.textContent = response.translatedText;
+        if (response?.success) {
+          testResultText.textContent = response.translatedText ?? '';
           testResult.classList.remove('hidden');
         } else {
-          testResultText.textContent = `Error: ${response.error}`;
+          testResultText.textContent = `Error: ${response?.error ?? 'Unknown error'}`;
           testResult.classList.remove('hidden');
         }
       } catch (error) {
-        testResultText.textContent = `Error: ${error.message}`;
+        testResultText.textContent = `Error: ${error?.message ?? 'Unknown error'}`;
         testResult.classList.remove('hidden');
       }
 

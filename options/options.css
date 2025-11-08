@@ -26,3 +26,86 @@ body {
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
 }
+
+/* Tab content transitions */
+.tab-content {
+  animation: fadeIn 0.2s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Tab button hover effects */
+.tab-button:hover {
+  background-color: rgba(249, 250, 251, 0.5);
+}
+
+.dark .tab-button:hover {
+  background-color: rgba(55, 65, 81, 0.5);
+}
+
+
+#tab-api label:has(input:checked) {
+  background-color: hsla(217, 99%, 52%, 0.1);
+  border-color: hsl(217, 99%, 52%);
+  color: hsl(217, 99%, 52%);
+
+  > div * {
+    color: hsl(217, 99%, 52%);
+  }
+}
+
+/* Toast Animations */
+.toast {
+  opacity: 0;
+  transform: translateX(100%);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.toast-show {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.toast-hide {
+  opacity: 0;
+  transform: translateX(100%);
+}
+
+/* Toast Container */
+#toastContainer {
+  max-width: 420px;
+}
+
+/* Toast close button hover */
+.toast-close:hover {
+  transform: scale(1.1);
+}
+
+.toast-close:active {
+  transform: scale(0.95);
+}
+
+.theme-preview-colors > div {
+  margin-right: -0.5rem;
+
+  &:last-child {
+    margin-right: 0;
+  }
+}
+
+label.theme-option {
+  max-height: 128px;
+
+  > div {
+    height: 100%;
+  }
+}

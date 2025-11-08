@@ -67,22 +67,22 @@
 .alto-translate-popup {
   position: absolute;
   z-index: 10001;
-  background: rgba(255, 255, 255, 0.7);
-  border: 1px solid #e5e7eb;
+  /* Default colors - can be overridden by CSS variables */
+  background: var(--alto-bg, rgba(255, 255, 255, 0.9));
+  border: 1px solid var(--alto-border, #e5e7eb);
   border-radius: 12px;
   box-shadow: rgba(0, 0, 0, 0.3) 0px 10px 21px -4px, rgba(0, 0, 0, 0.05) 0px 4px 8px -2px;
   min-width: 200px;
   max-width: 400px;
   padding: 12px 16px 16px;
-  /* font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; */
   font-family: InterVariable, sans-serif;
-  font-feature-settings: 'liga' 1, 'calt' 1; /* fix for Chrome */
+  font-feature-settings: 'liga' 1, 'calt' 1;
   font-size: 14px;
   line-height: 1.5;
-  color: #374151;
+  color: var(--alto-text, #374151);
   animation: alto-fade-in 0.3s ease-out;
   pointer-events: auto;
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px) saturate(180%);
 }
 
 @keyframes alto-fade-in {
@@ -102,11 +102,11 @@
   align-items: center;
   margin-bottom: 12px;
   padding-bottom: 8px;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--alto-header-border, #f3f4f6);
 }
 
 .alto-translate-popup-title {
-  color: #111827;
+  color: var(--alto-text, #111827);
   font-size: 13px;
   letter-spacing: 0;
   text-transform: initial;
@@ -120,15 +120,15 @@
   cursor: pointer;
   padding: 4px;
   border-radius: 4px;
-  color: #6b7280;
+  color: var(--alto-text-secondary, #6b7280);
   font-size: 16px;
   line-height: 1;
   transition: all 0.2s ease;
 }
 
 .alto-translate-popup-close:hover {
-  background: #f3f4f6;
-  color: #374151;
+  background: var(--alto-header-border, #f3f4f6);
+  color: var(--alto-text, #374151);
 }
 
 .alto-translate-popup-content {
@@ -142,14 +142,14 @@
 .alto-translate-original-text {
   margin-bottom: 8px;
   font-size: 14px;
-  color: #6b7280;
+  color: var(--alto-text-secondary, #6b7280);
   word-wrap: break-word;
   padding: 4px 0;
 }
 
 .alto-translate-translated-text {
   font-size: 14px;
-  color: #0c4a6e;
+  color: var(--alto-translated-text, #0c4a6e);
   word-wrap: break-word;
   min-height: 20px;
   padding: 4px 0;
@@ -171,15 +171,15 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #6b7280;
+  color: var(--alto-text-secondary, #6b7280);
   font-size: 13px;
 }
 
 .alto-translate-spinner {
   width: 16px;
   height: 16px;
-  border: 2px solid #e5e7eb;
-  border-top: 2px solid #3b82f6;
+  border: 2px solid var(--alto-border, #e5e7eb);
+  border-top: 2px solid var(--alto-button-text, #3b82f6);
   border-radius: 50%;
   animation: alto-spin 1s linear infinite;
 }
@@ -197,8 +197,8 @@
 }
 
 .alto-translate-copy-btn {
-  background: rgba(59, 131, 246, 0.2) !important;
-  color: #3b82f6;
+  background: var(--alto-button-bg, rgba(59, 131, 246, 0.2)) !important;
+  color: var(--alto-button-text, #3b82f6);
   border: none;
   border-radius: 6px;
   padding: 10px 12px;
@@ -217,7 +217,8 @@
 }
 
 .alto-translate-copy-btn:hover {
-  background: #2563eb;
+  background: var(--alto-button-hover, #2563eb) !important;
+  color: white;
 }
 
 .alto-translate-copy-btn:active {
@@ -232,7 +233,7 @@
 
 .alto-translate-api-badge {
   font-size: 9px;
-  color: #6b7280;
+  color: var(--alto-text-secondary, #6b7280);
   padding: 2px 6px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -240,12 +241,19 @@
   background: transparent;
   border: 1px solid currentColor;
   opacity: 0.7;
+  transition: color 0.2s ease;
+}
+
+.alto-translate-api-badge[title*="Cached"] {
+  color: #10b981;
+  border-color: #10b981;
+  opacity: 1;
 }
 
 .alto-translate-error {
-  color: #dc2626;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  color: var(--alto-error-text, #dc2626);
+  background: var(--alto-error-bg, #fef2f2);
+  border: 1px solid var(--alto-error-border, #fecaca);
   border-radius: 6px;
   padding: 8px 12px;
   font-size: 13px;
@@ -265,67 +273,126 @@
   text-decoration: underline;
 }
 
-/* Dark mode support */
+/* Dark theme support - based on webpage theme detection */
+.alto-translate-icon.alto-dark-theme,
+.alto-translate-popup.alto-dark-theme {
+  background: rgba(31, 41, 55, 0.7);
+  border-color: #374151;
+  color: #f9fafb;
+  backdrop-filter: blur(10px);
+}
+
+.alto-translate-icon.alto-dark-theme:hover {
+  background: #374151;
+  border-color: #4b5563;
+}
+
+.alto-translate-popup.alto-dark-theme .alto-translate-popup-header {
+  border-bottom-color: #374151;
+}
+
+.alto-translate-popup.alto-dark-theme .alto-translate-popup-title {
+  color: #f9fafb;
+}
+
+.alto-translate-popup.alto-dark-theme .alto-translate-popup-close {
+  color: #9ca3af;
+}
+
+.alto-translate-popup.alto-dark-theme .alto-translate-popup-close:hover {
+  background: #374151;
+  color: #f9fafb;
+}
+
+.alto-translate-popup.alto-dark-theme .alto-translate-original-text {
+  color: rgba(156, 163, 175, 0.85);
+}
+
+.alto-translate-popup.alto-dark-theme .alto-translate-translated-text {
+  color: #93c5fd;
+}
+
+.alto-translate-popup.alto-dark-theme .alto-translate-loading {
+  color: #9ca3af;
+}
+
+.alto-translate-popup.alto-dark-theme .alto-translate-spinner {
+  border-color: #374151;
+  border-top-color: #3b82f6;
+}
+
+.alto-translate-popup.alto-dark-theme .alto-translate-api-badge {
+  color: #9ca3af;
+  background: #374151;
+}
+
+.alto-translate-popup.alto-dark-theme .alto-translate-error {
+  color: #fca5a5;
+  background: #7f1d1d;
+  border-color: #dc2626;
+}
+
+/* Fallback: System preference (for pages that don't have clear theme) */
 @media (prefers-color-scheme: dark) {
-  .alto-translate-icon {
+  .alto-translate-icon:not(.alto-light-theme):not(.alto-dark-theme) {
     background: rgba(31, 41, 55, 0.7);
     border-color: #374151;
     color: #f9fafb;
     backdrop-filter: blur(10px);
   }
   
-  .alto-translate-icon:hover {
+  .alto-translate-icon:not(.alto-light-theme):not(.alto-dark-theme):hover {
     background: #374151;
     border-color: #4b5563;
   }
   
-  .alto-translate-popup {
+  .alto-translate-popup:not(.alto-light-theme):not(.alto-dark-theme) {
     background: rgba(31, 41, 55, 0.7);
     border-color: #374151;
     color: #f9fafb;
     backdrop-filter: blur(10px);
   }
 
-  .alto-translate-popup-header {
+  .alto-translate-popup:not(.alto-light-theme):not(.alto-dark-theme) .alto-translate-popup-header {
     border-bottom-color: #374151;
   }
   
-  .alto-translate-popup-title {
+  .alto-translate-popup:not(.alto-light-theme):not(.alto-dark-theme) .alto-translate-popup-title {
     color: #f9fafb;
   }
   
-  .alto-translate-popup-close {
+  .alto-translate-popup:not(.alto-light-theme):not(.alto-dark-theme) .alto-translate-popup-close {
     color: #9ca3af;
   }
   
-  .alto-translate-popup-close:hover {
+  .alto-translate-popup:not(.alto-light-theme):not(.alto-dark-theme) .alto-translate-popup-close:hover {
     background: #374151;
     color: #f9fafb;
   }
   
-  .alto-translate-original-text {
+  .alto-translate-popup:not(.alto-light-theme):not(.alto-dark-theme) .alto-translate-original-text {
     color: rgba(156, 163, 175, 0.85);
   }
   
-  .alto-translate-translated-text {
+  .alto-translate-popup:not(.alto-light-theme):not(.alto-dark-theme) .alto-translate-translated-text {
     color: #93c5fd;
   }
   
-  .alto-translate-loading {
+  .alto-translate-popup:not(.alto-light-theme):not(.alto-dark-theme) .alto-translate-loading {
     color: #9ca3af;
   }
   
-  .alto-translate-spinner {
+  .alto-translate-popup:not(.alto-light-theme):not(.alto-dark-theme) .alto-translate-spinner {
     border-color: #374151;
     border-top-color: #3b82f6;
   }
   
-  .alto-translate-api-badge {
+  .alto-translate-popup:not(.alto-light-theme):not(.alto-dark-theme) .alto-translate-api-badge {
     color: #9ca3af;
     background: #374151;
   }
   
-  .alto-translate-error {
+  .alto-translate-popup:not(.alto-light-theme):not(.alto-dark-theme) .alto-translate-error {
     color: #fca5a5;
     background: #7f1d1d;
     border-color: #dc2626;

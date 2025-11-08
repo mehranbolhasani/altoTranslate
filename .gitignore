@@ -1,0 +1,66 @@
+# Chrome Extension Build Files
+*.zip
+*.crx
+*.pem
+
+# IDE and Editor Files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.code-workspace
+
+# Cursor AI Files
+.cursor/
+
+# Node modules (if using any build tools)
+node_modules/
+package-lock.json
+yarn.lock
+
+# Environment variables and secrets
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# Build and dist directories (if any)
+dist/
+build/
+out/
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Documentation build (if any)
+docs/_build/
+
+# Local development files
+local/
+dev/
+
