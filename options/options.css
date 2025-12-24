@@ -1,7 +1,6 @@
 /* Custom styles for options page - Tailwind CSS handles most styling */
 
 body {
-  /* font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; */
   font-family: InterVariable, sans-serif;
   font-feature-settings: 'liga' 1, 'calt' 1; /* fix for Chrome */
   margin: 0;

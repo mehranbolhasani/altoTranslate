@@ -1,10 +1,13 @@
 // LibreTranslate API integration module
 // Uses MyMemory API as fallback - no API key required for basic usage
+// Chrome Extension compatible - no CommonJS exports
 
-// MyMemory API endpoint (free, no API key required)
-const MYMEMORY_API_BASE = 'https://api.mymemory.translated.net/get';
+// Import constants (must be loaded before this script)
+// Assumes constants.js is loaded via importScripts before this file
 
-// Language code mapping for LibreTranslate
+// MYMEMORY_API_BASE is imported from utils/constants.js via importScripts
+
+// Language code mapping for MyMemory API
 const LIBRETRANSLATE_LANGUAGES = {
   'en': 'en',
   'es': 'es',
@@ -64,6 +67,7 @@ const LIBRETRANSLATE_LANGUAGES = {
 
 /**
  * Translate text using MyMemory API (free, no API key required)
+ * Note: Function name uses "LibreTranslate" for consistency with user-facing naming
  * @param {string} text - Text to translate
  * @param {string} targetLanguage - Target language code
  * @param {string} sourceLanguage - Source language code (optional, auto-detect if not provided)
@@ -78,7 +82,7 @@ async function translateWithLibreTranslate(text, targetLanguage, sourceLanguage 
     return {
       success: false,
       error: `Target language '${targetLanguage}' is not supported by MyMemory API`,
-      api: 'libretranslate'
+      api: 'mymemory'
     };
   }
   
@@ -86,100 +90,65 @@ async function translateWithLibreTranslate(text, targetLanguage, sourceLanguage 
     return {
       success: false,
       error: `Source language '${sourceLanguage}' is not supported by MyMemory API`,
-      api: 'libretranslate'
+      api: 'mymemory'
     };
   }
   
   try {
-    const result = await tryTranslateWithMyMemory(text, targetLang, sourceLang);
-    return result;
+    // MyMemory API doesn't support 'auto' - try to detect language or use English as default
+    let actualSourceLang = sourceLang;
+    if (sourceLang === 'auto') {
+      // For auto-detect, try to detect if it's English, otherwise use English as fallback
+      // This is a simple heuristic - in a real app you might want more sophisticated detection
+      const isLikelyEnglish = /^[a-zA-Z\s.,!?;:'"()-]+$/.test(text.trim());
+      actualSourceLang = isLikelyEnglish ? 'en' : 'en'; // Default to English for now
+    }
+    
+    const params = new URLSearchParams({
+      q: text,
+      langpair: `${actualSourceLang}|${targetLang}`
+    });
+    
+    // Use getApiEndpoint if available, otherwise use MYMEMORY_API_BASE from constants.js
+    const apiEndpoint = typeof getApiEndpoint === 'function' 
+      ? getApiEndpoint('mymemory')
+      : (typeof MYMEMORY_API_BASE !== 'undefined' ? MYMEMORY_API_BASE : 'https://api.mymemory.translated.net/get');
+    
+    const url = `${apiEndpoint}?${params.toString()}`;
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'User-Agent': 'AltoTranslate-Extension/1.0'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    const translatedText = data?.responseData?.translatedText;
+    
+    if (!translatedText) {
+      throw new Error('Invalid response format from MyMemory API');
+    }
+    
+    return {
+      success: true,
+      translatedText,
+      sourceLanguage: sourceLang === 'auto' ? 'auto' : sourceLang,
+      targetLanguage: targetLang,
+      api: 'mymemory',
+      instance: 'MyMemory API'
+    };
+    
   } catch (error) {
     console.error('MyMemory API failed:', error);
     return {
       success: false,
-      error: 'MyMemory API is currently unavailable. Please try again later.',
-      api: 'libretranslate'
+      error: error?.message ?? 'MyMemory API is currently unavailable. Please try again later.',
+      api: 'mymemory'
     };
   }
-}
-
-/**
- * Try to translate with MyMemory API
- * @param {string} text - Text to translate
- * @param {string} targetLang - Target language code
- * @param {string} sourceLang - Source language code
- * @returns {Promise<Object>} Translation result
- */
-async function tryTranslateWithMyMemory(text, targetLang, sourceLang) {
-  // MyMemory API uses GET requests with query parameters
-  const params = new URLSearchParams({
-    q: text,
-    langpair: sourceLang === 'auto' ? `auto|${targetLang}` : `${sourceLang}|${targetLang}`
-  });
-  
-  const url = `${MYMEMORY_API_BASE}?${params.toString()}`;
-  
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      'User-Agent': 'AltoTranslate-Extension/1.0'
-    }
-  });
-  
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-  }
-  
-  const data = await response.json();
-  
-  if (!data.responseData || !data.responseData.translatedText) {
-    throw new Error('Invalid response format from MyMemory API');
-  }
-  
-  return {
-    success: true,
-    translatedText: data.responseData.translatedText,
-    sourceLanguage: sourceLang === 'auto' ? 'auto' : sourceLang,
-    targetLanguage: targetLang,
-    api: 'libretranslate',
-    instance: 'MyMemory API'
-  };
-}
-
-/**
- * Get supported languages from MyMemory API
- * @returns {Promise<Array>} Array of supported languages
- */
-async function getSupportedLanguagesFromLibreTranslate() {
-  // MyMemory API supports a wide range of languages
-  // Return the languages we have mapped
-  return Object.entries(LIBRETRANSLATE_LANGUAGES).map(([code, name]) => ({
-    code: code,
-    name: name
-  }));
-}
-
-/**
- * Detect language using MyMemory API (not directly supported, return auto)
- * @param {string} text - Text to detect language for
- * @returns {Promise<Object>} Language detection result
- */
-async function detectLanguageWithLibreTranslate(text) {
-  // MyMemory API doesn't have a direct language detection endpoint
-  // Return auto-detect as the source language
-  return {
-    success: true,
-    language: 'auto',
-    confidence: 0.5
-  };
-}
-
-// Export for use in other modules
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = {
-    translateWithLibreTranslate,
-    getSupportedLanguagesFromLibreTranslate,
-    detectLanguageWithLibreTranslate,
-    LIBRETRANSLATE_LANGUAGES
-  };
 }

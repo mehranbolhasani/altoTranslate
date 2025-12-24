@@ -10,6 +10,9 @@ class OptionsManager {
     // Load current settings
     await this.loadSettings();
     
+    // Update version display
+    this.updateVersion();
+    
     // Populate form
     this.populateForm();
     
@@ -24,6 +27,19 @@ class OptionsManager {
     
     // Add event listeners
     this.addEventListeners();
+  }
+
+  updateVersion() {
+    try {
+      const manifest = chrome.runtime.getManifest();
+      const version = manifest.version || '1.1.0';
+      const versionElement = document.getElementById('versionDisplay');
+      if (versionElement) {
+        versionElement.textContent = `Version ${version}`;
+      }
+    } catch (error) {
+      console.error('Error getting version:', error);
+    }
   }
 
   initTabs() {
@@ -112,6 +128,12 @@ class OptionsManager {
     const themeRadio = document.querySelector(`input[name="popupTheme"][value="${popupTheme}"]`);
     if (themeRadio) {
       themeRadio.checked = true;
+    }
+
+    // Disable input fields setting
+    const disableInputFields = document.getElementById('disableInputFields');
+    if (disableInputFields) {
+      disableInputFields.checked = this.settings.disableInputFields || false;
     }
   }
 
@@ -356,13 +378,15 @@ class OptionsManager {
 
   async saveSettings() {
     const formData = new FormData(document.getElementById('settingsForm'));
+    const disableInputFieldsCheckbox = document.getElementById('disableInputFields');
     const settings = {
       apiPreference: formData.get('apiPreference'),
       geminiApiKey: formData.get('geminiApiKey'),
       openrouterApiKey: formData.get('openrouterApiKey'),
       sourceLanguage: formData.get('sourceLanguage'),
       targetLanguage: formData.get('targetLanguage'),
-      popupTheme: formData.get('popupTheme') || 'default'
+      popupTheme: formData.get('popupTheme') || 'default',
+      disableInputFields: disableInputFieldsCheckbox ? disableInputFieldsCheckbox.checked : false
     };
 
     // Validate settings

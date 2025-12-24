@@ -1,7 +1,10 @@
 // Dark Mode Detection and Application
 // This script handles automatic dark mode detection based on system preferences
 
-// Check for dark mode preference and apply it
+/**
+ * Check for dark mode preference and apply it to the document
+ * Detects system color scheme preference and adds/removes 'dark' class accordingly
+ */
 function applyDarkMode() {
   const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
   
@@ -12,7 +15,10 @@ function applyDarkMode() {
   }
 }
 
-// Toggle dark mode manually
+/**
+ * Toggle dark mode manually
+ * Switches between light and dark mode by toggling the 'dark' class
+ */
 function toggleDarkMode() {
   document.documentElement.classList.toggle('dark');
 }
@@ -35,3 +41,4 @@ applyDarkMode();
 if (window.matchMedia) {
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyDarkMode);
 }
+

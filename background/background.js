@@ -1,65 +1,14 @@
 // Background service worker for Chrome extension
 
-/**
- * Language name mapping - single source of truth
- * @type {Object<string, string>}
- */
-const LANGUAGE_NAMES = {
-  'en': 'English',
-  'es': 'Spanish',
-  'fr': 'French',
-  'de': 'German',
-  'it': 'Italian',
-  'pt': 'Portuguese',
-  'ru': 'Russian',
-  'zh': 'Chinese',
-  'ja': 'Japanese',
-  'ko': 'Korean',
-  'ar': 'Arabic',
-  'fa': 'Persian/Farsi',
-  'hi': 'Hindi',
-  'ur': 'Urdu',
-  'bn': 'Bengali',
-  'ta': 'Tamil',
-  'te': 'Telugu',
-  'ml': 'Malayalam',
-  'kn': 'Kannada',
-  'gu': 'Gujarati',
-  'pa': 'Punjabi',
-  'mr': 'Marathi',
-  'th': 'Thai',
-  'vi': 'Vietnamese',
-  'id': 'Indonesian',
-  'ms': 'Malay',
-  'tl': 'Filipino',
-  'he': 'Hebrew',
-  'uk': 'Ukrainian',
-  'cs': 'Czech',
-  'sk': 'Slovak',
-  'hu': 'Hungarian',
-  'ro': 'Romanian',
-  'bg': 'Bulgarian',
-  'hr': 'Croatian',
-  'sr': 'Serbian',
-  'sl': 'Slovenian',
-  'et': 'Estonian',
-  'lv': 'Latvian',
-  'lt': 'Lithuanian',
-  'el': 'Greek',
-  'is': 'Icelandic',
-  'mt': 'Maltese',
-  'cy': 'Welsh',
-  'ga': 'Irish',
-  'eu': 'Basque',
-  'ca': 'Catalan',
-  'nl': 'Dutch',
-  'sv': 'Swedish',
-  'da': 'Danish',
-  'no': 'Norwegian',
-  'fi': 'Finnish',
-  'pl': 'Polish',
-  'tr': 'Turkish'
-};
+// Import utility modules
+importScripts(
+  '../utils/constants.js',
+  '../utils/languages.js',
+  '../utils/error-messages.js',
+  '../utils/api-gemini.js',
+  '../utils/api-openrouter.js',
+  '../utils/api-libretranslate.js'
+);
 
 /**
  * Predefined themes for translation popup
@@ -241,28 +190,12 @@ const DEFAULT_SETTINGS = {
   libretranslateEnabled: true,
   sourceLanguage: 'auto',
   targetLanguage: 'en',
-  popupTheme: 'default'
+  popupTheme: 'default',
+  disableInputFields: false // Disable translation for input fields and textareas
 };
 
-/**
- * Gemini API models to try in order
- * @type {string[]}
- */
-const GEMINI_MODELS = [
-  'gemini-pro',
-  'gemini-1.5-flash',
-  'gemini-1.5-pro',
-  'gemini-2.0-flash-exp'
-];
-
-/**
- * Cache configuration
- */
-const CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
-const CACHE_PREFIX = 'translation_cache_';
-const MAX_CACHE_SIZE_MB = 8; // Maximum cache size in MB (80% of 10MB limit)
-const MAX_CACHE_SIZE_BYTES = MAX_CACHE_SIZE_MB * 1024 * 1024;
-const EVICTION_THRESHOLD = 0.9; // Evict when cache reaches 90% of max size
+// Constants are now imported from utils/constants.js via importScripts
+// GEMINI_MODELS, CACHE_TTL, CACHE_PREFIX, MAX_CACHE_SIZE_MB, MAX_CACHE_SIZE_BYTES, EVICTION_THRESHOLD
 
 /**
  * In-memory cache for fast lookups
@@ -279,15 +212,6 @@ const lruOrder = [];
 chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === 'install') {
     chrome.runtime.openOptionsPage();
-  }
-});
-
-/**
- * Development hot reload shortcut (Ctrl+Shift+R)
- */
-chrome.commands?.onCommand.addListener((command) => {
-  if (command === 'reload-extension') {
-    chrome.runtime.reload();
   }
 });
 
@@ -348,7 +272,7 @@ function validateTranslationInput(text, targetLanguage) {
     return { valid: false, error: 'Invalid target language' };
   }
   
-  const MAX_TEXT_LENGTH = 5000;
+  // MAX_TEXT_LENGTH is imported from utils/constants.js
   if (text.length > MAX_TEXT_LENGTH) {
     return { 
       valid: false, 
@@ -371,7 +295,13 @@ async function handleTranslation(request, sendResponse) {
     // Validate input
     const validation = validateTranslationInput(text, targetLanguage);
     if (!validation.valid) {
-      sendResponse({ success: false, error: validation.error });
+      const errorType = validation.error.toLowerCase().includes('too long') ? 'TEXT_TOO_LONG' : 'UNKNOWN_ERROR';
+      const errorMsg = getErrorMessage(errorType, { maxLength: MAX_TEXT_LENGTH });
+      sendResponse({ 
+        success: false, 
+        error: validation.error,
+        errorDetails: errorMsg
+      });
       return;
     }
     
@@ -384,9 +314,11 @@ async function handleTranslation(request, sendResponse) {
                        settings.libretranslateEnabled;
     
     if (!hasService) {
+      const errorMsg = getErrorMessage('NO_API_KEYS');
       sendResponse({
         success: false,
-        error: 'No translation services configured. Please set up your API keys or enable LibreTranslate in the extension settings.'
+        error: formatErrorMessage('NO_API_KEYS'),
+        errorDetails: errorMsg
       });
       return;
     }
@@ -406,53 +338,96 @@ async function handleTranslation(request, sendResponse) {
     // Cache miss - proceed with API call
     let result;
     
-    switch (apiPreference) {
-      case 'gemini':
-        if (!settings.geminiApiKey) {
-          sendResponse({ success: false, error: 'Gemini API key not configured' });
+    try {
+      switch (apiPreference) {
+        case 'gemini':
+          if (!settings.geminiApiKey) {
+            sendResponse({ 
+              success: false, 
+              error: formatErrorMessage('GEMINI_API_KEY_MISSING'),
+              errorDetails: getErrorMessage('GEMINI_API_KEY_MISSING')
+            });
+            return;
+          }
+          result = await translateWithGemini(sanitizedText, targetLanguage, settings.geminiApiKey, sourceLanguage);
+          // No automatic fallback when user explicitly selects Gemini - show the error
+          break;
+          
+        case 'openrouter':
+          if (!settings.openrouterApiKey) {
+            sendResponse({ 
+              success: false, 
+              error: formatErrorMessage('OPENROUTER_API_KEY_MISSING'),
+              errorDetails: getErrorMessage('OPENROUTER_API_KEY_MISSING')
+            });
+            return;
+          }
+          result = await translateWithOpenRouter(sanitizedText, targetLanguage, settings.openrouterApiKey, sourceLanguage);
+          break;
+          
+        case 'libretranslate':
+          if (!settings.libretranslateEnabled) {
+            sendResponse({ 
+              success: false, 
+              error: formatErrorMessage('LIBRETRANSLATE_DISABLED'),
+              errorDetails: getErrorMessage('LIBRETRANSLATE_DISABLED')
+            });
+            return;
+          }
+          result = await translateWithLibreTranslate(sanitizedText, targetLanguage, sourceLanguage);
+          break;
+          
+        case 'both':
+          result = await translateWithAll(sanitizedText, targetLanguage, sourceLanguage, settings);
+          break;
+          
+        default:
+          sendResponse({ success: false, error: `Invalid API preference: ${apiPreference}` });
           return;
-        }
-        result = await translateWithGemini(sanitizedText, targetLanguage, settings.geminiApiKey, sourceLanguage);
-        break;
-        
-      case 'openrouter':
-        if (!settings.openrouterApiKey) {
-          sendResponse({ success: false, error: 'OpenRouter API key not configured' });
-          return;
-        }
-        result = await translateWithOpenRouter(sanitizedText, targetLanguage, settings.openrouterApiKey, sourceLanguage);
-        break;
-        
-      case 'libretranslate':
-        if (!settings.libretranslateEnabled) {
-          sendResponse({ success: false, error: 'LibreTranslate is not enabled' });
-          return;
-        }
-        result = await translateWithLibreTranslate(sanitizedText, targetLanguage, sourceLanguage);
-        break;
-        
-      case 'both':
-        result = await translateWithAll(sanitizedText, targetLanguage, sourceLanguage, settings);
-        break;
-        
-      default:
-        sendResponse({ success: false, error: `Invalid API preference: ${apiPreference}` });
-        return;
-    }
+      }
 
-    // Cache successful translations only
-    if (result?.success) {
-      await setCachedTranslation(cacheKey, result);
-    }
+      // Ensure result is an object
+      if (!result || typeof result !== 'object') {
+        result = {
+          success: false,
+          error: 'Translation API returned an invalid response'
+        };
+      }
 
-    // Add cache indicator flag (false for new translations)
-    sendResponse({ ...result, fromCache: false });
+      // Cache successful translations only
+      if (result.success) {
+        await setCachedTranslation(cacheKey, result);
+      }
+
+      // Add cache indicator flag (false for new translations)
+      sendResponse({ ...result, fromCache: false });
+    } catch (apiError) {
+      // Handle any unexpected errors from API calls
+      console.error('API call error:', apiError);
+      sendResponse({
+        success: false,
+        error: apiError?.message || 'Translation API call failed',
+        errorDetails: {
+          message: apiError?.message || 'Unknown error',
+          api: apiPreference
+        }
+      });
+    }
     
   } catch (error) {
     console.error('Translation error:', error);
+    const errorType = getErrorTypeFromMessage(error?.message ?? '');
+    const errorMsg = getErrorMessage(errorType, { 
+      error: error?.message,
+      apiType: settings?.apiPreference 
+    });
     sendResponse({
       success: false,
-      error: error?.message ?? 'Unknown translation error'
+      error: formatErrorMessage(errorType, { 
+        error: error?.message,
+        apiType: settings?.apiPreference 
+      }),
+      errorDetails: errorMsg
     });
   }
 }
@@ -605,6 +580,35 @@ function updateLRU(cacheKey) {
 }
 
 /**
+ * Safe storage operation with retry logic and exponential backoff
+ * @param {Function} operation - Async function that performs the storage operation
+ * @param {number} retries - Number of retry attempts (default: 3)
+ * @returns {Promise<any>} Result of the operation
+ */
+async function safeStorageOperation(operation, retries = STORAGE_RETRY_ATTEMPTS) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      return await operation();
+    } catch (error) {
+      // If this is the last retry, throw the error
+      if (i === retries - 1) {
+        console.error('Storage operation failed after all retries:', error);
+        throw error;
+      }
+      
+      // Exponential backoff: wait STORAGE_RETRY_BASE_DELAY * (attempt number + 1)
+      const delay = STORAGE_RETRY_BASE_DELAY * (i + 1);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      
+      // Log retry attempt (but don't spam console)
+      if (i === 0) {
+        console.warn('Storage operation failed, retrying...', error.message);
+      }
+    }
+  }
+}
+
+/**
  * Evict least recently used entries until cache is under threshold
  * @returns {Promise<number>} Number of entries evicted
  */
@@ -625,18 +629,20 @@ async function evictLRU() {
       currentSize -= entrySize;
       memoryCache.delete(keyToEvict);
       
-      // Also remove from storage
+      // Also remove from storage with retry logic
       try {
+        await safeStorageOperation(async () => {
         await chrome.storage.local.remove(keyToEvict);
+        }, 3);
       } catch (error) {
-        console.error('Error removing from storage during eviction:', error);
+        // If storage removal fails after retries, log but continue eviction
+        // The entry is already removed from memory cache, so we continue
+        console.error('Failed to remove from storage after retries, continuing eviction:', error);
       }
       
       evicted++;
     }
   }
-  
-  // LRU eviction completed
   
   return evicted;
 }
@@ -902,330 +908,11 @@ async function saveSettings(settings) {
   }
 }
 
-/**
- * Translate text using Gemini API
- * @param {string} text - Text to translate
- * @param {string} targetLanguage - Target language code
- * @param {string} apiKey - Gemini API key
- * @param {string} sourceLanguage - Source language code
- * @returns {Promise<Object>} Translation result
- */
-async function translateWithGemini(text, targetLanguage, apiKey, sourceLanguage = 'auto') {
-  for (const model of GEMINI_MODELS) {
-    try {
-      const result = await tryTranslateWithModel(text, targetLanguage, apiKey, sourceLanguage, model);
-      if (result?.success) {
-        return result;
-      }
-    } catch (error) {
-      // Model failed, try next one
-      continue;
-    }
-  }
-  
-  throw new Error('All Gemini models failed. Please check your API key and try again.');
-}
+// Translation functions are now imported from utility modules via importScripts
+// translateWithGemini, translateWithOpenRouter, and translateWithLibreTranslate
+// are available from the imported modules
 
-/**
- * Try translating with a specific Gemini model
- * @param {string} text - Text to translate
- * @param {string} targetLanguage - Target language code
- * @param {string} apiKey - Gemini API key
- * @param {string} sourceLanguage - Source language code
- * @param {string} model - Model name to use
- * @returns {Promise<Object>} Translation result
- */
-async function tryTranslateWithModel(text, targetLanguage, apiKey, sourceLanguage, model) {
-  const GEMINI_API_BASE = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
-  
-  const targetLangName = getLanguageName(targetLanguage);
-  const sourceLangName = sourceLanguage === 'auto' ? 'auto-detect' : getLanguageName(sourceLanguage);
-
-  const prompt = sourceLanguage === 'auto' 
-    ? `Translate the following text to ${targetLangName}. Only return the translated text, nothing else:\n\n${text}`
-    : `Translate the following text from ${sourceLangName} to ${targetLangName}. Only return the translated text, nothing else:\n\n${text}`;
-
-  const requestBody = {
-    contents: [{
-      parts: [{ text: prompt }]
-    }],
-    generationConfig: {
-      temperature: 0.1,
-      topK: 1,
-      topP: 0.8,
-      maxOutputTokens: 1000
-    }
-  };
-
-  const response = await fetch(`${GEMINI_API_BASE}?key=${apiKey}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(requestBody)
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    const statusMessages = {
-      400: ' (Check your API key and request format)',
-      403: ' (API key may be invalid or restricted)',
-      404: ' (Model not found - check API version)'
-    };
-    
-    const errorMessage = `Gemini API error: ${response.status} - ${errorData?.error?.message ?? response.statusText}${statusMessages[response.status] ?? ''}`;
-    throw new Error(errorMessage);
-  }
-
-  const data = await response.json();
-  const candidate = data?.candidates?.[0]?.content?.parts?.[0];
-  
-  if (!candidate?.text) {
-    throw new Error('Invalid response format from Gemini API');
-  }
-
-  return {
-    success: true,
-    translatedText: candidate.text.trim(),
-    sourceLanguage,
-    targetLanguage,
-    api: 'gemini',
-    usage: data.usageMetadata ?? null
-  };
-}
-
-/**
- * Translate text using OpenRouter API
- * @param {string} text - Text to translate
- * @param {string} targetLanguage - Target language code
- * @param {string} apiKey - OpenRouter API key
- * @param {string} sourceLanguage - Source language code
- * @returns {Promise<Object>} Translation result
- */
-async function translateWithOpenRouter(text, targetLanguage, apiKey, sourceLanguage = 'auto') {
-  const OPENROUTER_API_BASE = 'https://openrouter.ai/api/v1/chat/completions';
-  
-  const targetLangName = getLanguageName(targetLanguage);
-  const sourceLangName = sourceLanguage === 'auto' ? 'auto-detect' : getLanguageName(sourceLanguage);
-
-  const prompt = sourceLanguage === 'auto' 
-    ? `Translate the following text to ${targetLangName}. Only return the translated text, nothing else:\n\n${text}`
-    : `Translate the following text from ${sourceLangName} to ${targetLangName}. Only return the translated text, nothing else:\n\n${text}`;
-
-  const requestBody = {
-    model: 'google/gemma-3-4b-it:free', // Using OpenAI OSS free model through OpenRouter
-    messages: [
-      {
-        role: 'user',
-        content: prompt
-      }
-    ],
-    temperature: 0.1,
-    max_tokens: 1000
-  };
-
-  try {
-    const response = await fetch(OPENROUTER_API_BASE, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-        'HTTP-Referer': 'https://alto-translate-extension.com', // Optional: for analytics
-        'X-Title': 'Alto Translate Extension' // Optional: for analytics
-      },
-      body: JSON.stringify(requestBody)
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      const statusMessages = {
-        400: ' (Check your API key and request format)',
-        401: ' (Invalid API key)',
-        403: ' (API key may be invalid or restricted)',
-        429: ' (Rate limit exceeded or insufficient credits)'
-      };
-      
-      const errorMessage = `OpenRouter API error: ${response.status} - ${errorData?.error?.message ?? response.statusText}${statusMessages[response.status] ?? ''}`;
-      throw new Error(errorMessage);
-    }
-
-    const data = await response.json();
-    const message = data?.choices?.[0]?.message;
-    
-    if (!message?.content) {
-      throw new Error('Invalid response format from OpenRouter API');
-    }
-
-    const translatedText = message.content.trim();
-    
-    return {
-      success: true,
-      translatedText,
-      sourceLanguage: sourceLanguage,
-      targetLanguage,
-      api: 'openrouter',
-      usage: data.usage || null
-    };
-
-  } catch (error) {
-    console.error('OpenRouter translation error:', error);
-    return {
-      success: false,
-      error: error?.message ?? 'OpenRouter translation failed',
-      api: 'openrouter'
-    };
-  }
-}
-
-/**
- * Translate text using MyMemory API (LibreTranslate fallback)
- * @param {string} text - Text to translate
- * @param {string} targetLanguage - Target language code
- * @param {string} sourceLanguage - Source language code
- * @returns {Promise<Object>} Translation result
- */
-async function translateWithLibreTranslate(text, targetLanguage, sourceLanguage = 'auto') {
-  // MyMemory API endpoint (free, no API key required)
-  const MYMEMORY_API_BASE = 'https://api.mymemory.translated.net/get';
-  
-  // Language code mapping for MyMemory API
-  const MYMEMORY_LANGUAGES = {
-    'en': 'en',
-    'es': 'es',
-    'fr': 'fr',
-    'de': 'de',
-    'it': 'it',
-    'pt': 'pt',
-    'ru': 'ru',
-    'zh': 'zh',
-    'ja': 'ja',
-    'ko': 'ko',
-    'ar': 'ar',
-    'fa': 'fa',
-    'hi': 'hi',
-    'ur': 'ur',
-    'bn': 'bn',
-    'ta': 'ta',
-    'te': 'te',
-    'ml': 'ml',
-    'kn': 'kn',
-    'gu': 'gu',
-    'pa': 'pa',
-    'mr': 'mr',
-    'th': 'th',
-    'vi': 'vi',
-    'id': 'id',
-    'ms': 'ms',
-    'tl': 'tl',
-    'he': 'he',
-    'uk': 'uk',
-    'cs': 'cs',
-    'sk': 'sk',
-    'hu': 'hu',
-    'ro': 'ro',
-    'bg': 'bg',
-    'hr': 'hr',
-    'sr': 'sr',
-    'sl': 'sl',
-    'et': 'et',
-    'lv': 'lv',
-    'lt': 'lt',
-    'el': 'el',
-    'is': 'is',
-    'mt': 'mt',
-    'cy': 'cy',
-    'ga': 'ga',
-    'eu': 'eu',
-    'ca': 'ca',
-    'nl': 'nl',
-    'sv': 'sv',
-    'da': 'da',
-    'no': 'no',
-    'fi': 'fi',
-    'pl': 'pl',
-    'tr': 'tr'
-  };
-  
-  // Convert language codes to MyMemory format
-  const sourceLang = sourceLanguage === 'auto' ? 'auto' : MYMEMORY_LANGUAGES[sourceLanguage];
-  const targetLang = MYMEMORY_LANGUAGES[targetLanguage];
-  
-  if (!targetLang) {
-    return {
-      success: false,
-      error: `Target language '${targetLanguage}' is not supported by MyMemory API`,
-      api: 'mymemory'
-    };
-  }
-  
-  if (sourceLang && sourceLang !== 'auto' && !MYMEMORY_LANGUAGES[sourceLanguage]) {
-    return {
-      success: false,
-      error: `Source language '${sourceLanguage}' is not supported by MyMemory API`,
-      api: 'mymemory'
-    };
-  }
-  
-  try {
-    // MyMemory API doesn't support 'auto' - try to detect language or use English as default
-    let actualSourceLang = sourceLang;
-    if (sourceLang === 'auto') {
-      // For auto-detect, try to detect if it's English, otherwise use English as fallback
-      // This is a simple heuristic - in a real app you might want more sophisticated detection
-      const isLikelyEnglish = /^[a-zA-Z\s.,!?;:'"()-]+$/.test(text.trim());
-      actualSourceLang = isLikelyEnglish ? 'en' : 'en'; // Default to English for now
-    }
-    
-    const params = new URLSearchParams({
-      q: text,
-      langpair: `${actualSourceLang}|${targetLang}`
-    });
-    
-    const url = `${MYMEMORY_API_BASE}?${params.toString()}`;
-    
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'User-Agent': 'AltoTranslate-Extension/1.0'
-      }
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-    
-    const data = await response.json();
-    const translatedText = data?.responseData?.translatedText;
-    
-    if (!translatedText) {
-      throw new Error('Invalid response format from MyMemory API');
-    }
-    
-    return {
-      success: true,
-      translatedText,
-      sourceLanguage: sourceLang === 'auto' ? 'auto' : sourceLang,
-      targetLanguage: targetLang,
-      api: 'mymemory',
-      instance: 'MyMemory API'
-    };
-    
-  } catch (error) {
-    console.error('MyMemory API failed:', error);
-    return {
-      success: false,
-      error: error?.message ?? 'MyMemory API is currently unavailable. Please try again later.',
-      api: 'mymemory'
-    };
-  }
-}
-
-/**
- * Get language name from code
- * @param {string} code - Language code
- * @returns {string} Language name
- */
-function getLanguageName(code) {
-  return LANGUAGE_NAMES[code] ?? code;
-}
+// getLanguageName is now imported from utils/languages.js via importScripts
 
 /**
  * Handle get cache statistics request
@@ -1271,7 +958,7 @@ async function handleValidateApiKey(request, sendResponse) {
   try {
     const { apiKey, apiType } = request;
     
-    // Only check for API key if it's required (not for LibreTranslate/MyMemory API)
+    // Only check for API key if it's required (not for LibreTranslate/MyMemory API - no key needed)
     if (!apiKey && apiType !== 'libretranslate') {
       sendResponse({
         success: false,
@@ -1282,14 +969,17 @@ async function handleValidateApiKey(request, sendResponse) {
 
     if (apiType === 'gemini') {
       // Test with different models to find one that works
-      const models = [
-        'gemini-pro',
-        'gemini-1.5-flash',
-        'gemini-1.5-pro',
-        'gemini-2.0-flash-exp'
-      ];
+      // GEMINI_MODELS is imported from utils/constants.js
+      // Skip experimental models for validation (they may not be available on free tier)
+      const validationModels = GEMINI_MODELS.filter(model => !model.includes('exp'));
       
-      for (const model of GEMINI_MODELS) {
+      let lastError = null;
+      let lastErrorDetails = null;
+      let quotaExceeded = false;
+      let has403Error = false; // Track if we got any 403 errors (invalid key)
+      let has404Error = false; // Track if we got any 404 errors (model not available)
+      
+      for (const model of validationModels) {
         try {
           const testResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
             method: 'POST',
@@ -1306,14 +996,96 @@ async function handleValidateApiKey(request, sendResponse) {
             });
             return;
           }
+          
+          // Capture error details for better feedback
+          try {
+            const errorData = await testResponse.json();
+            const errorMessage = errorData?.error?.message || '';
+            
+            // Track error types
+            if (testResponse.status === 403) {
+              has403Error = true;
+            } else if (testResponse.status === 404) {
+              has404Error = true;
+            }
+            
+            // Check if it's a quota error (key is valid but quota exceeded)
+            if (errorMessage.includes('quota') || errorMessage.includes('Quota exceeded')) {
+              quotaExceeded = true;
+              lastError = errorMessage;
+              lastErrorDetails = {
+                status: testResponse.status,
+                model: model,
+                message: errorMessage,
+                isQuotaError: true
+              };
+              // Continue trying other models - quota might be model-specific
+              continue;
+            }
+            
+            lastError = errorMessage || `HTTP ${testResponse.status}`;
+            lastErrorDetails = {
+              status: testResponse.status,
+              model: model,
+              message: errorMessage
+            };
+          } catch (e) {
+            lastError = `HTTP ${testResponse.status}: ${testResponse.statusText}`;
+            lastErrorDetails = {
+              status: testResponse.status,
+              model: model
+            };
+            if (testResponse.status === 403) {
+              has403Error = true;
+            } else if (testResponse.status === 404) {
+              has404Error = true;
+            }
+          }
         } catch (error) {
+          lastError = error.message;
+          lastErrorDetails = { model: model, error: error.message };
           continue;
         }
       }
       
+      // Provide more helpful error message
+      let errorMessage = '';
+      let isValidKey = false;
+      
+      if (quotaExceeded) {
+        // Quota exceeded means the key is valid but free tier quota is used up
+        errorMessage = 'API key is valid, but free tier quota has been exceeded. ';
+        errorMessage += 'You can either wait for the quota to reset or upgrade your plan. ';
+        errorMessage += 'The extension will still work for translation, but you may hit rate limits.';
+        isValidKey = true;
+      } else if (has403Error) {
+        // 403 means invalid key or no access
+        errorMessage = 'API key is invalid or does not have access to Gemini API. ';
+        errorMessage += 'Please verify your API key is correct and that you have enabled the Gemini API in Google Cloud Console.';
+        isValidKey = false;
+      } else if (has404Error && !has403Error) {
+        // Only 404s and no 403s - key format might be valid but models not available
+        errorMessage = 'API key format appears valid, but the tested models are not available. ';
+        errorMessage += 'This could mean: (1) The models require a different API version, (2) Your API key needs model access enabled, ';
+        errorMessage += 'or (3) The models are not available in your region. ';
+        errorMessage += 'The extension may still work - try using it for translation.';
+        isValidKey = true; // Treat as potentially valid since we didn't get 403
+      } else if (lastErrorDetails?.status === 400) {
+        errorMessage = 'Invalid API key format. Please check that your API key is correct.';
+        isValidKey = false;
+      } else if (lastError) {
+        errorMessage = `API key validation failed. Error: ${lastError}`;
+        isValidKey = false;
+      } else {
+        errorMessage = 'API key validation failed. Unable to connect to Gemini API. Please check your internet connection and try again.';
+        isValidKey = false;
+      }
+      
       sendResponse({
-        success: false,
-        error: 'API key validation failed: No compatible models found. Please check your API key and ensure you have access to Gemini API.'
+        success: isValidKey,
+        error: errorMessage,
+        isQuotaError: quotaExceeded,
+        isModelUnavailable: has404Error && !has403Error
       });
     } else if (apiType === 'openrouter') {
       // Test OpenRouter API
@@ -1368,25 +1140,25 @@ async function handleValidateApiKey(request, sendResponse) {
         });
       }
     } else if (apiType === 'libretranslate') {
-      // MyMemory API doesn't require API keys, just test connectivity
+      // LibreTranslate (MyMemory API) doesn't require API keys, just test connectivity
       try {
         const testResult = await translateWithLibreTranslate('Hello', 'es', 'en');
         
         if (testResult.success) {
           sendResponse({
             success: true,
-            message: 'MyMemory API is available and working'
+            message: 'LibreTranslate (MyMemory API) is available and working'
           });
         } else {
           sendResponse({
             success: false,
-            error: `MyMemory API test failed: ${testResult.error}`
+            error: `LibreTranslate (MyMemory API) test failed: ${testResult.error}`
           });
         }
       } catch (error) {
         sendResponse({
           success: false,
-          error: `MyMemory API connectivity test failed: ${error.message}`
+          error: `LibreTranslate (MyMemory API) connectivity test failed: ${error.message}`
         });
       }
     } else {

@@ -4,68 +4,85 @@ const DEFAULT_SETTINGS = {
   apiPreference: 'gemini', // 'gemini', 'openrouter', 'libretranslate', or 'both'
   geminiApiKey: '',
   openrouterApiKey: '',
-  libretranslateEnabled: true, // LibreTranslate doesn't need API key
+  libretranslateEnabled: true, // LibreTranslate (MyMemory API) doesn't need API key
   sourceLanguage: 'auto',
-  targetLanguage: 'en'
+  targetLanguage: 'en',
+  disableInputFields: false // Disable translation for input fields and textareas
 };
 
-const SUPPORTED_LANGUAGES = {
-  'auto': 'Auto-detect',
-  'en': 'English',
-  'es': 'Spanish',
-  'fr': 'French',
-  'de': 'German',
-  'it': 'Italian',
-  'pt': 'Portuguese',
-  'ru': 'Russian',
-  'zh': 'Chinese',
-  'ja': 'Japanese',
-  'ko': 'Korean',
-  'ar': 'Arabic',
-  'fa': 'Persian/Farsi',
-  'hi': 'Hindi',
-  'ur': 'Urdu',
-  'bn': 'Bengali',
-  'ta': 'Tamil',
-  'te': 'Telugu',
-  'ml': 'Malayalam',
-  'kn': 'Kannada',
-  'gu': 'Gujarati',
-  'pa': 'Punjabi',
-  'mr': 'Marathi',
-  'th': 'Thai',
-  'vi': 'Vietnamese',
-  'id': 'Indonesian',
-  'ms': 'Malay',
-  'tl': 'Filipino',
-  'he': 'Hebrew',
-  'uk': 'Ukrainian',
-  'cs': 'Czech',
-  'sk': 'Slovak',
-  'hu': 'Hungarian',
-  'ro': 'Romanian',
-  'bg': 'Bulgarian',
-  'hr': 'Croatian',
-  'sr': 'Serbian',
-  'sl': 'Slovenian',
-  'et': 'Estonian',
-  'lv': 'Latvian',
-  'lt': 'Lithuanian',
-  'el': 'Greek',
-  'is': 'Icelandic',
-  'mt': 'Maltese',
-  'cy': 'Welsh',
-  'ga': 'Irish',
-  'eu': 'Basque',
-  'ca': 'Catalan',
-  'nl': 'Dutch',
-  'sv': 'Swedish',
-  'da': 'Danish',
-  'no': 'Norwegian',
-  'fi': 'Finnish',
-  'pl': 'Polish',
-  'tr': 'Turkish'
-};
+// SUPPORTED_LANGUAGES now uses centralized language mappings
+// Note: 'auto' is added here as it's specific to settings, not translation
+function getSupportedLanguages() {
+  // Import language names from centralized module if available
+  // Otherwise use fallback (for contexts where languages.js isn't loaded)
+  if (typeof getLanguageName === 'function') {
+    const languages = { 'auto': 'Auto-detect' };
+    const codes = getSupportedLanguageCodes ? getSupportedLanguageCodes() : [];
+    codes.forEach(code => {
+      languages[code] = getLanguageName(code);
+    });
+    return languages;
+  }
+  
+  // Fallback if languages.js not loaded
+  return {
+    'auto': 'Auto-detect',
+    'en': 'English',
+    'es': 'Spanish',
+    'fr': 'French',
+    'de': 'German',
+    'it': 'Italian',
+    'pt': 'Portuguese',
+    'ru': 'Russian',
+    'zh': 'Chinese',
+    'ja': 'Japanese',
+    'ko': 'Korean',
+    'ar': 'Arabic',
+    'fa': 'Persian/Farsi',
+    'hi': 'Hindi',
+    'ur': 'Urdu',
+    'bn': 'Bengali',
+    'ta': 'Tamil',
+    'te': 'Telugu',
+    'ml': 'Malayalam',
+    'kn': 'Kannada',
+    'gu': 'Gujarati',
+    'pa': 'Punjabi',
+    'mr': 'Marathi',
+    'th': 'Thai',
+    'vi': 'Vietnamese',
+    'id': 'Indonesian',
+    'ms': 'Malay',
+    'tl': 'Filipino',
+    'he': 'Hebrew',
+    'uk': 'Ukrainian',
+    'cs': 'Czech',
+    'sk': 'Slovak',
+    'hu': 'Hungarian',
+    'ro': 'Romanian',
+    'bg': 'Bulgarian',
+    'hr': 'Croatian',
+    'sr': 'Serbian',
+    'sl': 'Slovenian',
+    'et': 'Estonian',
+    'lv': 'Latvian',
+    'lt': 'Lithuanian',
+    'el': 'Greek',
+    'is': 'Icelandic',
+    'mt': 'Maltese',
+    'cy': 'Welsh',
+    'ga': 'Irish',
+    'eu': 'Basque',
+    'ca': 'Catalan',
+    'nl': 'Dutch',
+    'sv': 'Swedish',
+    'da': 'Danish',
+    'no': 'Norwegian',
+    'fi': 'Finnish',
+    'pl': 'Polish',
+    'tr': 'Turkish'
+  };
+}
 
 /**
  * Get settings from Chrome storage
@@ -151,7 +168,7 @@ function validateApiKey(apiKey, apiType) {
       // OpenRouter API key format - typically starts with 'sk-or-'
       return apiKey.startsWith('sk-or-') && apiKey.length > 20; // Placeholder validation
     case 'libretranslate':
-      // LibreTranslate doesn't require API keys
+      // LibreTranslate (MyMemory API) doesn't require API keys
       return true;
     default:
       return false;
@@ -160,19 +177,21 @@ function validateApiKey(apiKey, apiType) {
 
 /**
  * Get language name from code
+ * Uses centralized getLanguageName if available, otherwise fallback
  * @param {string} code - Language code
  * @returns {string} Language name
  */
 function getLanguageName(code) {
-  return SUPPORTED_LANGUAGES[code] || code;
-}
-
-/**
- * Get all supported languages
- * @returns {Object} Language codes and names
- */
-function getSupportedLanguages() {
-  return SUPPORTED_LANGUAGES;
+  if (code === 'auto') {
+    return 'Auto-detect';
+  }
+  // Use centralized function if available (from languages.js)
+  if (typeof window !== 'undefined' && window.getLanguageName) {
+    return window.getLanguageName(code);
+  }
+  // Fallback
+  const languages = getSupportedLanguages();
+  return languages[code] || code;
 }
 
 // Export for use in other modules
@@ -186,7 +205,6 @@ if (typeof module !== 'undefined' && module.exports) {
     validateApiKey,
     getLanguageName,
     getSupportedLanguages,
-    DEFAULT_SETTINGS,
-    SUPPORTED_LANGUAGES
+    DEFAULT_SETTINGS
   };
 }

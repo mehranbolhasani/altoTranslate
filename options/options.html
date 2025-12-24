@@ -29,8 +29,8 @@
             </div>
           </div>
           <div class="flex items-center gap-4">
-            <div class="text-sm text-gray-500 dark:text-gray-400">
-              Version 1.0.0
+            <div id="versionDisplay" class="text-sm text-gray-500 dark:text-gray-400">
+              Version 1.1.0
             </div>
             <button id="toggleDarkMode" class="text-xs bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 px-2 py-1 rounded hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">
               Toggle Dark
@@ -216,6 +216,19 @@
             <div>
               <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Language Settings</h3>
               <p class="text-sm text-gray-400 dark:text-gray-500 mb-6">Configure source and target languages</p>
+              
+              <!-- Behavior Settings -->
+              <div class="mb-6 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">Behavior</h4>
+                <label class="flex items-center gap-3 cursor-pointer">
+                  <input type="checkbox" id="disableInputFields" name="disableInputFields" 
+                         class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded">
+                  <div>
+                    <div class="text-sm font-medium text-gray-900 dark:text-gray-100">Disable for input fields</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400">Prevent translation popup from appearing when selecting text in input fields and textareas</div>
+                  </div>
+                </label>
+              </div>
               
               <div class="flex gap-6">
                 <!-- Source Language -->
@@ -453,6 +466,6 @@
   </div>
 
   <script src="options.js"></script>
-  <script src="dark-mode.js"></script>
+  <script src="../utils/dark-mode.js"></script>
 </body>
 </html>

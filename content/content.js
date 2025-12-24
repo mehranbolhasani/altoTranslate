@@ -12,6 +12,8 @@ class AltoTranslate {
     this.hideTimer = null; // Track hide timer
     this.settings = null;
     this.mousePosition = { x: 0, y: 0 }; // Track mouse position
+    this.detectedThemeCache = null; // Cache detected theme per page
+    this.themeCachePageUrl = null; // Track which page the cache is for
     
     // Bind methods to preserve context
     this.handleTextSelection = this.handleTextSelection.bind(this);
@@ -29,8 +31,8 @@ class AltoTranslate {
     // Load settings
     await this.loadSettings();
     
-    // Detect webpage theme
-    this.detectedTheme = this.detectWebpageTheme();
+    // Detect webpage theme (with caching)
+    this.detectedTheme = this.getDetectedTheme();
     
     // Add event listeners
     document.addEventListener('mouseup', this.handleTextSelection);
@@ -42,6 +44,45 @@ class AltoTranslate {
     
     // Listen for settings changes
     chrome.runtime.onMessage.addListener(this.handleSettingsUpdate);
+    
+    // Clear theme cache on page visibility change (indicates navigation)
+    if (typeof document !== 'undefined' && document.addEventListener) {
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          // Page became visible, might be a new page - clear cache
+          this.clearThemeCache();
+        }
+      });
+    }
+  }
+
+  /**
+   * Get detected theme with caching
+   * @returns {string} 'dark' or 'light'
+   */
+  getDetectedTheme() {
+    const currentUrl = window.location.href;
+    
+    // Check if cache is valid for current page
+    if (this.detectedThemeCache && this.themeCachePageUrl === currentUrl) {
+      return this.detectedThemeCache;
+    }
+    
+    // Cache miss - detect theme
+    const theme = this.detectWebpageTheme();
+    this.detectedThemeCache = theme;
+    this.themeCachePageUrl = currentUrl;
+    
+    return theme;
+  }
+
+  /**
+   * Clear theme detection cache
+   * Call this when page navigation is detected
+   */
+  clearThemeCache() {
+    this.detectedThemeCache = null;
+    this.themeCachePageUrl = null;
   }
 
   /**
@@ -209,10 +250,83 @@ class AltoTranslate {
       const response = await chrome.runtime.sendMessage({ action: 'getSettings' });
       if (response.success) {
         this.settings = response.settings;
+      } else {
+        // Fallback to default settings if loading fails
+        this.settings = { disableInputFields: false };
       }
     } catch (error) {
       console.error('Error loading settings:', error);
+      // Fallback to default settings
+      this.settings = { disableInputFields: false };
     }
+  }
+  
+  /**
+   * Check if the current selection is inside an input field or textarea
+   * @returns {boolean} True if selection is in input/textarea
+   */
+  isSelectionInInputField() {
+    // Method 1: Check active element first (most reliable for input fields)
+    const activeElement = document.activeElement;
+    if (activeElement) {
+      const tagName = activeElement.tagName;
+      if (tagName === 'INPUT' || tagName === 'TEXTAREA') {
+        return true;
+      }
+    }
+    
+    // Method 2: Check all input and textarea elements to see if any have selection
+    const allInputs = document.querySelectorAll('input, textarea');
+    for (const input of allInputs) {
+      // Check if input has text selection
+      if (input.selectionStart !== undefined && input.selectionEnd !== undefined) {
+        if (input.selectionStart !== input.selectionEnd) {
+          return true;
+        }
+      }
+    }
+    
+    // Method 3: Check selection range containers
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) {
+      return false;
+    }
+    
+    const range = selection.getRangeAt(0);
+    if (!range) {
+      return false;
+    }
+    
+    // Check start container
+    let element = range.startContainer;
+    if (element.nodeType === Node.TEXT_NODE) {
+      element = element.parentElement;
+    }
+    
+    // Walk up the DOM tree
+    while (element && element !== document.body && element !== document.documentElement) {
+      const tagName = element.tagName;
+      if (tagName === 'INPUT' || tagName === 'TEXTAREA') {
+        return true;
+      }
+      element = element.parentElement;
+    }
+    
+    // Check end container as well
+    element = range.endContainer;
+    if (element.nodeType === Node.TEXT_NODE) {
+      element = element.parentElement;
+    }
+    
+    while (element && element !== document.body && element !== document.documentElement) {
+      const tagName = element.tagName;
+      if (tagName === 'INPUT' || tagName === 'TEXTAREA') {
+        return true;
+      }
+      element = element.parentElement;
+    }
+    
+    return false;
   }
 
   handleMouseMove(event) {
@@ -231,9 +345,11 @@ class AltoTranslate {
     }
 
     // Debounce the selection to avoid showing icon on accidental selections
-    const DEBOUNCE_DELAY = 300;
-    this.debounceTimer = setTimeout(() => {
-      this.processTextSelection();
+    // DEBOUNCE_DELAY is defined in utils/constants.js (300ms)
+    // For content scripts, we use a local constant since importScripts doesn't work here
+    const DEBOUNCE_DELAY = 300; // Matches utils/constants.js
+    this.debounceTimer = setTimeout(async () => {
+      await this.processTextSelection();
       this.debounceTimer = null;
     }, DEBOUNCE_DELAY);
   }
@@ -250,9 +366,11 @@ class AltoTranslate {
     }
 
     // Add a minimum time before popup can be hidden (prevent immediate hiding)
+    // MIN_POPUP_DISPLAY_TIME is defined in utils/constants.js (2000ms)
+    const MIN_POPUP_DISPLAY_TIME = 2000; // Matches utils/constants.js
     if (this.isPopupOpen && this.popupOpenTime) {
       const timeSinceOpen = Date.now() - this.popupOpenTime;
-      if (timeSinceOpen < 2000) { // 2 seconds minimum
+      if (timeSinceOpen < MIN_POPUP_DISPLAY_TIME) {
         return;
       }
     }
@@ -264,12 +382,13 @@ class AltoTranslate {
         !this.translateIcon?.contains(event.target)) {
       
       // Check if the click is on the selected text or nearby
+      // CLICK_TOLERANCE is defined in utils/constants.js (100px)
+      const CLICK_TOLERANCE = 100; // Matches utils/constants.js
       const selection = window.getSelection();
       if (selection?.rangeCount > 0) {
         const range = selection.getRangeAt(0);
         const rect = range.getBoundingClientRect();
         const { clientX: clickX, clientY: clickY } = event;
-        const CLICK_TOLERANCE = 100;
         
         // If click is near the selected text, don't hide popup
         if (clickX >= rect.left - CLICK_TOLERANCE && 
@@ -281,12 +400,14 @@ class AltoTranslate {
       }
       
       // Add a longer delay to prevent immediate hiding
+      // HIDE_TIMER_DELAY is defined in utils/constants.js (1000ms)
+      const HIDE_TIMER_DELAY = 1000; // Matches utils/constants.js
       const hideTimer = setTimeout(() => {
         if (this.isPopupOpen && this.translatePopup && 
             !this.translatePopup.contains(event.target) && !this.translationInProgress) {
           this.hidePopup();
         }
-      }, 1000);
+      }, HIDE_TIMER_DELAY);
       
       // Store timer reference for potential cleanup
       this.hideTimer = hideTimer;
@@ -307,7 +428,38 @@ class AltoTranslate {
     }
   }
 
-  processTextSelection() {
+  async processTextSelection() {
+    // Ensure settings are loaded FIRST before any checks
+    if (!this.settings) {
+      await this.loadSettings();
+    }
+
+    // Check if selection is within an input field or textarea (if setting is enabled)
+    // Do this BEFORE checking selectedText, because input selections work differently
+    if (this.settings?.disableInputFields === true) {
+      // Check active element first - this catches most input field cases
+      const activeElement = document.activeElement;
+      if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
+        // Check if there's actually selected text in the input
+        const hasSelection = activeElement.selectionStart !== undefined && 
+                             activeElement.selectionEnd !== undefined &&
+                             activeElement.selectionStart !== activeElement.selectionEnd;
+        
+        if (hasSelection) {
+          this.hideIcon();
+          this.hidePopup();
+          return;
+        }
+      }
+      
+      // Also check using the helper method for other cases
+      if (this.isSelectionInInputField()) {
+        this.hideIcon();
+        this.hidePopup();
+        return;
+      }
+    }
+
     const selection = window.getSelection();
     const selectedText = selection.toString().trim();
 
@@ -342,8 +494,8 @@ class AltoTranslate {
     // Remove existing icon
     this.hideIcon();
 
-    // Re-detect theme in case page changed
-    this.detectedTheme = this.detectWebpageTheme();
+    // Get theme (uses cache if available)
+    this.detectedTheme = this.getDetectedTheme();
 
     // Create icon element
     this.translateIcon = document.createElement('div');
@@ -369,7 +521,8 @@ class AltoTranslate {
     document.body.appendChild(this.translateIcon);
 
     // Auto-hide after timeout if not clicked
-    const AUTO_HIDE_DELAY = 10000; // 10 seconds
+    // AUTO_HIDE_DELAY is defined in utils/constants.js (10000ms)
+    const AUTO_HIDE_DELAY = 10000; // Matches utils/constants.js
     this.autoHideTimer = setTimeout(() => {
       if (this.translateIcon && !this.isPopupOpen) {
         this.hideIcon();
@@ -462,8 +615,8 @@ class AltoTranslate {
       this.translatePopup = null;
     }
 
-    // Re-detect theme in case page changed
-    this.detectedTheme = this.detectWebpageTheme();
+    // Get theme (uses cache if available)
+    this.detectedTheme = this.getDetectedTheme();
 
     // Create popup element
     this.translatePopup = document.createElement('div');
@@ -583,7 +736,14 @@ class AltoTranslate {
                        this.settings?.libretranslateEnabled;
 
     if (!hasService) {
-      this.showError('Please configure your API keys or enable MyMemory API in the extension settings.');
+      this.showError('Please configure your API keys or enable LibreTranslate/MyMemory API in the extension settings.', {
+        steps: [
+          'Open the extension settings',
+          'Configure at least one API key (Gemini or OpenRouter)',
+          'Or enable LibreTranslate/MyMemory API (no key required)',
+          'Save your settings'
+        ]
+      });
       return;
     }
 
@@ -601,17 +761,18 @@ class AltoTranslate {
       if (response?.success) {
         this.showTranslation(response);
       } else {
-        this.showError(response?.error ?? 'Translation failed');
+        this.showError(response?.error ?? 'Translation failed', response?.errorDetails ?? null);
       }
     } catch (error) {
       console.error('Translation error:', error);
       this.showError(error?.message ?? 'Failed to connect to translation service');
     } finally {
       // Add a small delay before allowing popup to be hidden again
-      // This prevents immediate hiding due to events that might fire right after translation
+      // TRANSLATION_PROTECTION_DELAY is defined in utils/constants.js (500ms)
+      const TRANSLATION_PROTECTION_DELAY = 500; // Matches utils/constants.js
       setTimeout(() => {
         this.translationInProgress = false;
-      }, 500); // 500ms delay to prevent immediate hiding
+      }, TRANSLATION_PROTECTION_DELAY);
     }
   }
 
@@ -656,11 +817,13 @@ class AltoTranslate {
   }
 
   isRTLLanguage(languageCode) {
+    // RTL languages list - matches utils/languages.js RTL_LANGUAGES
+    // Note: Content scripts can't use importScripts, so we maintain a local copy
     const rtlLanguages = ['ar', 'fa', 'he', 'ur'];
     return rtlLanguages.includes(languageCode);
   }
 
-  showError(errorMessage) {
+  showError(errorMessage, errorDetails = null) {
     if (!this.translatePopup || !errorMessage) return;
 
     const translatedTextEl = this.translatePopup.querySelector('.alto-translate-translated-text');
@@ -669,8 +832,48 @@ class AltoTranslate {
 
     if (!translatedTextEl || !copyBtn || !apiBadge) return;
 
-    // Show error
-    translatedTextEl.innerHTML = `<div class="alto-translate-error">${this.escapeHtml(errorMessage)}</div>`;
+    // Build error HTML with structured message
+    let errorHtml = `<div class="alto-translate-error">${this.escapeHtml(errorMessage)}</div>`;
+    
+    // Add actionable steps if available
+    if (errorDetails && errorDetails.steps && errorDetails.steps.length > 0) {
+      errorHtml += '<div class="alto-translate-error-steps" style="margin-top: 8px; font-size: 12px; color: var(--alto-text-secondary, #6b7280);">';
+      errorDetails.steps.forEach((step, index) => {
+        errorHtml += `<div style="margin: 4px 0;">${index + 1}. ${this.escapeHtml(step)}</div>`;
+      });
+      errorHtml += '</div>';
+    }
+    
+    // Add help link if available
+    if (errorDetails && errorDetails.helpLink) {
+      const helpLink = document.createElement('a');
+      helpLink.href = errorDetails.helpLink;
+      helpLink.target = '_blank';
+      helpLink.className = 'alto-translate-settings-link';
+      helpLink.textContent = 'Get Help';
+      helpLink.style.display = 'block';
+      helpLink.style.marginTop = '8px';
+      translatedTextEl.innerHTML = errorHtml;
+      translatedTextEl.appendChild(helpLink);
+    } else {
+      translatedTextEl.innerHTML = errorHtml;
+    }
+
+    // Add settings link for API key errors
+    if (errorMessage.toLowerCase().includes('api key') || 
+        (errorDetails && errorDetails.steps && errorDetails.steps.some(s => s.toLowerCase().includes('settings')))) {
+      const settingsLink = document.createElement('a');
+      settingsLink.href = '#';
+      settingsLink.className = 'alto-translate-settings-link';
+      settingsLink.textContent = 'Open Settings';
+      settingsLink.style.display = 'block';
+      settingsLink.style.marginTop = '8px';
+      settingsLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        chrome.runtime.sendMessage({ action: 'openSettings' }).catch(console.error);
+      });
+      translatedTextEl.appendChild(settingsLink);
+    }
 
     // Disable copy button
     copyBtn.disabled = true;
@@ -678,19 +881,6 @@ class AltoTranslate {
 
     // Update API badge
     apiBadge.textContent = 'Error';
-
-    // Add settings link if it's an API key error
-    if (errorMessage.toLowerCase().includes('api key')) {
-      const settingsLink = document.createElement('a');
-      settingsLink.href = '#';
-      settingsLink.className = 'alto-translate-settings-link';
-      settingsLink.textContent = 'Open Settings';
-      settingsLink.addEventListener('click', (e) => {
-        e.preventDefault();
-        chrome.runtime.sendMessage({ action: 'openSettings' }).catch(console.error);
-      });
-      translatedTextEl.appendChild(settingsLink);
-    }
   }
 
   async copyToClipboard() {
@@ -710,15 +900,16 @@ class AltoTranslate {
       await navigator.clipboard.writeText(textToCopy);
       
       // Show success feedback
+      // COPY_FEEDBACK_DURATION is defined in utils/constants.js (2000ms)
+      const COPY_FEEDBACK_DURATION = 2000; // Matches utils/constants.js
       const originalText = copyBtn.innerHTML;
-      const FEEDBACK_DURATION = 2000;
       copyBtn.innerHTML = 'Copied!';
       copyBtn.style.background = '#10b981';
       
       setTimeout(() => {
         copyBtn.innerHTML = originalText;
         copyBtn.style.background = '';
-      }, FEEDBACK_DURATION);
+      }, COPY_FEEDBACK_DURATION);
     } catch (error) {
       console.error('Copy failed:', error);
       const originalText = copyBtn.innerHTML;
@@ -770,37 +961,74 @@ class AltoTranslate {
    * Call this when the extension is disabled or page unloads
    */
   cleanup() {
-    // Clear all timers
-    if (this.debounceTimer) {
+    // Clear all timers with null checks
+    if (this.debounceTimer !== null && this.debounceTimer !== undefined) {
       clearTimeout(this.debounceTimer);
       this.debounceTimer = null;
     }
-    if (this.autoHideTimer) {
+    if (this.autoHideTimer !== null && this.autoHideTimer !== undefined) {
       clearTimeout(this.autoHideTimer);
       this.autoHideTimer = null;
     }
-    if (this.hideTimer) {
+    if (this.hideTimer !== null && this.hideTimer !== undefined) {
       clearTimeout(this.hideTimer);
       this.hideTimer = null;
     }
 
-    // Remove event listeners
-    document.removeEventListener('mouseup', this.handleTextSelection);
-    document.removeEventListener('mousedown', this.handleMouseDown);
-    document.removeEventListener('mousemove', this.handleMouseMove);
-    document.removeEventListener('scroll', this.handleScroll);
-    window.removeEventListener('resize', this.handleResize);
-    document.removeEventListener('keydown', this.handleKeydown);
-    chrome.runtime.onMessage.removeListener(this.handleSettingsUpdate);
+    // Remove event listeners with existence checks
+    // Check if document/window exist (may be null in some contexts)
+    if (typeof document !== 'undefined' && document) {
+      if (this.handleTextSelection) {
+        document.removeEventListener('mouseup', this.handleTextSelection);
+      }
+      if (this.handleMouseDown) {
+        document.removeEventListener('mousedown', this.handleMouseDown);
+      }
+      if (this.handleMouseMove) {
+        document.removeEventListener('mousemove', this.handleMouseMove);
+      }
+      if (this.handleScroll) {
+        document.removeEventListener('scroll', this.handleScroll);
+      }
+      if (this.handleKeydown) {
+        document.removeEventListener('keydown', this.handleKeydown);
+      }
+    }
+
+    if (typeof window !== 'undefined' && window) {
+      if (this.handleResize) {
+        window.removeEventListener('resize', this.handleResize);
+      }
+    }
+
+    // Remove message listener if it exists
+    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage && this.handleSettingsUpdate) {
+      try {
+        chrome.runtime.onMessage.removeListener(this.handleSettingsUpdate);
+      } catch (error) {
+        // Listener may not be registered, ignore error
+        console.warn('Could not remove message listener:', error);
+      }
+    }
 
     // Clean up DOM elements
     this.hideIcon();
     this.hidePopup();
 
-    // Clear references
+    // Clear all references
     this.selectedText = '';
     this.selectionRange = null;
     this.settings = null;
+    this.translateIcon = null;
+    this.translatePopup = null;
+    this.isPopupOpen = false;
+    this.popupOpenTime = null;
+    this.translationInProgress = false;
+    this.popupSetupComplete = false;
+    this.mousePosition = { x: 0, y: 0 };
+    this.detectedTheme = null;
+    this.detectedThemeCache = null;
+    this.themeCachePageUrl = null;
   }
 }
 

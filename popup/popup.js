@@ -13,11 +13,27 @@ class PopupManager {
     // Update UI
     this.updateUI();
     
+    // Update version display
+    this.updateVersion();
+    
     // Check API status
     this.checkApiStatus();
     
     // Add event listeners
     this.addEventListeners();
+  }
+
+  updateVersion() {
+    try {
+      const manifest = chrome.runtime.getManifest();
+      const version = manifest.version || '1.1.0';
+      const versionElement = document.querySelector('#versionDisplay');
+      if (versionElement) {
+        versionElement.textContent = `Version ${version}`;
+      }
+    } catch (error) {
+      console.error('Error getting version:', error);
+    }
   }
 
   async loadSettings() {
@@ -74,10 +90,9 @@ class PopupManager {
     if (this.settings?.geminiApiKey) {
       try {
         const response = await chrome.runtime.sendMessage({
-          action: 'translate',
-          text: 'test',
-          targetLanguage: 'en',
-          sourceLanguage: 'auto'
+          action: 'validateApiKey',
+          apiKey: this.settings.geminiApiKey,
+          apiType: 'gemini'
         });
         this.updateApiStatus('gemini', response?.success ? 'connected' : 'disconnected');
       } catch (error) {
@@ -91,8 +106,12 @@ class PopupManager {
     this.updateApiStatus('openrouter', 'checking');
     if (this.settings?.openrouterApiKey) {
       try {
-        // Note: This is a placeholder - actual OpenRouter API testing would go here
-        this.updateApiStatus('openrouter', 'disconnected'); // Placeholder
+        const response = await chrome.runtime.sendMessage({
+          action: 'validateApiKey',
+          apiKey: this.settings.openrouterApiKey,
+          apiType: 'openrouter'
+        });
+        this.updateApiStatus('openrouter', response?.success ? 'connected' : 'disconnected');
       } catch (error) {
         this.updateApiStatus('openrouter', 'disconnected');
       }

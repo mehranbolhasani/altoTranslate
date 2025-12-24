@@ -226,7 +226,7 @@ altoTranslate/
 - ✅ Secure API key storage (Chrome encrypted storage)
 - ✅ CSP compliance (no inline scripts)
 - ✅ Memory leak prevention
-- ✅ Minimal permissions (storage, activeTab only)
+- ✅ Minimal permissions (storage only)
 
 ### Future Considerations
 - Rate limiting per user session
