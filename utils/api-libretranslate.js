@@ -7,63 +7,15 @@
 
 // MYMEMORY_API_BASE is imported from utils/constants.js via importScripts
 
-// Language code mapping for MyMemory API
-const LIBRETRANSLATE_LANGUAGES = {
-  'en': 'en',
-  'es': 'es',
-  'fr': 'fr',
-  'de': 'de',
-  'it': 'it',
-  'pt': 'pt',
-  'ru': 'ru',
-  'zh': 'zh',
-  'ja': 'ja',
-  'ko': 'ko',
-  'ar': 'ar',
-  'fa': 'fa',
-  'hi': 'hi',
-  'ur': 'ur',
-  'bn': 'bn',
-  'ta': 'ta',
-  'te': 'te',
-  'ml': 'ml',
-  'kn': 'kn',
-  'gu': 'gu',
-  'pa': 'pa',
-  'mr': 'mr',
-  'th': 'th',
-  'vi': 'vi',
-  'id': 'id',
-  'ms': 'ms',
-  'tl': 'tl',
-  'he': 'he',
-  'uk': 'uk',
-  'cs': 'cs',
-  'sk': 'sk',
-  'hu': 'hu',
-  'ro': 'ro',
-  'bg': 'bg',
-  'hr': 'hr',
-  'sr': 'sr',
-  'sl': 'sl',
-  'et': 'et',
-  'lv': 'lv',
-  'lt': 'lt',
-  'el': 'el',
-  'is': 'is',
-  'mt': 'mt',
-  'cy': 'cy',
-  'ga': 'ga',
-  'eu': 'eu',
-  'ca': 'ca',
-  'nl': 'nl',
-  'sv': 'sv',
-  'da': 'da',
-  'no': 'no',
-  'fi': 'fi',
-  'pl': 'pl',
-  'tr': 'tr'
-};
+// Language codes supported by the MyMemory API
+const MYMEMORY_SUPPORTED_LANGUAGES = new Set([
+  'en', 'es', 'fr', 'de', 'it', 'pt', 'ru', 'zh', 'ja', 'ko',
+  'ar', 'fa', 'hi', 'ur', 'bn', 'ta', 'te', 'ml', 'kn', 'gu',
+  'pa', 'mr', 'th', 'vi', 'id', 'ms', 'tl', 'he', 'uk', 'cs',
+  'sk', 'hu', 'ro', 'bg', 'hr', 'sr', 'sl', 'et', 'lv', 'lt',
+  'el', 'is', 'mt', 'cy', 'ga', 'eu', 'ca', 'nl', 'sv', 'da',
+  'no', 'fi', 'pl', 'tr'
+]);
 
 /**
  * Translate text using MyMemory API (free, no API key required)
@@ -74,34 +26,34 @@ const LIBRETRANSLATE_LANGUAGES = {
  * @returns {Promise<Object>} Translation result
  */
 async function translateWithLibreTranslate(text, targetLanguage, sourceLanguage = 'auto') {
-  // Convert language codes to MyMemory format
-  const sourceLang = sourceLanguage === 'auto' ? 'auto' : LIBRETRANSLATE_LANGUAGES[sourceLanguage];
-  const targetLang = LIBRETRANSLATE_LANGUAGES[targetLanguage];
-  
-  if (!targetLang) {
+  if (!MYMEMORY_SUPPORTED_LANGUAGES.has(targetLanguage)) {
     return {
       success: false,
       error: `Target language '${targetLanguage}' is not supported by MyMemory API`,
       api: 'mymemory'
     };
   }
-  
-  if (sourceLang && sourceLang !== 'auto' && !LIBRETRANSLATE_LANGUAGES[sourceLanguage]) {
+
+  if (sourceLanguage !== 'auto' && !MYMEMORY_SUPPORTED_LANGUAGES.has(sourceLanguage)) {
     return {
       success: false,
       error: `Source language '${sourceLanguage}' is not supported by MyMemory API`,
       api: 'mymemory'
     };
   }
+
+  const sourceLang = sourceLanguage === 'auto' ? 'auto' : sourceLanguage;
+  const targetLang = targetLanguage;
   
   try {
-    // MyMemory API doesn't support 'auto' - try to detect language or use English as default
+    // MyMemory requires an explicit source language — it does not support 'auto'.
+    // Heuristic: text containing only printable ASCII (0x20-0x7E) is assumed English;
+    // non-ASCII text (CJK, Arabic, Cyrillic, etc.) defaults to Chinese as best-effort.
+    // Users needing accurate source detection should set it explicitly in settings.
     let actualSourceLang = sourceLang;
     if (sourceLang === 'auto') {
-      // For auto-detect, try to detect if it's English, otherwise use English as fallback
-      // This is a simple heuristic - in a real app you might want more sophisticated detection
-      const isLikelyEnglish = /^[a-zA-Z\s.,!?;:'"()-]+$/.test(text.trim());
-      actualSourceLang = isLikelyEnglish ? 'en' : 'en'; // Default to English for now
+      const isLikelyLatin = /^[\x20-\x7E]+$/.test(text.trim());
+      actualSourceLang = isLikelyLatin ? 'en' : 'zh';
     }
     
     const params = new URLSearchParams({
@@ -109,12 +61,7 @@ async function translateWithLibreTranslate(text, targetLanguage, sourceLanguage 
       langpair: `${actualSourceLang}|${targetLang}`
     });
     
-    // Use getApiEndpoint if available, otherwise use MYMEMORY_API_BASE from constants.js
-    const apiEndpoint = typeof getApiEndpoint === 'function' 
-      ? getApiEndpoint('mymemory')
-      : (typeof MYMEMORY_API_BASE !== 'undefined' ? MYMEMORY_API_BASE : 'https://api.mymemory.translated.net/get');
-    
-    const url = `${apiEndpoint}?${params.toString()}`;
+    const url = `${MYMEMORY_API_BASE}?${params.toString()}`;
     
     const response = await fetch(url, {
       method: 'GET',

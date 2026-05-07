@@ -59,36 +59,4 @@ const MYMEMORY_API_BASE = 'https://api.mymemory.translated.net/get';
 const STORAGE_RETRY_ATTEMPTS = 3;
 const STORAGE_RETRY_BASE_DELAY = 100; // Base delay in milliseconds for exponential backoff
 
-/**
- * Get API endpoint with environment support
- * Allows overriding endpoints for testing via environment variables
- * @param {string} apiType - Type of API ('gemini', 'openrouter', 'mymemory')
- * @param {string} model - Model name (for Gemini)
- * @returns {string} API endpoint URL
- */
-function getApiEndpoint(apiType, model = null) {
-  // Check for environment overrides (for testing)
-  // In Chrome extensions, we can't use process.env, but this structure allows
-  // future support for test configurations
-  const envOverrides = {};
-  
-  switch (apiType) {
-    case 'gemini':
-      if (model) {
-        return envOverrides.GEMINI_API_BASE || 
-               `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
-      }
-      return envOverrides.GEMINI_API_BASE || 
-             'https://generativelanguage.googleapis.com/v1beta/models';
-      
-    case 'openrouter':
-      return envOverrides.OPENROUTER_API_BASE || OPENROUTER_API_BASE;
-      
-    case 'mymemory':
-      return envOverrides.MYMEMORY_API_BASE || MYMEMORY_API_BASE;
-      
-    default:
-      throw new Error(`Unknown API type: ${apiType}`);
-  }
-}
 

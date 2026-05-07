@@ -306,10 +306,8 @@ async function tryTranslateWithModel(text, targetLanguage, apiKey, sourceLanguag
   let lastError = null;
   for (const apiVersion of apiVersions) {
   try {
-      const GEMINI_API_BASE = typeof getApiEndpoint === 'function' 
-        ? getApiEndpoint('gemini', model)
-        : `https://generativelanguage.googleapis.com/${apiVersion}/models/${model}:generateContent`;
-      
+      const GEMINI_API_BASE = `https://generativelanguage.googleapis.com/${apiVersion}/models/${model}:generateContent`;
+
     const response = await fetch(`${GEMINI_API_BASE}?key=${apiKey}`, {
       method: 'POST',
         headers: { 'Content-Type': 'application/json' },

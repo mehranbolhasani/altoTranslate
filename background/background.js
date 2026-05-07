@@ -5,179 +5,13 @@ importScripts(
   '../utils/constants.js',
   '../utils/languages.js',
   '../utils/error-messages.js',
+  '../utils/themes.js',
   '../utils/api-gemini.js',
   '../utils/api-openrouter.js',
   '../utils/api-libretranslate.js'
 );
 
-/**
- * Predefined themes for translation popup
- * @type {Object<string, Object>}
- */
-const PREDEFINED_THEMES = {
-  'default': {
-    name: 'Default',
-    description: 'Clean and minimal',
-    colors: {
-      background: 'rgba(255, 255, 255, 0.95)',
-      border: '#e5e7eb',
-      text: '#374151',
-      textSecondary: '#6b7280',
-      headerBorder: '#f3f4f6',
-      buttonBg: 'rgba(59, 131, 246, 0.2)',
-      buttonText: '#3b82f6',
-      buttonHover: '#2563eb',
-      translatedText: '#0c4a6e',
-      errorBg: '#fef2f2',
-      errorText: '#dc2626',
-      errorBorder: '#fecaca'
-    }
-  },
-  'ocean': {
-    name: 'Ocean',
-    description: 'Calm blue tones',
-    colors: {
-      background: 'rgba(240, 249, 255, 0.95)',
-      border: '#bae6fd',
-      text: '#0c4a6e',
-      textSecondary: '#075985',
-      headerBorder: '#e0f2fe',
-      buttonBg: 'rgba(14, 165, 233, 0.2)',
-      buttonText: '#0ea5e9',
-      buttonHover: '#0284c7',
-      translatedText: '#0369a1',
-      errorBg: '#fef2f2',
-      errorText: '#dc2626',
-      errorBorder: '#fecaca'
-    }
-  },
-  'sunset': {
-    name: 'Sunset',
-    description: 'Warm orange and pink',
-    colors: {
-      background: 'rgba(255, 247, 237, 0.95)',
-      border: '#fed7aa',
-      text: '#7c2d12',
-      textSecondary: '#9a3412',
-      headerBorder: '#ffedd5',
-      buttonBg: 'rgba(249, 115, 22, 0.2)',
-      buttonText: '#f97316',
-      buttonHover: '#ea580c',
-      translatedText: '#c2410c',
-      errorBg: '#fef2f2',
-      errorText: '#dc2626',
-      errorBorder: '#fecaca'
-    }
-  },
-  'forest': {
-    name: 'Forest',
-    description: 'Natural green shades',
-    colors: {
-      background: 'rgba(240, 253, 244, 0.95)',
-      border: '#bbf7d0',
-      text: '#14532d',
-      textSecondary: '#166534',
-      headerBorder: '#dcfce7',
-      buttonBg: 'rgba(34, 197, 94, 0.2)',
-      buttonText: '#22c55e',
-      buttonHover: '#16a34a',
-      translatedText: '#15803d',
-      errorBg: '#fef2f2',
-      errorText: '#dc2626',
-      errorBorder: '#fecaca'
-    }
-  },
-  'purple': {
-    name: 'Purple',
-    description: 'Rich purple hues',
-    colors: {
-      background: 'rgba(250, 245, 255, 0.95)',
-      border: '#e9d5ff',
-      text: '#581c87',
-      textSecondary: '#6b21a8',
-      headerBorder: '#f3e8ff',
-      buttonBg: 'rgba(168, 85, 247, 0.2)',
-      buttonText: '#a855f7',
-      buttonHover: '#9333ea',
-      translatedText: '#7e22ce',
-      errorBg: '#fef2f2',
-      errorText: '#dc2626',
-      errorBorder: '#fecaca'
-    }
-  },
-  'midnight': {
-    name: 'Midnight',
-    description: 'Dark elegant theme',
-    colors: {
-      background: 'rgba(15, 23, 42, 0.95)',
-      border: '#334155',
-      text: '#f1f5f9',
-      textSecondary: '#cbd5e1',
-      headerBorder: '#1e293b',
-      buttonBg: 'rgba(59, 130, 246, 0.3)',
-      buttonText: '#60a5fa',
-      buttonHover: '#3b82f6',
-      translatedText: '#93c5fd',
-      errorBg: '#7f1d1d',
-      errorText: '#fca5a5',
-      errorBorder: '#dc2626'
-    }
-  },
-  'rose': {
-    name: 'Rose',
-    description: 'Soft pink tones',
-    colors: {
-      background: 'rgba(255, 241, 242, 0.95)',
-      border: '#fecdd3',
-      text: '#881337',
-      textSecondary: '#9f1239',
-      headerBorder: '#fff1f2',
-      buttonBg: 'rgba(244, 63, 94, 0.2)',
-      buttonText: '#f43f5e',
-      buttonHover: '#e11d48',
-      translatedText: '#be123c',
-      errorBg: '#fef2f2',
-      errorText: '#dc2626',
-      errorBorder: '#fecaca'
-    }
-  },
-  'amber': {
-    name: 'Amber',
-    description: 'Bright and energetic',
-    colors: {
-      background: 'rgba(255, 251, 235, 0.95)',
-      border: '#fde68a',
-      text: '#78350f',
-      textSecondary: '#92400e',
-      headerBorder: '#fef3c7',
-      buttonBg: 'rgba(245, 158, 11, 0.2)',
-      buttonText: '#f59e0b',
-      buttonHover: '#d97706',
-      translatedText: '#b45309',
-      errorBg: '#fef2f2',
-      errorText: '#dc2626',
-      errorBorder: '#fecaca'
-    }
-  },
-  'slate': {
-    name: 'Slate',
-    description: 'Cool gray tones',
-    colors: {
-      background: 'rgba(248, 250, 252, 0.95)',
-      border: '#cbd5e1',
-      text: '#1e293b',
-      textSecondary: '#334155',
-      headerBorder: '#f1f5f9',
-      buttonBg: 'rgba(100, 116, 139, 0.2)',
-      buttonText: '#64748b',
-      buttonHover: '#475569',
-      translatedText: '#334155',
-      errorBg: '#fef2f2',
-      errorText: '#dc2626',
-      errorBorder: '#fecaca'
-    }
-  }
-};
+// PREDEFINED_THEMES is imported from utils/themes.js via importScripts
 
 /**
  * Default settings for the extension
@@ -250,6 +84,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       return true;
     case 'getThemes':
       sendResponse({ success: true, themes: PREDEFINED_THEMES });
+      return true;
+    case 'getLanguages':
+      sendResponse({ success: true, languages: LANGUAGE_NAMES });
       return true;
     default:
       sendResponse({ success: false, error: `Unknown action: ${action}` });
@@ -325,7 +162,7 @@ async function handleTranslation(request, sendResponse) {
 
     // Generate cache key
     const { apiPreference } = settings;
-    const cacheKey = generateCacheKey(sanitizedText, sourceLanguage, targetLanguage, apiPreference);
+    const cacheKey = await generateCacheKey(sanitizedText, sourceLanguage, targetLanguage, apiPreference);
     
     // Check cache first
     const cachedResult = await getCachedTranslation(cacheKey);
@@ -529,31 +366,22 @@ async function handleSaveSettings(settings, sendResponse) {
 }
 
 /**
- * Generate a simple hash from a string
- * @param {string} str - String to hash
- * @returns {string} Hash value
- */
-function simpleHash(str) {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32-bit integer
-  }
-  return Math.abs(hash).toString(36);
-}
-
-/**
- * Generate cache key for translation
+ * Generate a collision-resistant cache key using SHA-256
  * @param {string} text - Text to translate
  * @param {string} sourceLanguage - Source language code
  * @param {string} targetLanguage - Target language code
  * @param {string} apiPreference - API preference
- * @returns {string} Cache key
+ * @returns {Promise<string>} Cache key
  */
-function generateCacheKey(text, sourceLanguage, targetLanguage, apiPreference) {
-  const keyString = `${text}|${sourceLanguage}|${targetLanguage}|${apiPreference}`;
-  return `${CACHE_PREFIX}${simpleHash(keyString)}`;
+async function generateCacheKey(text, sourceLanguage, targetLanguage, apiPreference) {
+  // Null-byte delimiters prevent "ab|c" and "a|bc" from colliding
+  const keyString = `${text}\0${sourceLanguage}\0${targetLanguage}\0${apiPreference}`;
+  const encoded = new TextEncoder().encode(keyString);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', encoded);
+  const hashHex = Array.from(new Uint8Array(hashBuffer))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+  return `${CACHE_PREFIX}${hashHex}`;
 }
 
 /**

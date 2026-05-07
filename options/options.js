@@ -379,10 +379,13 @@ class OptionsManager {
   async saveSettings() {
     const formData = new FormData(document.getElementById('settingsForm'));
     const disableInputFieldsCheckbox = document.getElementById('disableInputFields');
+    const apiPreference = formData.get('apiPreference');
     const settings = {
-      apiPreference: formData.get('apiPreference'),
+      apiPreference,
       geminiApiKey: formData.get('geminiApiKey'),
       openrouterApiKey: formData.get('openrouterApiKey'),
+      // libretranslateEnabled is true when the user selects libretranslate or "both" mode
+      libretranslateEnabled: apiPreference === 'libretranslate' || apiPreference === 'both',
       sourceLanguage: formData.get('sourceLanguage'),
       targetLanguage: formData.get('targetLanguage'),
       popupTheme: formData.get('popupTheme') || 'default',
@@ -423,13 +426,11 @@ class OptionsManager {
   }
 
   validateSettings(settings) {
-    // Check if at least one translation service is available
-    if (!settings.geminiApiKey && !settings.openrouterApiKey && !settings.libretranslateEnabled) {
-      this.showStatus('error', 'Validation Error', 'Please provide at least one API key or enable LibreTranslate');
-      return false;
+    // MyMemory/LibreTranslate never needs an API key — always valid
+    if (settings.apiPreference === 'libretranslate') {
+      return true;
     }
 
-    // Check if selected API has a key (LibreTranslate doesn't need a key)
     if (settings.apiPreference === 'gemini' && !settings.geminiApiKey) {
       this.showStatus('error', 'Validation Error', 'Please provide a Gemini API key');
       return false;
@@ -440,7 +441,11 @@ class OptionsManager {
       return false;
     }
 
-    // LibreTranslate doesn't need validation - it's always available
+    // "Use All" mode works with any combination; MyMemory is always available as fallback
+    if (settings.apiPreference === 'both' && !settings.geminiApiKey && !settings.openrouterApiKey) {
+      this.showStatus('error', 'Validation Error', 'Please provide at least one API key for "Use All" mode');
+      return false;
+    }
 
     return true;
   }
@@ -502,9 +507,11 @@ class OptionsManager {
         apiPreference: 'gemini',
         geminiApiKey: '',
         openrouterApiKey: '',
+        libretranslateEnabled: false,
         sourceLanguage: 'auto',
         targetLanguage: 'en',
-        popupTheme: 'default'
+        popupTheme: 'default',
+        disableInputFields: false
       };
 
     try {
@@ -527,9 +534,18 @@ class OptionsManager {
     }
   }
 
+  escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
   showStatus(type, title, message) {
     const toastContainer = document.getElementById('toastContainer');
     if (!toastContainer) return;
+
+    title = this.escapeHtml(String(title));
+    message = this.escapeHtml(String(message));
 
     // Create toast element
     const toast = document.createElement('div');
