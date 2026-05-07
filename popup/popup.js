@@ -7,18 +7,22 @@ class PopupManager {
   }
 
   async init() {
-    // Load settings
-    await this.loadSettings();
-    
+    // Load settings and language names in parallel
+    const [, languagesResponse] = await Promise.all([
+      this.loadSettings(),
+      chrome.runtime.sendMessage({ action: 'getLanguages' }).catch(() => null)
+    ]);
+    this.languageNames = languagesResponse?.languages ?? {};
+
     // Update UI
     this.updateUI();
-    
+
     // Update version display
     this.updateVersion();
-    
+
     // Check API status
     this.checkApiStatus();
-    
+
     // Add event listeners
     this.addEventListeners();
   }
@@ -59,65 +63,15 @@ class PopupManager {
     }
     
     if (currentTarget) {
-      const languageNames = {
-        'en': 'English',
-        'es': 'Spanish',
-        'fr': 'French',
-        'de': 'German',
-        'it': 'Italian',
-        'pt': 'Portuguese',
-        'ru': 'Russian',
-        'zh': 'Chinese',
-        'ja': 'Japanese',
-        'ko': 'Korean',
-        'ar': 'Arabic',
-        'hi': 'Hindi',
-        'nl': 'Dutch',
-        'sv': 'Swedish',
-        'da': 'Danish',
-        'no': 'Norwegian',
-        'fi': 'Finnish',
-        'pl': 'Polish',
-        'tr': 'Turkish'
-      };
-      currentTarget.textContent = languageNames[this.settings.targetLanguage] || this.settings.targetLanguage;
+      currentTarget.textContent = this.languageNames[this.settings.targetLanguage] || this.settings.targetLanguage;
     }
   }
 
-  async checkApiStatus() {
-    // Check Gemini API
-    this.updateApiStatus('gemini', 'checking');
-    if (this.settings?.geminiApiKey) {
-      try {
-        const response = await chrome.runtime.sendMessage({
-          action: 'validateApiKey',
-          apiKey: this.settings.geminiApiKey,
-          apiType: 'gemini'
-        });
-        this.updateApiStatus('gemini', response?.success ? 'connected' : 'disconnected');
-      } catch (error) {
-        this.updateApiStatus('gemini', 'disconnected');
-      }
-    } else {
-      this.updateApiStatus('gemini', 'disconnected');
-    }
-
-    // Check OpenRouter API
-    this.updateApiStatus('openrouter', 'checking');
-    if (this.settings?.openrouterApiKey) {
-      try {
-        const response = await chrome.runtime.sendMessage({
-          action: 'validateApiKey',
-          apiKey: this.settings.openrouterApiKey,
-          apiType: 'openrouter'
-        });
-        this.updateApiStatus('openrouter', response?.success ? 'connected' : 'disconnected');
-      } catch (error) {
-        this.updateApiStatus('openrouter', 'disconnected');
-      }
-    } else {
-      this.updateApiStatus('openrouter', 'disconnected');
-    }
+  checkApiStatus() {
+    // Show configured/not-configured based on key presence only.
+    // Live validation is expensive (consumes API quota) and belongs in the options page.
+    this.updateApiStatus('gemini', this.settings?.geminiApiKey ? 'connected' : 'disconnected');
+    this.updateApiStatus('openrouter', this.settings?.openrouterApiKey ? 'connected' : 'disconnected');
   }
 
   updateApiStatus(api, status) {
@@ -135,18 +89,13 @@ class PopupManager {
     switch (status) {
       case 'connected':
         indicator.classList.add('connected');
-        text.textContent = 'Connected';
+        text.textContent = 'Configured';
         text.className = 'text-xs text-green-600';
         break;
       case 'disconnected':
         indicator.classList.add('disconnected');
         text.textContent = 'Not configured';
         text.className = 'text-xs text-red-600';
-        break;
-      case 'checking':
-        indicator.classList.add('checking');
-        text.textContent = 'Checking...';
-        text.className = 'text-xs text-yellow-600';
         break;
     }
   }

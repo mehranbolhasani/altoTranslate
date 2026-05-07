@@ -25,8 +25,7 @@ async function translateWithOpenRouter(text, targetLanguage, apiKey, sourceLangu
     ? `Translate the following text to ${targetLangName}. Only return the translated text, nothing else:\n\n${text}`
     : `Translate the following text from ${sourceLangName} to ${targetLangName}. Only return the translated text, nothing else:\n\n${text}`;
 
-  // Use OPENROUTER_MODEL from constants.js if available
-  const model = typeof OPENROUTER_MODEL !== 'undefined' ? OPENROUTER_MODEL : 'google/gemma-3-4b-it:free';
+  const model = OPENROUTER_MODEL;
   
   const requestBody = {
     model: model, // Using Google Gemma free model through OpenRouter
@@ -41,12 +40,7 @@ async function translateWithOpenRouter(text, targetLanguage, apiKey, sourceLangu
   };
 
   try {
-    // Use getApiEndpoint if available, otherwise use OPENROUTER_API_BASE from constants.js
-    const apiEndpoint = typeof getApiEndpoint === 'function' 
-      ? getApiEndpoint('openrouter')
-      : (typeof OPENROUTER_API_BASE !== 'undefined' ? OPENROUTER_API_BASE : 'https://openrouter.ai/api/v1/chat/completions');
-    
-    const response = await fetch(apiEndpoint, {
+    const response = await fetch(OPENROUTER_API_BASE, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
