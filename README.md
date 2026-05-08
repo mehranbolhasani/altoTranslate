@@ -116,7 +116,11 @@ altoTranslate/
 └── utils/                   # Utility modules
     ├── tailwind.css         # Tailwind CSS utilities
     ├── dark-mode.js         # Dark mode functionality
-    └── storage.js           # Settings storage utilities
+    ├── storage.js           # Settings storage utilities
+    ├── mymemory_infer_source.js  # Source-language heuristic for MyMemory (auto)
+    ├── api-gemini.js        # Gemini API
+    ├── api-openrouter.js    # OpenRouter API
+    └── api-libretranslate.js # MyMemory API
 ```
 
 ## Development

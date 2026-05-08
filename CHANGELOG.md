@@ -5,6 +5,21 @@ All notable changes to Alto Translate will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.2] - 2025-03-30
+
+### Fixed
+- **Background**: Outer `handleTranslation` catch no longer references out-of-scope `settings` (prevents secondary errors while handling failures).
+- **Settings**: MyMemory is always available — removed save-validation gate that required `libretranslateEnabled` in the form payload; options save always persists `libretranslateEnabled: true`; `getSettings()` normalizes legacy `false` to `true`.
+- **MyMemory**: Replaced dead-branch auto source (`en`/`en`) with script-based inference plus transparent `sourceLanguageUsed` / `sourceInferred` metadata in API results.
+- **Fallback mode**: `translateWithAll` always includes MyMemory, even when no API keys are set.
+- **Content script**: Removed redundant “configure MyMemory” pre-check (MyMemory is always on).
+- **Popup**: API status shows key configured vs not — no live `validateApiKey` on every open (reduces Gemini quota usage).
+- **Reset defaults**: Reset now restores `disableInputFields` and `libretranslateEnabled`.
+
+### Added
+- **`utils/mymemory_infer_source.js`**: Shared heuristic for MyMemory `langpair` when source is `auto`.
+- **Tests**: `tests/mymemory_infer_source.test.js`, `tests/settings_save_rules.test.js`.
+
 ## [1.2.1] - 2024-12-XX
 
 ### Removed

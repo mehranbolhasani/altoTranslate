@@ -389,7 +389,9 @@ class OptionsManager {
       sourceLanguage: formData.get('sourceLanguage'),
       targetLanguage: formData.get('targetLanguage'),
       popupTheme: formData.get('popupTheme') || 'default',
-      disableInputFields: disableInputFieldsCheckbox ? disableInputFieldsCheckbox.checked : false
+      disableInputFields: disableInputFieldsCheckbox ? disableInputFieldsCheckbox.checked : false,
+      // MyMemory is always on (legacy field for storage compatibility)
+      libretranslateEnabled: true
     };
 
     // Validate settings

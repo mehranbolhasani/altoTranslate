@@ -6,6 +6,7 @@ importScripts(
   '../utils/languages.js',
   '../utils/error-messages.js',
   '../utils/themes.js',
+  '../utils/mymemory_infer_source.js',
   '../utils/api-gemini.js',
   '../utils/api-openrouter.js',
   '../utils/api-libretranslate.js'
@@ -21,7 +22,7 @@ const DEFAULT_SETTINGS = {
   apiPreference: 'gemini',
   geminiApiKey: '',
   openrouterApiKey: '',
-  libretranslateEnabled: true,
+  libretranslateEnabled: true, // Legacy field; MyMemory always on (normalized in getSettings)
   sourceLanguage: 'auto',
   targetLanguage: 'en',
   popupTheme: 'default',
@@ -126,6 +127,10 @@ function validateTranslationInput(text, targetLanguage) {
  * @param {Function} sendResponse - Response callback
  */
 async function handleTranslation(request, sendResponse) {
+  /** Hoisted for outer catch — must not reference block-scoped `settings` in catch */
+  let settings = null;
+  let apiPreference = null;
+
   try {
     const { text, targetLanguage, sourceLanguage = 'auto' } = request;
     
@@ -143,25 +148,12 @@ async function handleTranslation(request, sendResponse) {
     }
     
     const { sanitizedText } = validation;
-    const settings = await getSettings();
-    
-    // Check if at least one service is configured
-    const hasService = settings.geminiApiKey || 
-                       settings.openrouterApiKey || 
-                       settings.libretranslateEnabled;
-    
-    if (!hasService) {
-      const errorMsg = getErrorMessage('NO_API_KEYS');
-      sendResponse({
-        success: false,
-        error: formatErrorMessage('NO_API_KEYS'),
-        errorDetails: errorMsg
-      });
-      return;
-    }
+    settings = await getSettings();
+    apiPreference = settings.apiPreference;
+
+    // MyMemory is always available (no toggle). Gemini/OpenRouter need keys when selected.
 
     // Generate cache key
-    const { apiPreference } = settings;
     const cacheKey = await generateCacheKey(sanitizedText, sourceLanguage, targetLanguage, apiPreference);
     
     // Check cache first
@@ -203,14 +195,6 @@ async function handleTranslation(request, sendResponse) {
           break;
           
         case 'libretranslate':
-          if (!settings.libretranslateEnabled) {
-            sendResponse({ 
-              success: false, 
-              error: formatErrorMessage('LIBRETRANSLATE_DISABLED'),
-              errorDetails: getErrorMessage('LIBRETRANSLATE_DISABLED')
-            });
-            return;
-          }
           result = await translateWithLibreTranslate(sanitizedText, targetLanguage, sourceLanguage);
           break;
           
@@ -254,15 +238,16 @@ async function handleTranslation(request, sendResponse) {
   } catch (error) {
     console.error('Translation error:', error);
     const errorType = getErrorTypeFromMessage(error?.message ?? '');
+    const apiPref = settings?.apiPreference ?? apiPreference;
     const errorMsg = getErrorMessage(errorType, { 
       error: error?.message,
-      apiType: settings?.apiPreference 
+      apiType: apiPref 
     });
     sendResponse({
       success: false,
       error: formatErrorMessage(errorType, { 
         error: error?.message,
-        apiType: settings?.apiPreference 
+        apiType: apiPref 
       }),
       errorDetails: errorMsg
     });
@@ -288,9 +273,8 @@ async function translateWithAll(text, targetLanguage, sourceLanguage, settings) 
     promises.push(translateWithOpenRouter(text, targetLanguage, settings.openrouterApiKey, sourceLanguage));
   }
   
-  if (settings.libretranslateEnabled) {
-    promises.push(translateWithLibreTranslate(text, targetLanguage, sourceLanguage));
-  }
+  // MyMemory path is always available (no user toggle)
+  promises.push(translateWithLibreTranslate(text, targetLanguage, sourceLanguage));
   
   if (promises.length === 0) {
     return { success: false, error: 'No translation services configured' };
@@ -714,10 +698,13 @@ async function clearCache() {
 async function getSettings() {
   try {
     const result = await chrome.storage.sync.get(DEFAULT_SETTINGS);
-    return { ...DEFAULT_SETTINGS, ...result };
+    const merged = { ...DEFAULT_SETTINGS, ...result };
+    // MyMemory is always on; legacy installs may have libretranslateEnabled: false
+    merged.libretranslateEnabled = true;
+    return merged;
   } catch (error) {
     console.error('Error getting settings:', error);
-    return DEFAULT_SETTINGS;
+    return { ...DEFAULT_SETTINGS, libretranslateEnabled: true };
   }
 }
 

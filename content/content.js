@@ -731,21 +731,7 @@ class AltoTranslate {
       await this.loadSettings();
     }
 
-    const hasService = this.settings?.geminiApiKey || 
-                       this.settings?.openrouterApiKey || 
-                       this.settings?.libretranslateEnabled;
-
-    if (!hasService) {
-      this.showError('Please configure your API keys or enable LibreTranslate/MyMemory API in the extension settings.', {
-        steps: [
-          'Open the extension settings',
-          'Configure at least one API key (Gemini or OpenRouter)',
-          'Or enable LibreTranslate/MyMemory API (no key required)',
-          'Save your settings'
-        ]
-      });
-      return;
-    }
+    // MyMemory is always available; Gemini/OpenRouter need keys when those APIs are chosen in settings.
 
     // Prevent popup from being hidden during translation
     this.translationInProgress = true;

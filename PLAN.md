@@ -2,9 +2,18 @@
 
 ## Project Status
 
-**Current Version:** 1.0.0  
+**Current Version:** 1.2.2  
 **Status:** Live on Chrome Web Store  
 **Link:** https://chromewebstore.google.com/detail/alto-translate/icpcjiealadibmgncmoejgjakcihmbco
+
+## Recently completed (v1.2.2)
+
+- **Reliability**: Fixed outer `handleTranslation` catch referencing undefined `settings`.
+- **MyMemory**: Always-on product behavior — no user toggle; `getSettings()` normalizes legacy `libretranslateEnabled: false`; options save persists `libretranslateEnabled: true`; `translateWithAll` always queues MyMemory.
+- **MyMemory auto source**: Script-based inference (`utils/mymemory_infer_source.js`) with `sourceLanguageUsed` / `sourceInferred` on success responses (replaces dead `en`/`en` branch).
+- **Popup**: Status indicators use key presence only (no live API validation on each open).
+- **Options**: Reset-to-defaults includes `disableInputFields` and `libretranslateEnabled`; removed invalid “enable LibreTranslate” save gate when no keys.
+- **Tests**: `tests/mymemory_infer_source.test.js`, `tests/settings_save_rules.test.js`.
 
 ## Completed Features (v1.0.0)
 
@@ -100,7 +109,7 @@
 
 ### Current Limitations
 - Maximum text length: 5000 characters
-- MyMemory API auto-detection defaults to English
+- MyMemory with source “auto” uses script heuristics (not true linguistic detection); wrong guesses possible for ambiguous Latin text
 - No translation history persistence
 - No offline capability
 
@@ -188,6 +197,7 @@ altoTranslate/
 └── utils/                           # Utility modules
     ├── api-gemini.js                # Google Gemini API integration
     ├── api-openrouter.js            # OpenRouter API integration
+    ├── mymemory_infer_source.js     # Heuristic source lang for MyMemory when auto
     ├── api-libretranslate.js        # MyMemory API integration
     ├── storage.js                   # Chrome storage utilities
     ├── tailwind.css                 # Local Tailwind CSS build
@@ -256,9 +266,9 @@ altoTranslate/
 ## Next Steps (To-dos)
 
 - [ ] Update README.md line 30 to include live Chrome Web Store link with badge
-- [ ] Update README.md file structure section to include all current files (hot-reload.js, dark-mode.js, API files, fonts)
+- [ ] Update README.md file structure section to include all current files (hot-reload.js, dark-mode.js, API files, `mymemory_infer_source.js`, fonts)
 - [ ] Update manifest.json description to mention MyMemory API alongside Gemini and OpenRouter
 - [ ] Add screenshots or demo GIF to README.md showing extension in action
-- [ ] Create CHANGELOG.md file to track version history and updates
+- [x] Create CHANGELOG.md file to track version history and updates (present; keep updated per release)
 
 

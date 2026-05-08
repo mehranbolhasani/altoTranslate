@@ -3,9 +3,10 @@
 // Chrome Extension compatible - no CommonJS exports
 
 // Import constants (must be loaded before this script)
-// Assumes constants.js is loaded via importScripts before this file
+// Assumes constants.js and mymemory_infer_source.js are loaded via importScripts before this file
 
 // MYMEMORY_API_BASE is imported from utils/constants.js via importScripts
+// inferMyMemorySourceLanguage from utils/mymemory_infer_source.js
 
 // Language codes supported by the MyMemory API
 const MYMEMORY_SUPPORTED_LANGUAGES = new Set([
@@ -42,54 +43,60 @@ async function translateWithLibreTranslate(text, targetLanguage, sourceLanguage 
     };
   }
 
-  const sourceLang = sourceLanguage === 'auto' ? 'auto' : sourceLanguage;
   const targetLang = targetLanguage;
-  
-  try {
-    // MyMemory requires an explicit source language — it does not support 'auto'.
-    // Heuristic: text containing only printable ASCII (0x20-0x7E) is assumed English;
-    // non-ASCII text (CJK, Arabic, Cyrillic, etc.) defaults to Chinese as best-effort.
-    // Users needing accurate source detection should set it explicitly in settings.
-    let actualSourceLang = sourceLang;
-    if (sourceLang === 'auto') {
-      const isLikelyLatin = /^[\x20-\x7E]+$/.test(text.trim());
-      actualSourceLang = isLikelyLatin ? 'en' : 'zh';
+  let actualSourceLang;
+  let sourceInferred = false;
+
+  if (sourceLanguage === 'auto') {
+    sourceInferred = true;
+    let guessed =
+      typeof inferMyMemorySourceLanguage === 'function'
+        ? inferMyMemorySourceLanguage(text)
+        : 'en';
+    if (!MYMEMORY_SUPPORTED_LANGUAGES.has(guessed)) {
+      guessed = 'en';
     }
-    
+    actualSourceLang = guessed;
+  } else {
+    actualSourceLang = sourceLanguage;
+  }
+
+  try {
     const params = new URLSearchParams({
       q: text,
       langpair: `${actualSourceLang}|${targetLang}`
     });
-    
+
     const url = `${MYMEMORY_API_BASE}?${params.toString()}`;
-    
+
     const response = await fetch(url, {
       method: 'GET',
       headers: {
         'User-Agent': 'AltoTranslate-Extension/1.0'
       }
     });
-    
+
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
-    
+
     const data = await response.json();
     const translatedText = data?.responseData?.translatedText;
-    
+
     if (!translatedText) {
       throw new Error('Invalid response format from MyMemory API');
     }
-    
+
     return {
       success: true,
       translatedText,
-      sourceLanguage: sourceLang === 'auto' ? 'auto' : sourceLang,
+      sourceLanguage: sourceInferred ? 'auto' : sourceLanguage,
+      sourceLanguageUsed: actualSourceLang,
+      sourceInferred,
       targetLanguage: targetLang,
       api: 'mymemory',
       instance: 'MyMemory API'
     };
-    
   } catch (error) {
     console.error('MyMemory API failed:', error);
     return {

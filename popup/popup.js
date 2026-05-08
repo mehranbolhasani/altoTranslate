@@ -67,11 +67,15 @@ class PopupManager {
     }
   }
 
+  /**
+   * Show whether API keys are present — avoids live validateApiKey calls on every popup open (quota).
+   * Use Options → Validate for a real network check.
+   */
   checkApiStatus() {
-    // Show configured/not-configured based on key presence only.
-    // Live validation is expensive (consumes API quota) and belongs in the options page.
-    this.updateApiStatus('gemini', this.settings?.geminiApiKey ? 'connected' : 'disconnected');
-    this.updateApiStatus('openrouter', this.settings?.openrouterApiKey ? 'connected' : 'disconnected');
+    const hasGemini = Boolean(this.settings?.geminiApiKey?.trim());
+    const hasOpenRouter = Boolean(this.settings?.openrouterApiKey?.trim());
+    this.updateApiStatus('gemini', hasGemini ? 'configured' : 'disconnected');
+    this.updateApiStatus('openrouter', hasOpenRouter ? 'configured' : 'disconnected');
   }
 
   updateApiStatus(api, status) {
@@ -90,6 +94,11 @@ class PopupManager {
       case 'connected':
         indicator.classList.add('connected');
         text.textContent = 'Configured';
+        text.className = 'text-xs text-green-600';
+        break;
+      case 'configured':
+        indicator.classList.add('connected');
+        text.textContent = 'Key configured';
         text.className = 'text-xs text-green-600';
         break;
       case 'disconnected':
