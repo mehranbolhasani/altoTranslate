@@ -134,7 +134,7 @@ async function getAvailableGeminiModels(apiKey) {
  * @param {string} sourceLanguage - Source language code (optional, for auto-detect)
  * @returns {Promise<Object>} Translation result
  */
-async function translateWithGemini(text, targetLanguage, apiKey, sourceLanguage = 'auto') {
+async function translateWithGemini(text, targetLanguage, apiKey, sourceLanguage = 'auto', contextSnippet = null) {
   let lastError = null;
   const errorsByModel = [];
   
@@ -191,7 +191,7 @@ async function translateWithGemini(text, targetLanguage, apiKey, sourceLanguage 
       );
       
       const result = await Promise.race([
-        tryTranslateWithModel(text, targetLanguage, apiKey, sourceLanguage, model, preferredApiVersion),
+        tryTranslateWithModel(text, targetLanguage, apiKey, sourceLanguage, model, preferredApiVersion, contextSnippet),
         timeoutPromise
       ]);
       
@@ -270,25 +270,50 @@ async function translateWithGemini(text, targetLanguage, apiKey, sourceLanguage 
 }
 
 /**
- * Try translating with a specific Gemini model
- * @param {string} text - Text to translate
- * @param {string} targetLanguage - Target language code
- * @param {string} apiKey - Gemini API key
- * @param {string} sourceLanguage - Source language code
- * @param {string} model - Model name to use
- * @param {string} preferredApiVersion - Preferred API version (from model discovery)
- * @returns {Promise<Object>} Translation result
+ * Gemini prompt for translation; optional page context improves disambiguation.
+ * @param {string|null|undefined} rawContext
  */
-async function tryTranslateWithModel(text, targetLanguage, apiKey, sourceLanguage, model, preferredApiVersion = 'v1beta') {
-  // Try preferred API version first, then fallback to others
-  const apiVersions = [preferredApiVersion, 'v1beta', 'v1'].filter((v, i, arr) => arr.indexOf(v) === i); // Remove duplicates
-
+function buildGeminiTranslationPrompt(text, targetLanguage, sourceLanguage, rawContext) {
   const targetLangName = getLanguageName(targetLanguage);
   const sourceLangName = sourceLanguage === 'auto' ? 'auto-detect' : getLanguageName(sourceLanguage);
 
-  const prompt = sourceLanguage === 'auto' 
+  const capped =
+    rawContext && typeof rawContext === 'string' && typeof clampContextSnippetForApi === 'function'
+      ? clampContextSnippetForApi(rawContext)
+      : '';
+
+  if (capped) {
+    if (sourceLanguage === 'auto') {
+      return (
+        `Surrounding context (reference only; helps disambiguate — do not reply with a translation of the whole context):\n` +
+        `${capped}\n\n` +
+        `Translate ONLY the following segment to ${targetLangName}. ` +
+        `Output only the translated text of that segment with no quotes and no extra explanation:\n\n${text}`
+      );
+    }
+    return (
+      `Surrounding context (reference only; helps disambiguate — do not reply with a translation of the whole context):\n` +
+      `${capped}\n\n` +
+      `Translate ONLY the following segment from ${sourceLangName} to ${targetLangName}. ` +
+      `Output only the translated text of that segment with no quotes and no extra explanation:\n\n${text}`
+    );
+  }
+
+  return sourceLanguage === 'auto'
     ? `Translate the following text to ${targetLangName}. Only return the translated text, nothing else:\n\n${text}`
     : `Translate the following text from ${sourceLangName} to ${targetLangName}. Only return the translated text, nothing else:\n\n${text}`;
+}
+
+/**
+ * Try translating with a specific Gemini model
+ * @param {string|null|undefined} [contextSnippet]
+ * @returns {Promise<Object>}
+ */
+async function tryTranslateWithModel(text, targetLanguage, apiKey, sourceLanguage, model, preferredApiVersion = 'v1beta', contextSnippet = null) {
+  // Try preferred API version first, then fallback to others
+  const apiVersions = [preferredApiVersion, 'v1beta', 'v1'].filter((v, i, arr) => arr.indexOf(v) === i); // Remove duplicates
+
+  const prompt = buildGeminiTranslationPrompt(text, targetLanguage, sourceLanguage, contextSnippet);
 
   const requestBody = {
     contents: [{
@@ -298,7 +323,7 @@ async function tryTranslateWithModel(text, targetLanguage, apiKey, sourceLanguag
       temperature: 0.1,
       topK: 1,
       topP: 0.8,
-      maxOutputTokens: 1000
+      maxOutputTokens: TRANSLATION_MAX_OUTPUT_TOKENS
     }
   };
 

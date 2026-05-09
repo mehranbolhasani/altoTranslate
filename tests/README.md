@@ -8,6 +8,7 @@ This directory contains unit tests for the extension.
 - `validation.test.js` - Tests for input validation
 - `languages.test.js` - Tests for language utilities
 - `mymemory_infer_source.test.js` - MyMemory source inference heuristics
+- `selection_context.test.js` - Sentence/snippet bounds for Gemini/OpenRouter disambiguation context
 - `settings_save_rules.test.js` - Options save validation rules (MyMemory always on)
 - `api.test.js` - Tests for API integrations (mocks)
 

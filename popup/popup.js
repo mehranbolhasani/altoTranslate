@@ -59,7 +59,14 @@ class PopupManager {
     const currentTarget = document.getElementById('currentTarget');
     
     if (currentApi) {
-      currentApi.textContent = this.settings.apiPreference.toUpperCase();
+      const pref = this.settings.apiPreference;
+      const apiLabels = {
+        gemini: 'Gemini',
+        openrouter: 'OpenRouter',
+        libretranslate: 'MyMemory',
+        both: 'Smart fallback'
+      };
+      currentApi.textContent = apiLabels[pref] ?? String(pref).toUpperCase();
     }
     
     if (currentTarget) {

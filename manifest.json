@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Alto Translate",
-  "version": "1.2.2",
+  "version": "1.3.2",
   "description": "A minimal Chrome extension for translating selected text using Gemini, OpenRouter, and MyMemory APIs",
   "permissions": [
     "storage"
@@ -20,9 +20,9 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content/content.js"],
+      "js": ["utils/selection_context.js", "content/content.js"],
       "css": ["content/content.css"],
-      "run_at": "document_end"
+      "run_at": "document_idle"
     }
   ],
   "action": {
@@ -30,6 +30,15 @@
     "default_title": "Alto Translate Settings"
   },
   "options_page": "options/options.html",
+  "commands": {
+    "translate-selection": {
+      "suggested_key": {
+        "default": "Alt+A",
+        "mac": "Alt+A"
+      },
+      "description": "Translate the current text selection"
+    }
+  },
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",

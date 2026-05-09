@@ -14,7 +14,9 @@ class AltoTranslate {
     this.mousePosition = { x: 0, y: 0 }; // Track mouse position
     this.detectedThemeCache = null; // Cache detected theme per page
     this.themeCachePageUrl = null; // Track which page the cache is for
-    
+    /** When true, outside-click scroll/resize dismissal is disabled (persisted in chrome.storage.local). */
+    this.popupPinned = false;
+
     // Bind methods to preserve context
     this.handleTextSelection = this.handleTextSelection.bind(this);
     this.handleMouseDown = this.handleMouseDown.bind(this);
@@ -22,7 +24,7 @@ class AltoTranslate {
     this.handleScroll = this.handleScroll.bind(this);
     this.handleResize = this.handleResize.bind(this);
     this.handleKeydown = this.handleKeydown.bind(this);
-    this.handleSettingsUpdate = this.handleSettingsUpdate.bind(this);
+    this.handleRuntimeMessage = this.handleRuntimeMessage.bind(this);
     
     this.init();
   }
@@ -30,7 +32,8 @@ class AltoTranslate {
   async init() {
     // Load settings
     await this.loadSettings();
-    
+    await this.refreshPopupPinnedFromStorage();
+
     // Detect webpage theme (with caching)
     this.detectedTheme = this.getDetectedTheme();
     
@@ -38,12 +41,12 @@ class AltoTranslate {
     document.addEventListener('mouseup', this.handleTextSelection);
     document.addEventListener('mousedown', this.handleMouseDown);
     document.addEventListener('mousemove', this.handleMouseMove);
-    document.addEventListener('scroll', this.handleScroll);
+    window.addEventListener('scroll', this.handleScroll, true);
     window.addEventListener('resize', this.handleResize);
     document.addEventListener('keydown', this.handleKeydown);
     
     // Listen for settings changes
-    chrome.runtime.onMessage.addListener(this.handleSettingsUpdate);
+    chrome.runtime.onMessage.addListener(this.handleRuntimeMessage);
     
     // Clear theme cache on page visibility change (indicates navigation)
     if (typeof document !== 'undefined' && document.addEventListener) {
@@ -239,10 +242,102 @@ class AltoTranslate {
     }
   }
 
-  handleSettingsUpdate(request, sender, sendResponse) {
+  handleRuntimeMessage(request /* , sender, sendResponse */) {
+    if (!request?.action) return;
+
     if (request.action === 'settingsUpdated') {
       this.loadSettings();
+      return;
     }
+
+    if (request.action === 'triggerTranslateShortcut') {
+      void this.runTranslateShortcutFromCommand().catch((err) => {
+        console.warn('Alto Translate: shortcut failed', err);
+      });
+      return;
+    }
+  }
+
+  /** True when focus is in a field where Alt+A should not steal translation (typing surfaces). */
+  isFocusInTypingSurface() {
+    const el = document.activeElement;
+    if (!el || !(el instanceof HTMLElement)) return false;
+    const tag = el.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA') return true;
+    if (el.isContentEditable) return true;
+    if ((document.designMode || '').toLowerCase() === 'on') return true;
+    return false;
+  }
+
+  /** Same as clicking the floating icon — chrome.commands (default Alt+A). */
+  async runTranslateShortcutFromCommand() {
+    if (!this.settings) {
+      await this.loadSettings();
+    }
+
+    if (this.isFocusInTypingSurface()) {
+      return;
+    }
+
+    const sel = window.getSelection();
+    if (!sel?.rangeCount) return;
+
+    const raw = sel.toString().trim();
+    if (!raw || raw.length < 2) return;
+
+    if (this.settings?.disableInputFields === true && this.isSelectionInInputField()) {
+      return;
+    }
+
+    try {
+      this.selectedText = raw;
+      this.selectionRange = sel.getRangeAt(0).cloneRange();
+      this.hideIcon();
+      await this.hidePopupForNewTranslation();
+      await this.showPopup();
+    } catch (err) {
+      console.warn('Alto Translate: shortcut translation failed', err);
+    }
+  }
+
+  /** Close popup between shortcut runs without blocking on translation state. */
+  async hidePopupForNewTranslation() {
+    if (!this.translatePopup) {
+      this.isPopupOpen = false;
+      return;
+    }
+    if (this.hideTimer) {
+      clearTimeout(this.hideTimer);
+      this.hideTimer = null;
+    }
+    if (this.translatePopup.parentNode) {
+      this.translatePopup.remove();
+      this.translatePopup = null;
+    }
+    this.isPopupOpen = false;
+    this.popupSetupComplete = false;
+    this.translationInProgress = false;
+    this.popupOpenTime = null;
+  }
+
+  async refreshPopupPinnedFromStorage() {
+    try {
+      const stored = await chrome.storage.local.get('altoTranslatePopupPinned');
+      this.popupPinned = stored.altoTranslatePopupPinned === true;
+    } catch (err) {
+      console.warn('Alto Translate: could not load pin preference', err);
+      this.popupPinned = false;
+    }
+  }
+
+  syncPinToggleButton(pinBtn) {
+    if (!pinBtn) return;
+    const pinned = !!this.popupPinned;
+    pinBtn.classList.toggle('is-pinned', pinned);
+    pinBtn.setAttribute('aria-pressed', pinned ? 'true' : 'false');
+    pinBtn.title = pinned
+      ? 'Unpin (outside click / scroll / resize closes)'
+      : 'Pin — keep popup when clicking outside, scrolling, or resizing';
   }
 
   async loadSettings() {
@@ -271,6 +366,9 @@ class AltoTranslate {
     if (activeElement) {
       const tagName = activeElement.tagName;
       if (tagName === 'INPUT' || tagName === 'TEXTAREA') {
+        return true;
+      }
+      if (activeElement instanceof HTMLElement && activeElement.isContentEditable) {
         return true;
       }
     }
@@ -309,6 +407,9 @@ class AltoTranslate {
       if (tagName === 'INPUT' || tagName === 'TEXTAREA') {
         return true;
       }
+      if (element instanceof HTMLElement && element.isContentEditable) {
+        return true;
+      }
       element = element.parentElement;
     }
     
@@ -321,6 +422,9 @@ class AltoTranslate {
     while (element && element !== document.body && element !== document.documentElement) {
       const tagName = element.tagName;
       if (tagName === 'INPUT' || tagName === 'TEXTAREA') {
+        return true;
+      }
+      if (element instanceof HTMLElement && element.isContentEditable) {
         return true;
       }
       element = element.parentElement;
@@ -381,6 +485,10 @@ class AltoTranslate {
         !this.translatePopup.contains(event.target) && 
         !this.translateIcon?.contains(event.target)) {
       
+      if (this.popupPinned) {
+        return;
+      }
+
       // Check if the click is on the selected text or nearby
       // CLICK_TOLERANCE is defined in utils/constants.js (100px)
       const CLICK_TOLERANCE = 100; // Matches utils/constants.js
@@ -403,6 +511,9 @@ class AltoTranslate {
       // HIDE_TIMER_DELAY is defined in utils/constants.js (1000ms)
       const HIDE_TIMER_DELAY = 1000; // Matches utils/constants.js
       const hideTimer = setTimeout(() => {
+        if (this.popupPinned) {
+          return;
+        }
         if (this.isPopupOpen && this.translatePopup && 
             !this.translatePopup.contains(event.target) && !this.translationInProgress) {
           this.hidePopup();
@@ -415,6 +526,9 @@ class AltoTranslate {
   }
 
   handleScroll() {
+    if (this.popupPinned && this.isPopupOpen) {
+      return;
+    }
     // Hide popup on scroll, but keep icon visible
     if (this.isPopupOpen && !this.translationInProgress) {
       this.hidePopup();
@@ -422,6 +536,12 @@ class AltoTranslate {
   }
 
   handleResize() {
+    if (this.popupPinned && this.isPopupOpen) {
+      if (this.translatePopup?.isConnected) {
+        this.scheduleAlignPopupToSelection();
+      }
+      return;
+    }
     // Hide popup on window resize, but keep icon visible
     if (this.isPopupOpen && !this.translationInProgress) {
       this.hidePopup();
@@ -447,7 +567,7 @@ class AltoTranslate {
         
         if (hasSelection) {
           this.hideIcon();
-          this.hidePopup();
+          this.hidePopup(true);
           return;
         }
       }
@@ -455,7 +575,7 @@ class AltoTranslate {
       // Also check using the helper method for other cases
       if (this.isSelectionInInputField()) {
         this.hideIcon();
-        this.hidePopup();
+        this.hidePopup(true);
         return;
       }
     }
@@ -463,16 +583,29 @@ class AltoTranslate {
     const selection = window.getSelection();
     const selectedText = selection.toString().trim();
 
-    // Hide existing popup but keep icon if it's the same selection
-    this.hidePopup();
-
-    // Check if we have valid text selection
+    // Collapsed / tiny selection — keep pinned translation visible on harmless clicks
     if (!selectedText || selectedText.length < 2) {
+      if (!this.popupPinned) {
+        this.hidePopup(false);
+      }
       this.hideIcon();
       return;
     }
 
-    // If it's the same text selection, don't recreate the icon
+    // Popup open + same passage — ignore selection churn (mouseup from pin/close/etc. bubbles to document).
+    // Must not depend on pin: unpin triggers the same churn and would otherwise force-close the popup.
+    if (
+      this.isPopupOpen &&
+      this.translatePopup?.isConnected &&
+      selectedText === this.selectedText
+    ) {
+      return;
+    }
+
+    // Opening a genuinely new passage replaces any existing popup (including pinned)
+    this.hidePopup(true);
+
+    // Same selection as last time → keep existing floating icon only
     if (this.selectedText === selectedText && this.translateIcon) {
       return;
     }
@@ -544,39 +677,90 @@ class AltoTranslate {
     }
   }
 
+  /**
+   * @param {number} leftVp
+   * @param {number} topVp
+   * @param {number} boxW
+   * @param {number} boxH
+   * @param {number} pad
+   * @returns {{ leftVp: number, topVp: number }}
+   */
+  clampFloatingBoxViewport(leftVp, topVp, boxW, boxH, pad = 10) {
+    const maxLeftV = Math.max(pad, window.innerWidth - boxW - pad);
+    const maxTopV = Math.max(pad, window.innerHeight - boxH - pad);
+    return {
+      leftVp: Math.min(Math.max(leftVp, pad), maxLeftV),
+      topVp: Math.min(Math.max(topVp, pad), maxTopV)
+    };
+  }
+
+  /** Double rAF so width/height reflect layout after theme and content apply. */
+  scheduleAlignPopupToSelection() {
+    if (!this.translatePopup?.isConnected || !this.selectionRange) return;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => this.alignPopupToSelection());
+    });
+  }
+
+  alignPopupToSelection() {
+    const popup = this.translatePopup;
+    if (!popup?.isConnected || !this.selectionRange) return;
+
+    let anchor = this.selectionRange.getBoundingClientRect();
+    if (anchor.width < 1 && anchor.height < 1) {
+      const cx = this.mousePosition.x;
+      const cy = this.mousePosition.y;
+      anchor = new DOMRect(Math.max(0, cx - 1), Math.max(0, cy - 1), 2, 2);
+    }
+
+    const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
+    const scrollY = window.pageYOffset || document.documentElement.scrollTop;
+    const gap = 8;
+    const pad = 10;
+
+    const br = popup.getBoundingClientRect();
+    let w = Math.ceil(br.width);
+    let h = Math.ceil(br.height);
+    if (!w || w < 50) w = 320;
+    if (!h || h < 50) h = 180;
+
+    let leftVp = anchor.left;
+    let topVp = anchor.bottom + gap;
+
+    if (topVp + h > window.innerHeight - pad) {
+      topVp = anchor.top - gap - h;
+    }
+    if (leftVp + w > window.innerWidth - pad) {
+      leftVp = anchor.right - w;
+    }
+
+    const clamped = this.clampFloatingBoxViewport(leftVp, topVp, w, h, pad);
+    popup.style.left = `${clamped.leftVp + scrollX}px`;
+    popup.style.top = `${clamped.topVp + scrollY}px`;
+  }
+
   positionIcon() {
     if (!this.translateIcon || !this.selectionRange) return;
 
     const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
     const scrollY = window.pageYOffset || document.documentElement.scrollTop;
-    const iconSize = 24; // Icon size for calculations
+    const iconSize = 24;
+    const pad = 10;
 
-    // Position icon near the mouse cursor with a small offset
-    let left = this.mousePosition.x + scrollX + 10; // 10px offset from cursor
-    let top = this.mousePosition.y + scrollY - 10; // 10px offset above cursor
+    let leftVp = this.mousePosition.x + pad;
+    let topVp = this.mousePosition.y - pad;
 
-    // Ensure icon doesn't go off-screen to the right
-    if (left + iconSize > window.innerWidth + scrollX) {
-      left = this.mousePosition.x + scrollX - iconSize - 10; // Position to the left of cursor
+    if (leftVp + iconSize > window.innerWidth - pad) {
+      leftVp = this.mousePosition.x - iconSize - pad;
     }
 
-    // Ensure icon doesn't go off-screen to the bottom
-    if (top + iconSize > window.innerHeight + scrollY) {
-      top = this.mousePosition.y + scrollY - iconSize - 10; // Position above cursor
+    if (topVp + iconSize > window.innerHeight - pad) {
+      topVp = this.mousePosition.y - iconSize - pad;
     }
 
-    // Ensure icon doesn't go off-screen to the left
-    if (left < scrollX + 10) {
-      left = scrollX + 10;
-    }
-
-    // Ensure icon doesn't go off-screen to the top
-    if (top < scrollY + 10) {
-      top = scrollY + 10;
-    }
-
-    this.translateIcon.style.left = `${left}px`;
-    this.translateIcon.style.top = `${top}px`;
+    const clamped = this.clampFloatingBoxViewport(leftVp, topVp, iconSize, iconSize, pad);
+    this.translateIcon.style.left = `${clamped.leftVp + scrollX}px`;
+    this.translateIcon.style.top = `${clamped.topVp + scrollY}px`;
   }
 
   async showPopup() {
@@ -592,7 +776,7 @@ class AltoTranslate {
     this.popupSetupComplete = false;
 
     // Create popup
-    this.createPopup();
+    await this.createPopup();
 
     // Position popup
     this.positionPopup();
@@ -608,7 +792,7 @@ class AltoTranslate {
     }, 100);
   }
 
-  createPopup() {
+  async createPopup() {
     // Remove existing popup only if it exists
     if (this.translatePopup) {
       this.translatePopup.remove();
@@ -626,11 +810,17 @@ class AltoTranslate {
     this.applyTheme(this.translatePopup, this.detectedTheme);
     
     // Apply custom theme from settings
-    this.applyCustomTheme(this.translatePopup);
+    await this.applyCustomTheme(this.translatePopup);
+
     this.translatePopup.innerHTML = `
       <div class="alto-translate-popup-header">
         <div class="alto-translate-popup-title">Translation</div>
-        <button class="alto-translate-popup-close" title="Close">×</button>
+        <div class="alto-translate-popup-header-actions">
+          <button type="button" class="alto-translate-popup-pin" aria-pressed="false" title="Pin popup">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1 .65-3.93 2 2 0 0 1 3.32 1.32l2.66 11.54a3 3 0 1 1-9.94 3.94L9 10.76z"/></svg>
+          </button>
+          <button type="button" class="alto-translate-popup-close" title="Close">×</button>
+        </div>
       </div>
       <div class="alto-translate-popup-content">
         <div class="alto-translate-original-text">${this.escapeHtml(this.selectedText)}</div>
@@ -649,14 +839,39 @@ class AltoTranslate {
       </div>
     `;
 
-    // Add event listeners
+    const pinBtn = this.translatePopup.querySelector('.alto-translate-popup-pin');
     const closeBtn = this.translatePopup.querySelector('.alto-translate-popup-close');
     const copyBtn = this.translatePopup.querySelector('.alto-translate-copy-btn');
+
+    this.syncPinToggleButton(pinBtn);
+
+    if (pinBtn) {
+      pinBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        if (this.hideTimer) {
+          clearTimeout(this.hideTimer);
+          this.hideTimer = null;
+        }
+        this.popupPinned = !this.popupPinned;
+        try {
+          await chrome.storage.local.set({ altoTranslatePopupPinned: this.popupPinned });
+        } catch (err) {
+          console.warn('Alto Translate: pin save failed', err);
+        }
+        this.syncPinToggleButton(pinBtn);
+      });
+      pinBtn.addEventListener('mousedown', (e) => {
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+      });
+    }
 
     closeBtn.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      this.hidePopup();
+      this.hidePopup(true);
     });
     copyBtn.addEventListener('click', (e) => {
       e.preventDefault();
@@ -672,6 +887,12 @@ class AltoTranslate {
 
     // Also prevent mousedown events inside popup
     this.translatePopup.addEventListener('mousedown', (e) => {
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    });
+
+    // Prevent document-level mouseup (selection debounce) when interacting with the popup
+    this.translatePopup.addEventListener('mouseup', (e) => {
       e.stopPropagation();
       e.stopImmediatePropagation();
     });
@@ -696,34 +917,92 @@ class AltoTranslate {
 
   positionPopup() {
     if (!this.translatePopup || !this.selectionRange) return;
+    this.scheduleAlignPopupToSelection();
+  }
 
-    const rect = this.selectionRange.getBoundingClientRect();
-    const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
-    const scrollY = window.pageYOffset || document.documentElement.scrollTop;
-
-    // Position popup below selection, or above if not enough space
-    let left = rect.left + scrollX;
-    let top = rect.bottom + scrollY + 8;
-
-    // Check if popup would go off-screen to the right
-    const popupWidth = 300; // Approximate width
-    if (left + popupWidth > window.innerWidth + scrollX) {
-      left = window.innerWidth + scrollX - popupWidth - 16;
+  /**
+   * Nearest block-like ancestor for excerpting surrounding text (sentence context).
+   * @param {Range} range
+   * @returns {HTMLElement}
+   */
+  getSnippetContainer(range) {
+    if (!range || typeof Range === 'undefined') {
+      return document.body;
+    }
+    const blockTags = new Set([
+      'P',
+      'LI',
+      'TD',
+      'TH',
+      'DIV',
+      'SECTION',
+      'ARTICLE',
+      'BLOCKQUOTE',
+      'PRE',
+      'HEADER',
+      'FOOTER',
+      'ASIDE',
+      'MAIN',
+      'FIGCAPTION',
+      'H1',
+      'H2',
+      'H3',
+      'H4',
+      'H5',
+      'H6'
+    ]);
+    let el = range.commonAncestorContainer;
+    if (el.nodeType === Node.TEXT_NODE) {
+      el = el.parentElement;
+    }
+    if (!el || el.nodeType !== Node.ELEMENT_NODE) {
+      return document.body;
     }
 
-    // Check if popup would go off-screen to the bottom
-    const popupHeight = 150; // Approximate height
-    if (top + popupHeight > window.innerHeight + scrollY) {
-      top = rect.top + scrollY - popupHeight - 8;
+    const maxSnippetSourceChars = 12000;
+    let cur = el;
+    let fallbackLarge = document.body;
+
+    while (cur && cur !== document.body) {
+      if (blockTags.has(cur.tagName)) {
+        fallbackLarge = cur;
+        const len = (cur.textContent || '').length;
+        if (len <= maxSnippetSourceChars) {
+          return cur;
+        }
+      }
+      cur = cur.parentElement;
     }
 
-    // Ensure popup doesn't go off-screen to the left
-    if (left < scrollX + 16) {
-      left = scrollX + 16;
-    }
+    return fallbackLarge instanceof HTMLElement ? fallbackLarge : document.body;
+  }
 
-    this.translatePopup.style.left = `${left}px`;
-    this.translatePopup.style.top = `${top}px`;
+  /**
+   * @param {Range} range
+   * @returns {string|null}
+   */
+  getContextSnippetFromRange(range) {
+    if (!range || typeof buildTranslationContextSnippet !== 'function') {
+      return null;
+    }
+    try {
+      const container = this.getSnippetContainer(range);
+      const rangeBefore = document.createRange();
+      rangeBefore.selectNodeContents(container);
+      rangeBefore.setEnd(range.startContainer, range.startOffset);
+      const before = rangeBefore.toString();
+
+      const rangeAfter = document.createRange();
+      rangeAfter.selectNodeContents(container);
+      rangeAfter.setStart(range.endContainer, range.endOffset);
+      const after = rangeAfter.toString();
+
+      const rawSelected = range.toString();
+      return buildTranslationContextSnippet(before, rawSelected, after, {});
+    } catch (err) {
+      console.warn('Alto Translate: context snippet failed', err);
+      return null;
+    }
   }
 
   async translateText() {
@@ -737,12 +1016,26 @@ class AltoTranslate {
     this.translationInProgress = true;
 
     try {
-      const response = await chrome.runtime.sendMessage({
+      const contextSnippet = this.selectionRange
+        ? this.getContextSnippetFromRange(this.selectionRange)
+        : null;
+
+      /** @type {Record<string, string>} */
+      const msg = {
         action: 'translate',
         text: this.selectedText,
         targetLanguage: this.settings.targetLanguage,
         sourceLanguage: this.settings.sourceLanguage
-      });
+      };
+      if (contextSnippet) {
+        msg.contextSnippet = contextSnippet;
+      }
+
+      const response = await chrome.runtime.sendMessage(msg);
+
+      if (!this.translatePopup?.isConnected) {
+        return;
+      }
 
       if (response?.success) {
         this.showTranslation(response);
@@ -800,6 +1093,8 @@ class AltoTranslate {
       apiBadge.title = 'Fresh translation';
       apiBadge.style.color = ''; // Reset to default
     }
+
+    this.scheduleAlignPopupToSelection();
   }
 
   isRTLLanguage(languageCode) {
@@ -867,6 +1162,8 @@ class AltoTranslate {
 
     // Update API badge
     apiBadge.textContent = 'Error';
+
+    this.scheduleAlignPopupToSelection();
   }
 
   async copyToClipboard() {
@@ -906,26 +1203,34 @@ class AltoTranslate {
     }
   }
 
-  hidePopup() {
-    // Don't hide popup during translation
-    if (this.translationInProgress) {
-      return;
+  /**
+   * @param {boolean} [force] - When true, dismiss even if pinned (Close, Escape, new selection, cleanup).
+   */
+  hidePopup(force = false) {
+    if (!force) {
+      if (this.popupPinned) {
+        return;
+      }
+      if (this.translationInProgress) {
+        return;
+      }
     }
 
-    
     // Clear any pending hide timer
     if (this.hideTimer) {
       clearTimeout(this.hideTimer);
       this.hideTimer = null;
     }
-    
+
     if (this.translatePopup) {
       this.translatePopup.remove();
       this.translatePopup = null;
     }
     this.isPopupOpen = false;
     this.popupSetupComplete = false;
-    this.translationInProgress = false;
+    if (force) {
+      this.translationInProgress = false;
+    }
     this.popupOpenTime = null; // Reset timing
   }
 
@@ -936,9 +1241,9 @@ class AltoTranslate {
   }
 
   handleKeydown(event) {
-    // Close popup on Escape key
+    // Close popup on Escape key (even when pinned)
     if (event.key === 'Escape' && this.isPopupOpen) {
-      this.hidePopup();
+      this.hidePopup(true);
     }
   }
 
@@ -974,7 +1279,7 @@ class AltoTranslate {
         document.removeEventListener('mousemove', this.handleMouseMove);
       }
       if (this.handleScroll) {
-        document.removeEventListener('scroll', this.handleScroll);
+        window.removeEventListener('scroll', this.handleScroll, true);
       }
       if (this.handleKeydown) {
         document.removeEventListener('keydown', this.handleKeydown);
@@ -988,9 +1293,9 @@ class AltoTranslate {
     }
 
     // Remove message listener if it exists
-    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage && this.handleSettingsUpdate) {
+    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage && this.handleRuntimeMessage) {
       try {
-        chrome.runtime.onMessage.removeListener(this.handleSettingsUpdate);
+        chrome.runtime.onMessage.removeListener(this.handleRuntimeMessage);
       } catch (error) {
         // Listener may not be registered, ignore error
         console.warn('Could not remove message listener:', error);
@@ -999,7 +1304,7 @@ class AltoTranslate {
 
     // Clean up DOM elements
     this.hideIcon();
-    this.hidePopup();
+    this.hidePopup(true);
 
     // Clear all references
     this.selectedText = '';

@@ -30,7 +30,7 @@
           </div>
           <div class="flex items-center gap-4">
             <div id="versionDisplay" class="text-sm text-gray-500 dark:text-gray-400">
-              Version 1.1.0
+              Version 1.3.2
             </div>
             <button id="toggleDarkMode" class="text-xs bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 px-2 py-1 rounded hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">
               Toggle Dark
@@ -99,6 +99,13 @@
               <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Translation API</h3>
               <p class="text-sm text-gray-400 dark:text-gray-500 mb-4">Choose which translation service to use</p>
               <div class="flex gap-3 options-tabs-container">
+                <label for="apiLibreTranslate" class="flex items-center border border-gray-400 dark:border-gray-600 rounded-lg p-3 gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer w-full">
+                  <input type="radio" id="apiLibreTranslate" name="apiPreference" value="libretranslate" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 dark:bg-gray-700">
+                  <div class="flex-1">
+                    <div class="text-sm font-medium text-gray-900 dark:text-gray-100">MyMemory API</div>
+                    <div class="text-xs text-gray-400 dark:text-gray-500">Free, no key</div>
+                  </div>
+                </label>
                 <label for="apiGemini" class="flex items-center border border-gray-400 dark:border-gray-600 rounded-lg p-3 gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer w-full">
                   <input type="radio" id="apiGemini" name="apiPreference" value="gemini" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 dark:bg-gray-700">
                   <div class="flex-1">
@@ -113,18 +120,11 @@
                     <div class="text-xs text-gray-400 dark:text-gray-500">500+ models</div>
                   </div>
                 </label>
-                <label for="apiLibreTranslate" class="flex items-center border border-gray-400 dark:border-gray-600 rounded-lg p-3 gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer w-full">
-                  <input type="radio" id="apiLibreTranslate" name="apiPreference" value="libretranslate" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 dark:bg-gray-700">
-                  <div class="flex-1">
-                    <div class="text-sm font-medium text-gray-900 dark:text-gray-100">MyMemory API</div>
-                    <div class="text-xs text-gray-400 dark:text-gray-500">Free, no key</div>
-                  </div>
-                </label>
                 <label for="apiAll" class="flex items-center border border-gray-400 dark:border-gray-600 rounded-lg p-3 gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer w-full">
                   <input type="radio" id="apiAll" name="apiPreference" value="both" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 dark:bg-gray-700">
                   <div class="flex-1">
                     <div class="text-sm font-medium text-gray-900 dark:text-gray-100">All (fallback)</div>
-                    <div class="text-xs text-gray-400 dark:text-gray-500">Try all APIs</div>
+                    <div class="text-xs text-gray-400 dark:text-gray-500">MyMemory first (short); Gemini → OpenRouter first when text is long</div>
                   </div>
                 </label>
               </div>
@@ -175,6 +175,9 @@
                       Validate
                     </button>
                   </div>
+                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-2 leading-relaxed">
+                    Key only; Alto picks a working free-tier translation model from its catalog automatically.
+                  </p>
                 </div>
 
                 <!-- MyMemory API Status -->
@@ -448,7 +451,11 @@
 
       <!-- Save Button (Fixed at bottom) -->
       <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md/50 dark:shadow-lg/50 p-6">
-        <div class="flex justify-end space-x-3">
+        <div class="flex justify-between items-center gap-3 flex-wrap">
+          <a href="../privacy.html" target="_blank" rel="noopener noreferrer" class="text-sm text-blue-600 dark:text-blue-400 hover:underline order-last sm:order-first">
+            Privacy policy
+          </a>
+          <div class="flex justify-end space-x-3 ml-auto">
           <button type="button" id="resetBtn" 
                   class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
             Reset to Defaults
@@ -457,6 +464,7 @@
                   class="px-6 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-medium transition-all duration-200 transform hover:scale-105 shadow-md">
             Save Settings
           </button>
+          </div>
         </div>
       </div>
     </form>

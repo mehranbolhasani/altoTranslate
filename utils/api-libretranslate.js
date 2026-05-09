@@ -19,6 +19,17 @@ const MYMEMORY_SUPPORTED_LANGUAGES = new Set([
 ]);
 
 /**
+ * Whether MyMemory can handle this direction (used by smart fallback to skip a doomed first hop).
+ * @param {string} sourceLanguage
+ * @param {string} targetLanguage
+ */
+function myMemorySupportsLanguagePair(sourceLanguage, targetLanguage) {
+  if (!MYMEMORY_SUPPORTED_LANGUAGES.has(targetLanguage)) return false;
+  if (sourceLanguage !== 'auto' && !MYMEMORY_SUPPORTED_LANGUAGES.has(sourceLanguage)) return false;
+  return true;
+}
+
+/**
  * Translate text using MyMemory API (free, no API key required)
  * Note: Function name uses "LibreTranslate" for consistency with user-facing naming
  * @param {string} text - Text to translate

@@ -7,6 +7,7 @@ importScripts(
   '../utils/error-messages.js',
   '../utils/themes.js',
   '../utils/mymemory_infer_source.js',
+  '../utils/selection_context.js',
   '../utils/api-gemini.js',
   '../utils/api-openrouter.js',
   '../utils/api-libretranslate.js'
@@ -48,6 +49,30 @@ chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === 'install') {
     chrome.runtime.openOptionsPage();
   }
+});
+
+chrome.commands.onCommand.addListener((command) => {
+  if (command !== 'translate-selection') return;
+  chrome.tabs.query({ active: true, lastFocusedWindow: true }, (tabs) => {
+    const tab = tabs && tabs.length > 0 ? tabs[0] : null;
+    const tabId = tab?.id;
+    const url = tab?.url ?? '';
+    if (
+      tabId === undefined ||
+      tabId === null ||
+      url.startsWith('chrome://') ||
+      url.startsWith('chrome-extension://') ||
+      url.startsWith('edge://') ||
+      url === '' ||
+      url.startsWith('https://chromewebstore.google.com') ||
+      url.includes('chrome.google.com/webstore')
+    ) {
+      return;
+    }
+    chrome.tabs.sendMessage(tabId, { action: 'triggerTranslateShortcut' }, () => {
+      void chrome.runtime.lastError;
+    });
+  });
 });
 
 /**
@@ -132,7 +157,7 @@ async function handleTranslation(request, sendResponse) {
   let apiPreference = null;
 
   try {
-    const { text, targetLanguage, sourceLanguage = 'auto' } = request;
+    const { text, targetLanguage, sourceLanguage = 'auto', contextSnippet } = request;
     
     // Validate input
     const validation = validateTranslationInput(text, targetLanguage);
@@ -148,6 +173,11 @@ async function handleTranslation(request, sendResponse) {
     }
     
     const { sanitizedText } = validation;
+    const llmContext =
+      typeof contextSnippet === 'string' && contextSnippet.trim().length > 0
+        ? contextSnippet.trim()
+        : null;
+
     settings = await getSettings();
     apiPreference = settings.apiPreference;
 
@@ -178,7 +208,13 @@ async function handleTranslation(request, sendResponse) {
             });
             return;
           }
-          result = await translateWithGemini(sanitizedText, targetLanguage, settings.geminiApiKey, sourceLanguage);
+          result = await translateWithGemini(
+            sanitizedText,
+            targetLanguage,
+            settings.geminiApiKey,
+            sourceLanguage,
+            llmContext
+          );
           // No automatic fallback when user explicitly selects Gemini - show the error
           break;
           
@@ -191,7 +227,13 @@ async function handleTranslation(request, sendResponse) {
             });
             return;
           }
-          result = await translateWithOpenRouter(sanitizedText, targetLanguage, settings.openrouterApiKey, sourceLanguage);
+          result = await translateWithOpenRouter(
+            sanitizedText,
+            targetLanguage,
+            settings.openrouterApiKey,
+            sourceLanguage,
+            llmContext
+          );
           break;
           
         case 'libretranslate':
@@ -199,7 +241,13 @@ async function handleTranslation(request, sendResponse) {
           break;
           
         case 'both':
-          result = await translateWithAll(sanitizedText, targetLanguage, sourceLanguage, settings);
+          result = await translateWithAll(
+            sanitizedText,
+            targetLanguage,
+            sourceLanguage,
+            settings,
+            llmContext
+          );
           break;
           
         default:
@@ -262,52 +310,87 @@ async function handleTranslation(request, sendResponse) {
  * @param {Object} settings - User settings
  * @returns {Promise<Object>} Translation result
  */
-async function translateWithAll(text, targetLanguage, sourceLanguage, settings) {
-  const promises = [];
-  
-  if (settings.geminiApiKey) {
-    promises.push(translateWithGemini(text, targetLanguage, settings.geminiApiKey, sourceLanguage));
+async function translateWithAll(text, targetLanguage, sourceLanguage, settings, contextSnippet = null) {
+  const geminiKey = String(settings?.geminiApiKey || '').trim();
+  const openrouterKey = String(settings?.openrouterApiKey || '').trim();
+
+  const hasAnyLlmKey = Boolean(geminiKey || openrouterKey);
+  const preferLlmFirst =
+    hasAnyLlmKey &&
+    typeof SMART_FALLBACK_LLM_FIRST_MIN_CHARS === 'number' &&
+    text.length >= SMART_FALLBACK_LLM_FIRST_MIN_CHARS;
+
+  /** @type {{ id: string, run: () => Promise<*> }[]} */
+  const memorySteps = [];
+  if (typeof myMemorySupportsLanguagePair === 'function' && myMemorySupportsLanguagePair(sourceLanguage, targetLanguage)) {
+    memorySteps.push({
+      id: 'mymemory',
+      run: () => translateWithLibreTranslate(text, targetLanguage, sourceLanguage)
+    });
   }
-  
-  if (settings.openrouterApiKey) {
-    promises.push(translateWithOpenRouter(text, targetLanguage, settings.openrouterApiKey, sourceLanguage));
+
+  /** @type {{ id: string, run: () => Promise<*> }[]} */
+  const geminiSteps = [];
+  if (geminiKey) {
+    geminiSteps.push({
+      id: 'gemini',
+      run: () => translateWithGemini(text, targetLanguage, geminiKey, sourceLanguage, contextSnippet)
+    });
   }
-  
-  // MyMemory path is always available (no user toggle)
-  promises.push(translateWithLibreTranslate(text, targetLanguage, sourceLanguage));
-  
-  if (promises.length === 0) {
-    return { success: false, error: 'No translation services configured' };
+
+  /** @type {{ id: string, run: () => Promise<*> }[]} */
+  const openrouterSteps = [];
+  if (openrouterKey) {
+    openrouterSteps.push({
+      id: 'openrouter',
+      run: () => translateWithOpenRouter(text, targetLanguage, openrouterKey, sourceLanguage, contextSnippet)
+    });
   }
-  
-  try {
-    const results = await Promise.allSettled(promises);
-    
-    // Find the first successful result
-    const successResult = results.find(r => 
-      r.status === 'fulfilled' && r.value?.success === true
-    );
-    
-    if (successResult) {
-      return successResult.value;
-    }
-    
-    // Return the first error if available
-    const firstError = results.find(r => 
-      r.status === 'fulfilled' && r.value?.success === false
-    );
-    
-    return firstError?.value ?? { 
-      success: false, 
-      error: 'All translation services failed' 
-    };
-    
-  } catch (error) {
+
+  const steps = preferLlmFirst
+    ? [...geminiSteps, ...openrouterSteps, ...memorySteps]
+    : [...memorySteps, ...geminiSteps, ...openrouterSteps];
+
+  if (steps.length === 0) {
     return {
       success: false,
-      error: error?.message ?? 'Translation failed'
+      error:
+        'Smart fallback has no usable path: this language pair is not supported by MyMemory, and no Gemini or OpenRouter API key is set. Add a key or pick a single API.',
+      api: 'both'
     };
   }
+
+  let lastFailure = null;
+
+  for (const step of steps) {
+    try {
+      const result = await step.run();
+      if (result?.success) {
+        return {
+          ...result,
+          fallbackMode: true,
+          fallbackWinner: step.id,
+          ...(preferLlmFirst ? { fallbackPreferLlmDueToLength: true } : {})
+        };
+      }
+      lastFailure = result;
+    } catch (error) {
+      console.error(`translateWithAll: ${step.id} threw`, error);
+      lastFailure = {
+        success: false,
+        error: error?.message ?? 'Translation failed',
+        api: step.id
+      };
+    }
+  }
+
+  return (
+    lastFailure ?? {
+      success: false,
+      error: 'All translation services in the smart fallback chain failed',
+      api: 'both'
+    }
+  );
 }
 
 /**
@@ -903,50 +986,12 @@ async function handleValidateApiKey(request, sendResponse) {
         isModelUnavailable: has404Error && !has403Error
       });
     } else if (apiType === 'openrouter') {
-      // Test OpenRouter API
       try {
-        const testResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`,
-            'HTTP-Referer': 'https://alto-translate-extension.com',
-            'X-Title': 'Alto Translate Extension'
-          },
-          body: JSON.stringify({
-            model: 'google/gemma-3-4b-it:free',
-            messages: [
-              {
-                role: 'user',
-                content: 'Hello'
-              }
-            ],
-            max_tokens: 10
-          })
-        });
-
-        if (testResponse.ok) {
-          sendResponse({
-            success: true,
-            message: 'OpenRouter API key is valid'
-          });
+        const result = await validateOpenRouterApiKey(apiKey);
+        if (result.success) {
+          sendResponse({ success: true, message: result.message || 'OpenRouter API key is valid' });
         } else {
-          const errorData = await testResponse.json().catch(() => ({}));
-          let errorMessage = `OpenRouter API key validation failed: ${testResponse.status} - ${errorData.error?.message || testResponse.statusText}`;
-          
-          // Add helpful error messages
-          if (testResponse.status === 401) {
-            errorMessage += '\n\nPossible solutions:\n1. Check if your API key is correct\n2. Ensure you have credits in your OpenRouter account\n3. Verify your API key has the necessary permissions\n4. Check if your account is active';
-          } else if (testResponse.status === 403) {
-            errorMessage += '\n\nYour API key may not have permission to access OpenRouter services. Please check your account permissions.';
-          } else if (testResponse.status === 429) {
-            errorMessage += '\n\nRate limit exceeded or insufficient credits. Please check your account balance and usage limits.';
-          }
-          
-          sendResponse({
-            success: false,
-            error: errorMessage
-          });
+          sendResponse({ success: false, error: result.error });
         }
       } catch (error) {
         sendResponse({

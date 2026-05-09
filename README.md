@@ -5,7 +5,7 @@ A minimal and elegant Chrome extension for translating selected text using Googl
 ## Features
 
 - **Simple Text Selection**: Select any text on a webpage and click the "ax" icon to translate
-- **Multiple API Support**: Choose between Google Gemini, OpenRouter, MyMemory API, or all with automatic fallback
+- **Multiple API Support**: Choose MyMemory, Google Gemini, OpenRouter, or **smart fallback** (sequential: MyMemory-first for shorter text when supported, then Gemini and OpenRouter; **long selections** flip to Gemini/OpenRouter-first — see `SMART_FALLBACK_LLM_FIRST_MIN_CHARS` in `utils/constants.js`)
 - **Auto Language Detection**: Automatically detects source language
 - **50+ Languages**: Support for major world languages including RTL languages
 - **Clean UI**: Minimal, non-intrusive popup design with Tailwind CSS
@@ -48,18 +48,17 @@ A minimal and elegant Chrome extension for translating selected text using Googl
 1. **Select Text**: Highlight any text on a webpage
 2. **Click Icon**: Click the "ax" icon that appears near your selection
 3. **View Translation**: The translated text will appear in a popup
-4. **Copy Text**: Click the "Copy" button to copy the translation
+4. **Keyboard shortcut**: With text selected on a normal page (not typing in an input), press **Alt+A** to translate (same as the icon). Change the binding under `chrome://extensions/shortcuts` (new installs pick up the default; if yours still shows Alt+T from an older build, remap it once).
+5. **Copy text**: Use the copy button in the popup.
 
 ## API Configuration
-
-### Google Gemini API
 - Free tier: ~60 requests per minute
 - High-quality translations
 - Auto language detection
 - Get API key: [Google AI Studio](https://makersuite.google.com/app/apikey)
 
 ### OpenRouter API
-- Unified API with access to 500+ models
+- Paste an API key only — the extension **auto-selects a working free-tier model** by trying [`OPENROUTER_FREE_MODEL_CANDIDATES`](utils/constants.js) in order (releases update this list when OpenRouter rotates `:free` catalog ids).
 - Excellent for backup/fallback
 - Get API key: [OpenRouter](https://openrouter.ai/)
 
@@ -140,6 +139,7 @@ No build process required - the extension uses vanilla JavaScript and includes a
 
 ## Privacy & Security
 
+- **Privacy policy page**: See [`privacy.html`](privacy.html) in this repository. Host it at a public HTTPS URL (for example GitHub Pages) and set that URL as the **Privacy practices** link in the [Chrome Web Store Developer Dashboard](https://chrome.google.com/webstore/devconsole) for Alto Translate.
 - **API Keys**: Stored securely in Chrome's encrypted storage
 - **No Data Collection**: Extension doesn't collect or store user data
 - **Local Processing**: All translation requests go directly to chosen API services
