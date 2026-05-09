@@ -9,8 +9,15 @@
 *.swp
 *.swo
 *~
-.DS_Store
 *.code-workspace
+
+# Local-only docs & meta (not published to remote)
+/CACHING_ANALYSIS.md
+/CHANGELOG.md
+/PLAN.md
+/PRE_SUBMISSION_CHECKLIST.md
+/SUMMARIES.md
+/altoTranslate.code-workspace
 
 # Cursor AI Files
 .cursor/
