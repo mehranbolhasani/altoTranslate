@@ -1,2 +1,28 @@
+# Dependencies
 node_modules/
+
+# macOS
 .DS_Store
+
+# Build artifacts
+*.zip
+
+# IDE / editor
+.vscode/
+*.code-workspace
+
+# Cursor AI
+.cursor/
+
+# Claude AI
+.claude/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Internal project docs (not needed in public repo)
+CACHING_ANALYSIS.md
+PLAN.md
+PRE_SUBMISSION_CHECKLIST.md
+SUMMARIES.md

@@ -904,18 +904,13 @@ class VocabularyPageApp {
         a.target = '_blank';
         a.rel = 'noopener noreferrer';
         a.className = 'vocab-source-link';
-        const host = parseHostname(url);
         const img = document.createElement('img');
         img.src = faviconUrlForPageUrl(url);
         img.alt = '';
         img.className = 'vocab-favicon';
         img.width = 16;
         img.height = 16;
-        const span = document.createElement('span');
-        span.className = 'vocab-source-domain';
-        span.textContent = host || url;
         a.appendChild(img);
-        // a.appendChild(span);
         tdSrc.appendChild(a);
       } else {
         tdSrc.textContent = '—';

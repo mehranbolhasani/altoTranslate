@@ -4,6 +4,8 @@ All notable changes to Alto Translate are documented in this file.
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-05-12
+
 ### Fixed
 
 - **Content script → settings**: in-page translation popup gear now uses `sendMessage({ action: 'openSettings' })`; `chrome.runtime.openOptionsPage` is not available in content scripts, so the background opens options ([`content/content.js`](content/content.js), [`background/background.js`](background/background.js)).
