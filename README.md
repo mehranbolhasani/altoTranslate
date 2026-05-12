@@ -106,12 +106,23 @@ altoTranslate/
 │   └── background.js         # API routing and message handling
 ├── popup/                    # Extension popup
 │   ├── popup.html           # Popup interface
-│   ├── popup.js             # Popup logic
+│   ├── popup.mjs            # Popup logic (ESM + Motion)
 │   └── popup.css            # Popup styling
 ├── options/                  # Settings page
 │   ├── options.html         # Settings interface
-│   ├── options.js           # Settings logic
+│   ├── options.mjs          # Settings logic (ESM + Motion)
 │   └── options.css          # Settings styling
+├── vocabulary/               # Vocabulary / review page
+│   ├── vocabulary.html
+│   ├── vocabulary.mjs       # Page logic (ESM + Motion)
+│   └── vocabulary.css
+├── vendor/                   # Vendored bundles (MV3 CSP)
+│   └── motion-lib.js        # Built by `npm run build:motion`
+├── scripts/
+│   ├── build-motion.mjs     # esbuild wrapper
+│   └── motion-export.mjs    # Motion re-exports
+├── package.json
+├── package-lock.json
 └── utils/                   # Utility modules
     ├── tailwind.css         # Tailwind CSS utilities
     ├── dark-mode.js         # Dark mode functionality
@@ -127,9 +138,11 @@ altoTranslate/
 ### Prerequisites
 - Chrome browser
 - Basic knowledge of JavaScript and Chrome extensions
+- **Node.js 18+** (only if you rebuild the Motion bundle)
 
 ### Building
-No build process required - the extension uses vanilla JavaScript and includes a local Tailwind CSS file for better performance and CSP compliance.
+- The shipped extension includes [`vendor/motion-lib.js`](vendor/motion-lib.js). To regenerate it after upgrading the `motion` dependency: `npm ci` then `npm run build:motion`.
+- Otherwise no build step is required for day-to-day editing of non-bundled scripts.
 
 ### Testing
 1. Load the extension in developer mode

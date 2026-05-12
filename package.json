@@ -1,0 +1,31 @@
+{
+  "name": "altotranslate",
+  "version": "1.0.0",
+  "description": "A minimal and elegant Chrome extension for translating selected text using Google Gemini, OpenRouter, and MyMemory APIs.",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build:motion": "node scripts/build-motion.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mehranbolhasani/altoTranslate.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/mehranbolhasani/altoTranslate/issues"
+  },
+  "homepage": "https://github.com/mehranbolhasani/altoTranslate#readme",
+  "dependencies": {
+    "motion": "^12.38.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.0"
+  }
+}

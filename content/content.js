@@ -1,5 +1,7 @@
 // Content script for text selection and translation popup
 
+const NON_LATIN_PHONETIC_LANGS = new Set(['zh', 'ja', 'ko', 'ar', 'fa', 'he', 'th', 'hi', 'bn', 'ta', 'te']);
+
 class AltoTranslate {
   constructor() {
     this.selectedText = '';
@@ -17,6 +19,11 @@ class AltoTranslate {
     /** When true, outside-click scroll/resize dismissal is disabled (persisted in chrome.storage.local). */
     this.popupPinned = false;
 
+    /** Snapshot of last successful translation for vocabulary save (popup). */
+    this.lastTranslationSnapshot = null;
+    /** Last translate response for phonetic line refresh when options toggle changes. */
+    this.lastTranslationResult = null;
+
     // Bind methods to preserve context
     this.handleTextSelection = this.handleTextSelection.bind(this);
     this.handleMouseDown = this.handleMouseDown.bind(this);
@@ -30,6 +37,8 @@ class AltoTranslate {
   }
 
   async init() {
+    this.handleStorageChanged = this.handleStorageChanged.bind(this);
+
     // Load settings
     await this.loadSettings();
     await this.refreshPopupPinnedFromStorage();
@@ -47,6 +56,7 @@ class AltoTranslate {
     
     // Listen for settings changes
     chrome.runtime.onMessage.addListener(this.handleRuntimeMessage);
+    chrome.storage.onChanged.addListener(this.handleStorageChanged);
     
     // Clear theme cache on page visibility change (indicates navigation)
     if (typeof document !== 'undefined' && document.addEventListener) {
@@ -242,6 +252,19 @@ class AltoTranslate {
     }
   }
 
+  handleStorageChanged(changes, areaName) {
+    if (areaName !== 'local' || !changes.altoShowPhoneticsNonLatin) return;
+    const nv = changes.altoShowPhoneticsNonLatin.newValue;
+    const on = nv !== false;
+    if (this.settings) {
+      this.settings.showPhoneticsNonLatin = on;
+    }
+    if (this.translatePopup?.isConnected && this.lastTranslationResult) {
+      this.updatePhoneticLine(this.lastTranslationResult);
+      this.scheduleAlignPopupToSelection();
+    }
+  }
+
   handleRuntimeMessage(request /* , sender, sendResponse */) {
     if (!request?.action) return;
 
@@ -347,12 +370,12 @@ class AltoTranslate {
         this.settings = response.settings;
       } else {
         // Fallback to default settings if loading fails
-        this.settings = { disableInputFields: false };
+        this.settings = { disableInputFields: false, showPhoneticsNonLatin: true };
       }
     } catch (error) {
       console.error('Error loading settings:', error);
       // Fallback to default settings
-      this.settings = { disableInputFields: false };
+      this.settings = { disableInputFields: false, showPhoneticsNonLatin: true };
     }
   }
   
@@ -814,16 +837,19 @@ class AltoTranslate {
 
     this.translatePopup.innerHTML = `
       <div class="alto-translate-popup-header">
-        <div class="alto-translate-popup-title">Translation</div>
+        <div class="alto-translate-api-badge">Loading...</div>
         <div class="alto-translate-popup-header-actions">
           <button type="button" class="alto-translate-popup-pin" aria-pressed="false" title="Pin popup">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1 .65-3.93 2 2 0 0 1 3.32 1.32l2.66 11.54a3 3 0 1 1-9.94 3.94L9 10.76z"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pin-icon lucide-pin"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg>
           </button>
-          <button type="button" class="alto-translate-popup-close" title="Close">×</button>
+          <button type="button" class="alto-translate-popup-close" title="Close">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
         </div>
       </div>
       <div class="alto-translate-popup-content">
         <div class="alto-translate-original-text">${this.escapeHtml(this.selectedText)}</div>
+        <div class="alto-translate-phonetic" hidden></div>
         <div class="alto-translate-translated-text">
           <div class="alto-translate-loading">
             <div class="alto-translate-spinner"></div>
@@ -831,17 +857,31 @@ class AltoTranslate {
           </div>
         </div>
       </div>
+      <div class="alto-translate-vocab-banner" role="status" hidden></div>
       <div class="alto-translate-popup-footer">
-        <button class="alto-translate-copy-btn" disabled>
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-copy-icon lucide-copy" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+        <div class="alto-translate-popup-footer-actions">
+        <button type="button" class="alto-translate-copy-btn" disabled>
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-copy-icon lucide-copy"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
         </button>
-        <div class="alto-translate-api-badge">Loading...</div>
+        <button type="button" class="alto-translate-save-vocab-btn" disabled title="Save to vocabulary" aria-label="Save to vocabulary">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bookmark-icon lucide-bookmark"><path d="M17 3a2 2 0 0 1 2 2v15a1 1 0 0 1-1.496.868l-4.512-2.578a2 2 0 0 0-1.984 0l-4.512 2.578A1 1 0 0 1 5 20V5a2 2 0 0 1 2-2z"/></svg>
+        </button>
+        <button type="button" class="alto-translate-open-vocab-btn" title="Open vocabulary" aria-label="Open vocabulary">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-folder-bookmark-icon lucide-folder-bookmark"><path d="M12 6v8l3-3 3 3V6"/><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2z"/></svg>
+        </button>
+        <button type="button" class="alto-translate-open-settings-btn" title="Settings" aria-label="Extension settings">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+        </div>
       </div>
     `;
 
     const pinBtn = this.translatePopup.querySelector('.alto-translate-popup-pin');
     const closeBtn = this.translatePopup.querySelector('.alto-translate-popup-close');
     const copyBtn = this.translatePopup.querySelector('.alto-translate-copy-btn');
+    const saveVocabBtn = this.translatePopup.querySelector('.alto-translate-save-vocab-btn');
+    const openVocabBtn = this.translatePopup.querySelector('.alto-translate-open-vocab-btn');
+    const openSettingsBtn = this.translatePopup.querySelector('.alto-translate-open-settings-btn');
 
     this.syncPinToggleButton(pinBtn);
 
@@ -878,6 +918,49 @@ class AltoTranslate {
       e.stopPropagation();
       this.copyToClipboard();
     });
+
+    if (saveVocabBtn) {
+      saveVocabBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        void this.saveCurrentToVocabulary();
+      });
+      saveVocabBtn.addEventListener('mousedown', (e) => {
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+      });
+    }
+
+    if (openVocabBtn) {
+      openVocabBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const url = chrome.runtime.getURL('vocabulary/vocabulary.html');
+        window.open(url, '_blank', 'noopener,noreferrer');
+      });
+      openVocabBtn.addEventListener('mousedown', (e) => {
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+      });
+    }
+
+    if (openSettingsBtn) {
+      openSettingsBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        // Content scripts cannot call chrome.runtime.openOptionsPage; background handles it.
+        chrome.runtime.sendMessage({ action: 'openSettings' }, () => {
+          const err = chrome.runtime.lastError;
+          if (err) {
+            console.warn('Alto Translate: open settings failed', err.message);
+          }
+        });
+      });
+      openSettingsBtn.addEventListener('mousedown', (e) => {
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+      });
+    }
 
     // Prevent popup from closing when clicking inside it
     this.translatePopup.addEventListener('click', (e) => {
@@ -1038,7 +1121,7 @@ class AltoTranslate {
       }
 
       if (response?.success) {
-        this.showTranslation(response);
+        await this.showTranslation(response);
       } else {
         this.showError(response?.error ?? 'Translation failed', response?.errorDetails ?? null);
       }
@@ -1055,11 +1138,122 @@ class AltoTranslate {
     }
   }
 
-  showTranslation(result) {
+  normalizeLangBaseForPhonetics(code) {
+    if (!code || typeof code !== 'string') return '';
+    return code.trim().toLowerCase().split(/[-_]/)[0];
+  }
+
+  shouldShowPhoneticLine(result) {
+    if (!result || result.api !== 'gemini') return false;
+    if (this.settings && this.settings.showPhoneticsNonLatin === false) return false;
+    const base = this.normalizeLangBaseForPhonetics(result.sourceLanguage);
+    if (!base || base === 'auto') return false;
+    if (!NON_LATIN_PHONETIC_LANGS.has(base)) return false;
+    const rom = result.romanization;
+    return typeof rom === 'string' && rom.trim().length > 0;
+  }
+
+  updatePhoneticLine(result) {
+    const el = this.translatePopup?.querySelector('.alto-translate-phonetic');
+    if (!el) return;
+    if (!this.shouldShowPhoneticLine(result)) {
+      el.textContent = '';
+      el.hidden = true;
+      return;
+    }
+    el.textContent = result.romanization.trim();
+    el.hidden = false;
+  }
+
+  hideVocabBanner() {
+    const b = this.translatePopup?.querySelector('.alto-translate-vocab-banner');
+    if (!b) return;
+    b.textContent = '';
+    b.hidden = true;
+  }
+
+  showVocabBanner(message) {
+    const b = this.translatePopup?.querySelector('.alto-translate-vocab-banner');
+    if (!b) return;
+    b.textContent = message;
+    b.hidden = false;
+  }
+
+  async syncVocabButtonForOriginal(original) {
+    const saveBtn = this.translatePopup?.querySelector('.alto-translate-save-vocab-btn');
+    if (!saveBtn) return;
+    try {
+      const res = await chrome.runtime.sendMessage({
+        action: 'vocabularyStatus',
+        original: (original || '').trim()
+      });
+      if (!res?.success) return;
+      saveBtn.classList.toggle('is-saved', res.isDuplicate === true);
+    } catch (err) {
+      console.warn('Alto Translate: vocabulary status failed', err);
+    }
+  }
+
+  async saveCurrentToVocabulary() {
+    const snap = this.lastTranslationSnapshot;
+    const saveBtn = this.translatePopup?.querySelector('.alto-translate-save-vocab-btn');
+    if (!snap || !saveBtn || saveBtn.disabled) return;
+
+    this.hideVocabBanner();
+    try {
+      const status = await chrome.runtime.sendMessage({
+        action: 'vocabularyStatus',
+        original: snap.original.trim()
+      });
+      if (status?.isFull) {
+        this.showVocabBanner('Vocabulary full — review and delete some words first.');
+        return;
+      }
+      if (status?.isDuplicate) {
+        saveBtn.classList.add('is-saved');
+        return;
+      }
+      const entry = {
+        id: crypto.randomUUID(),
+        original: snap.original.trim(),
+        translation: snap.translation,
+        romanization: snap.romanization,
+        sourceLang: snap.sourceLang,
+        targetLang: snap.targetLang,
+        sourceUrl: snap.sourceUrl,
+        savedAt: Date.now()
+      };
+      const res = await chrome.runtime.sendMessage({ action: 'saveVocabularyEntry', entry });
+      if (res?.success) {
+        saveBtn.classList.add('is-saved');
+      } else if (res?.reason === 'full') {
+        this.showVocabBanner('Vocabulary full — review and delete some words first.');
+      } else if (res?.reason === 'duplicate') {
+        saveBtn.classList.add('is-saved');
+      }
+    } catch (err) {
+      console.warn('Alto Translate: vocabulary save failed', err);
+    }
+  }
+
+  async showTranslation(result) {
     if (!this.translatePopup || !result?.translatedText) return;
+
+    this.lastTranslationResult = result;
+
+    this.lastTranslationSnapshot = {
+      original: this.selectedText,
+      translation: result.translatedText,
+      romanization: result.romanization != null ? result.romanization : null,
+      sourceLang: result.sourceLanguage ?? this.settings?.sourceLanguage ?? 'auto',
+      targetLang: result.targetLanguage ?? this.settings?.targetLanguage ?? 'en',
+      sourceUrl: typeof location?.href === 'string' ? location.href : '',
+      api: result.api
+    };
 
     const translatedTextEl = this.translatePopup.querySelector('.alto-translate-translated-text');
     const copyBtn = this.translatePopup.querySelector('.alto-translate-copy-btn');
+    const saveVocabBtn = this.translatePopup.querySelector('.alto-translate-save-vocab-btn');
     const apiBadge = this.translatePopup.querySelector('.alto-translate-api-badge');
 
     if (!translatedTextEl || !copyBtn || !apiBadge) return;
@@ -1073,9 +1267,18 @@ class AltoTranslate {
     
     translatedTextEl.className = `alto-translate-translated-text ${isRTL ? 'rtl' : 'ltr'}`;
 
-    // Enable copy button
+    this.updatePhoneticLine(result);
+
+    // Enable copy + save buttons
     copyBtn.disabled = false;
     copyBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-copy-icon lucide-copy" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>';
+
+    if (saveVocabBtn) {
+      saveVocabBtn.disabled = false;
+      saveVocabBtn.classList.remove('is-saved');
+    }
+
+    await this.syncVocabButtonForOriginal(this.selectedText);
 
     // Update API badge
     const apiName = (result.api ?? 'unknown').toUpperCase();
@@ -1098,20 +1301,34 @@ class AltoTranslate {
   }
 
   isRTLLanguage(languageCode) {
-    // RTL languages list - matches utils/languages.js RTL_LANGUAGES
-    // Note: Content scripts can't use importScripts, so we maintain a local copy
+    const base = this.normalizeLangBaseForPhonetics(languageCode);
     const rtlLanguages = ['ar', 'fa', 'he', 'ur'];
-    return rtlLanguages.includes(languageCode);
+    return rtlLanguages.includes(base);
   }
 
   showError(errorMessage, errorDetails = null) {
     if (!this.translatePopup || !errorMessage) return;
 
+    this.lastTranslationSnapshot = null;
+    this.lastTranslationResult = null;
+    const phoneticEl = this.translatePopup.querySelector('.alto-translate-phonetic');
+    if (phoneticEl) {
+      phoneticEl.textContent = '';
+      phoneticEl.hidden = true;
+    }
+    this.hideVocabBanner();
+
     const translatedTextEl = this.translatePopup.querySelector('.alto-translate-translated-text');
     const copyBtn = this.translatePopup.querySelector('.alto-translate-copy-btn');
+    const saveVocabBtn = this.translatePopup.querySelector('.alto-translate-save-vocab-btn');
     const apiBadge = this.translatePopup.querySelector('.alto-translate-api-badge');
 
     if (!translatedTextEl || !copyBtn || !apiBadge) return;
+
+    if (saveVocabBtn) {
+      saveVocabBtn.disabled = true;
+      saveVocabBtn.classList.remove('is-saved');
+    }
 
     // Build error HTML with structured message
     let errorHtml = `<div class="alto-translate-error">${this.escapeHtml(errorMessage)}</div>`;
@@ -1232,6 +1449,8 @@ class AltoTranslate {
       this.translationInProgress = false;
     }
     this.popupOpenTime = null; // Reset timing
+    this.lastTranslationSnapshot = null;
+    this.lastTranslationResult = null;
   }
 
   escapeHtml(text) {
@@ -1292,6 +1511,14 @@ class AltoTranslate {
       }
     }
 
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged && this.handleStorageChanged) {
+      try {
+        chrome.storage.onChanged.removeListener(this.handleStorageChanged);
+      } catch (error) {
+        console.warn('Could not remove storage listener:', error);
+      }
+    }
+
     // Remove message listener if it exists
     if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage && this.handleRuntimeMessage) {
       try {
@@ -1320,6 +1547,8 @@ class AltoTranslate {
     this.detectedTheme = null;
     this.detectedThemeCache = null;
     this.themeCachePageUrl = null;
+    this.lastTranslationSnapshot = null;
+    this.lastTranslationResult = null;
   }
 }
 

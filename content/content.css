@@ -20,7 +20,7 @@
 .alto-translate-icon,
 .alto-translate-popup {
   all: initial;
-  font-family: InterVariable, sans-serif;
+  font-family: Manrope, sans-serif;
   font-feature-settings: 'liga' 1, 'calt' 1; /* fix for Chrome */
 }
 
@@ -74,7 +74,7 @@
   border: 1px solid var(--alto-border, #e5e7eb);
   border-radius: 12px;
   box-shadow: rgba(0, 0, 0, 0.3) 0px 10px 21px -4px, rgba(0, 0, 0, 0.05) 0px 4px 8px -2px;
-  min-width: 200px;
+  min-width: 300px;
   padding: 12px 16px 16px;
   font-family: InterVariable, sans-serif;
   font-feature-settings: 'liga' 1, 'calt' 1;
@@ -180,6 +180,17 @@
   padding: 4px 0;
 }
 
+.alto-translate-phonetic {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--alto-text-secondary, #6b7280);
+  opacity: 0.85;
+  font-style: italic;
+  word-wrap: break-word;
+  padding: 0 0 6px;
+  margin-top: -4px;
+}
+
 .alto-translate-translated-text {
   font-size: 14px;
   color: var(--alto-translated-text, #0c4a6e);
@@ -222,19 +233,94 @@
   100% { transform: rotate(360deg); }
 }
 
+.alto-translate-vocab-banner {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--alto-error-text, #b45309);
+  background: var(--alto-error-bg, #fffbeb);
+  border: 1px solid var(--alto-error-border, #fcd34d);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+}
+
 .alto-translate-popup-footer {
   display: flex;
   justify-content: space-between;
-  align-items: end;
+  align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
+}
+
+.alto-translate-popup-footer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.alto-translate-open-vocab-btn,
+.alto-translate-open-settings-btn {
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--alto-button-text, #3b82f6);
+}
+
+.alto-translate-open-vocab-btn:hover,
+.alto-translate-open-settings-btn:hover {
+  background: var(--alto-button-hover, #2563eb);
+  color: white;
+}
+
+.alto-translate-save-vocab-btn {
+  color: var(--alto-button-text, #3b82f6);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+.alto-translate-save-vocab-btn:hover:not(:disabled) {
+  background: var(--alto-button-hover, #2563eb) !important;
+  color: white;
+}
+
+.alto-translate-save-vocab-btn:disabled {
+  background: #9ca3af !important;
+  cursor: not-allowed;
+  transform: none;
+  opacity: 0.6;
+}
+
+.alto-translate-save-vocab-btn.is-saved {
+  color: #fff;
+  background: #10b981 !important;
+}
+
+.alto-translate-save-vocab-btn.is-saved svg {
+  fill: currentColor;
+  stroke: currentColor;
 }
 
 .alto-translate-copy-btn {
-  background: var(--alto-button-bg, rgba(59, 131, 246, 0.2)) !important;
   color: var(--alto-button-text, #3b82f6);
+  background: transparent;
   border: none;
   border-radius: 6px;
-  padding: 10px 12px;
+  padding: 6px 6px;
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
@@ -339,6 +425,16 @@
 
 .alto-translate-popup.alto-dark-theme .alto-translate-original-text {
   color: rgba(156, 163, 175, 0.85);
+}
+
+.alto-translate-popup.alto-dark-theme .alto-translate-phonetic {
+  color: rgba(156, 163, 175, 0.75);
+}
+
+.alto-translate-popup.alto-dark-theme .alto-translate-vocab-banner {
+  color: #fcd34d;
+  background: rgba(120, 53, 15, 0.35);
+  border-color: rgba(251, 191, 36, 0.45);
 }
 
 .alto-translate-popup.alto-dark-theme .alto-translate-translated-text {

@@ -1,4 +1,13 @@
 // Options page script for Alto Translate extension
+import { animate } from '../vendor/motion-lib.js';
+
+function prefersReducedMotion() {
+  try {
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  } catch {
+    return false;
+  }
+}
 
 class OptionsManager {
   constructor() {
@@ -15,7 +24,8 @@ class OptionsManager {
     
     // Populate form
     this.populateForm();
-    
+    await this.refreshOpenVocabNewTabCheckbox();
+
     // Load themes and render selector
     await this.loadThemes();
     
@@ -34,8 +44,12 @@ class OptionsManager {
       const manifest = chrome.runtime.getManifest();
       const version = manifest.version || '1.1.0';
       const versionElement = document.getElementById('versionDisplay');
+      const versionFooter = document.getElementById('versionFooter');
       if (versionElement) {
-        versionElement.textContent = `Version ${version}`;
+        versionElement.textContent = `v${version}`;
+      }
+      if (versionFooter) {
+        versionFooter.textContent = `Version ${version}`;
       }
     } catch (error) {
       console.error('Error getting version:', error);
@@ -48,30 +62,29 @@ class OptionsManager {
   }
 
   switchTab(tabName) {
-    // Hide all tab contents
-    const tabContents = document.querySelectorAll('.tab-content');
-    tabContents.forEach(content => {
+    document.querySelectorAll('.tab-content').forEach(content => {
       content.classList.add('hidden');
     });
 
-    // Remove active state from all tab buttons
-    const tabButtons = document.querySelectorAll('.tab-button');
-    tabButtons.forEach(button => {
-      button.classList.remove('active', 'text-blue-600', 'dark:text-blue-400', 'bg-blue-50', 'dark:bg-blue-900/20', 'border-b-2', 'border-blue-600', 'dark:border-blue-400');
-      button.classList.add('text-gray-500', 'dark:text-gray-400');
+    document.querySelectorAll('.tab-button').forEach(button => {
+      button.classList.remove('is-active');
+      button.removeAttribute('aria-current');
     });
 
-    // Show selected tab content
     const selectedTab = document.getElementById(`tab-${tabName}`);
     if (selectedTab) {
       selectedTab.classList.remove('hidden');
+      if (!prefersReducedMotion()) {
+        requestAnimationFrame(() => {
+          void animate(selectedTab, { opacity: [0, 1], y: [6, 0] }, { duration: 1, ease: [0.33, 1, 0.68, 1] });
+        });
+      }
     }
 
-    // Activate selected tab button
     const selectedButton = document.querySelector(`[data-tab="${tabName}"]`);
     if (selectedButton) {
-      selectedButton.classList.add('active', 'text-blue-600', 'dark:text-blue-400', 'bg-blue-50', 'dark:bg-blue-900/20', 'border-b-2', 'border-blue-600', 'dark:border-blue-400');
-      selectedButton.classList.remove('text-gray-500', 'dark:text-gray-400');
+      selectedButton.classList.add('is-active');
+      selectedButton.setAttribute('aria-current', 'page');
     }
   }
 
@@ -135,6 +148,56 @@ class OptionsManager {
     if (disableInputFields) {
       disableInputFields.checked = this.settings.disableInputFields || false;
     }
+
+    const showPhoneticsNonLatin = document.getElementById('showPhoneticsNonLatin');
+    if (showPhoneticsNonLatin) {
+      showPhoneticsNonLatin.checked = this.settings.showPhoneticsNonLatin !== false;
+    }
+
+    this.updateApiCardStatus();
+  }
+
+  async refreshOpenVocabNewTabCheckbox() {
+    const el = document.getElementById('openVocabNewTab');
+    if (!el) return;
+    try {
+      const r = await chrome.storage.local.get('altoOpenVocabularyNewTab');
+      el.checked = r.altoOpenVocabularyNewTab === true;
+    } catch (error) {
+      console.error('Error loading new-tab vocabulary preference:', error);
+    }
+  }
+
+  updateApiCardStatus() {
+    const geminiInput = document.getElementById('geminiApiKey');
+    const openrouterInput = document.getElementById('openrouterApiKey');
+    const gemini = geminiInput?.value?.trim() ?? '';
+    const openrouter = openrouterInput?.value?.trim() ?? '';
+
+    const setRow = (forName, dotClass, labelText) => {
+      const wrap = document.querySelector(`[data-status-for="${forName}"]`);
+      if (!wrap) return;
+      const dot = wrap.querySelector('.status-dot');
+      const label = wrap.querySelector('.status-label');
+      if (dot) {
+        dot.className = `status-dot ${dotClass}`;
+      }
+      if (label) {
+        label.textContent = labelText;
+      }
+    };
+
+    setRow('gemini', gemini ? 'status-dot--ok' : 'status-dot--muted', gemini ? 'Key saved' : 'No key');
+    setRow('openrouter', openrouter ? 'status-dot--ok' : 'status-dot--muted', openrouter ? 'Key saved' : 'No key');
+
+    const keyCount = (gemini ? 1 : 0) + (openrouter ? 1 : 0);
+    if (keyCount === 0) {
+      setRow('both', 'status-dot--muted', 'No keys');
+    } else if (keyCount === 1) {
+      setRow('both', 'status-dot--warn', '1 key');
+    } else {
+      setRow('both', 'status-dot--ok', '2 keys');
+    }
   }
 
   async loadThemes() {
@@ -162,28 +225,28 @@ class OptionsManager {
       const colors = theme.colors;
       const isSelected = key === currentTheme;
       
-      // Extract main colors for preview
-      const bgColor = colors.background.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
-      const borderColor = colors.border;
-      const textColor = colors.text;
-      const buttonColor = colors.buttonText;
-      
+      const checkSvg = `<span class="theme-option-check-wrap" style="color:${colors.text};"><svg xmlns="http://www.w3.org/2000/svg" class="theme-option-check" width="14" height="14" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg></span>`;
       return `
         <label class="theme-option ${isSelected ? 'selected' : ''}" data-theme="${key}">
-          <input type="radio" name="popupTheme" value="${key}" ${isSelected ? 'checked' : ''} class="hidden">
-          <div class="theme-preview border-2 rounded-lg p-3 cursor-pointer transition-all hover:scale-105 ${isSelected ? 'border-blue-500 dark:border-blue-400 ring-2 ring-blue-500 dark:ring-blue-400' : 'border-gray-200 dark:border-gray-600'}" 
+          <input type="radio" name="popupTheme" value="${key}" ${isSelected ? 'checked' : ''} class="theme-option-input">
+          <div class="theme-preview theme-preview-card ${isSelected ? 'theme-preview--selected' : ''}" 
                style="background: ${colors.background}; border-color: ${colors.border};">
-            <div class="flex items-center justify-between mb-2">
-              <div class="font-medium text-sm" style="color: ${colors.text};">${theme.name}</div>
-              ${isSelected ? '<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>' : ''}
+            <div class="theme-mini-popup" aria-hidden="true">
+              <div class="theme-mini-header" style="border-bottom: 1px solid ${colors.headerBorder};">
+                <span class="theme-mini-title" style="color: ${colors.text};">Translate</span>
+                ${isSelected ? checkSvg : ''}
+              </div>
+              <div class="theme-mini-body">
+                <p class="theme-mini-src" style="color: ${colors.textSecondary};">Hello, world</p>
+                <p class="theme-mini-translation" style="color: ${colors.translatedText};">Hola, mundo</p>
+              </div>
+              <div class="theme-mini-footer">
+                <span class="theme-mini-chip" style="background: ${colors.buttonBg}; color: ${colors.buttonText};">Copy</span>
+              </div>
             </div>
-            <div class="text-xs mb-3" style="color: ${colors.textSecondary};">${theme.description}</div>
-            <div class="flex gap-0 justify-end theme-preview-colors">
-              <div class="h-8 w-8 rounded-full -translate-x-5" style="background: ${colors.background}; border: 1px solid ${colors.border};"></div>
-              <div class="h-8 w-8 rounded-full -translate-x-5" style="background: ${colors.buttonBg}; border: 1px solid ${colors.buttonText};"></div>
-              <div class="h-8 w-8 rounded-full -translate-x-5" style="background: ${colors.translatedText};"></div>
-              <div class="h-8 w-8 rounded-full -translate-x-5" style="background: ${colors.text};"></div>
-            </div>
+          </div>
+          <div class="theme-option-caption">
+            <span class="theme-option-caption-title">${theme.name}</span>
           </div>
         </label>
       `;
@@ -197,28 +260,27 @@ class OptionsManager {
         if (radio) {
           radio.checked = true;
           // Update visual selection
+          const checkColor = this.themes[themeKey]?.colors?.text ?? '#374151';
+          const checkSvg = `<span class="theme-option-check-wrap" style="color:${checkColor};"><svg xmlns="http://www.w3.org/2000/svg" class="theme-option-check" width="14" height="14" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg></span>`;
           themeSelector.querySelectorAll('.theme-option').forEach(opt => {
             opt.classList.remove('selected');
             const preview = opt.querySelector('.theme-preview');
             if (preview) {
-              preview.classList.remove('border-blue-500', 'dark:border-blue-400', 'ring-2', 'ring-blue-500', 'dark:ring-blue-400');
-              preview.classList.add('border-gray-200', 'dark:border-gray-600');
+              preview.classList.remove('theme-preview--selected');
             }
-            const checkIcon = opt.querySelector('svg');
-            if (checkIcon) checkIcon.remove();
+            opt.querySelectorAll('.theme-option-check-wrap').forEach(el => el.remove());
           });
           
           option.classList.add('selected');
           const preview = option.querySelector('.theme-preview');
           if (preview) {
-            preview.classList.remove('border-gray-200', 'dark:border-gray-600');
-            preview.classList.add('border-blue-500', 'dark:border-blue-400', 'ring-2', 'ring-blue-500', 'dark:ring-blue-400');
+            preview.classList.add('theme-preview--selected');
           }
           
-          // Add checkmark
-          const nameDiv = option.querySelector('.font-medium');
-          if (nameDiv && nameDiv.nextElementSibling?.tagName !== 'svg') {
-            nameDiv.insertAdjacentHTML('afterend', '<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>');
+          const titleEl = option.querySelector('.theme-mini-title');
+          const headerEl = option.querySelector('.theme-mini-header');
+          if (titleEl && headerEl && !headerEl.querySelector('.theme-option-check-wrap')) {
+            titleEl.insertAdjacentHTML('afterend', checkSvg);
           }
         }
       });
@@ -288,12 +350,14 @@ class OptionsManager {
     if (geminiApiKey) {
       geminiApiKey.addEventListener('input', () => {
         this.validateApiKey('gemini', geminiApiKey.value);
+        this.updateApiCardStatus();
       });
     }
     
     if (openrouterApiKey) {
       openrouterApiKey.addEventListener('input', () => {
         this.validateApiKey('openrouter', openrouterApiKey.value);
+        this.updateApiCardStatus();
       });
     }
 
@@ -329,6 +393,68 @@ class OptionsManager {
       clearCacheBtn.addEventListener('click', () => {
         this.clearCache();
       });
+    }
+
+    const showPhoneticsEl = document.getElementById('showPhoneticsNonLatin');
+    if (showPhoneticsEl) {
+      showPhoneticsEl.addEventListener('change', async () => {
+        try {
+          await chrome.storage.local.set({ altoShowPhoneticsNonLatin: showPhoneticsEl.checked });
+        } catch (error) {
+          console.error('Error saving phonetics preference:', error);
+        }
+      });
+    }
+
+    const openVocabNewTabEl = document.getElementById('openVocabNewTab');
+    if (openVocabNewTabEl) {
+      openVocabNewTabEl.addEventListener('change', async () => {
+        try {
+          await chrome.storage.local.set({ altoOpenVocabularyNewTab: openVocabNewTabEl.checked });
+        } catch (error) {
+          console.error('Error saving new-tab preference:', error);
+        }
+      });
+    }
+
+    const vocabPageUrl = chrome.runtime.getURL('vocabulary/vocabulary.html');
+    const openFooterVocab = document.getElementById('openVocabularyPageFooter');
+    if (openFooterVocab) {
+      openFooterVocab.addEventListener('click', (e) => {
+        e.preventDefault();
+        chrome.tabs.create({ url: vocabPageUrl });
+      });
+    }
+    const openSettingsVocab = document.getElementById('openVocabularyFromSettings');
+    if (openSettingsVocab) {
+      openSettingsVocab.addEventListener('click', (e) => {
+        e.preventDefault();
+        chrome.tabs.create({ url: vocabPageUrl });
+      });
+    }
+
+    const clearAllVocabBtn = document.getElementById('clearAllVocabularyBtn');
+    if (clearAllVocabBtn) {
+      clearAllVocabBtn.addEventListener('click', () => {
+        void this.clearAllVocabulary();
+      });
+    }
+  }
+
+  async clearAllVocabulary() {
+    if (!confirm('Delete all saved vocabulary and today’s review progress? This cannot be undone.')) {
+      return;
+    }
+    try {
+      const response = await chrome.runtime.sendMessage({ action: 'clearVocabulary' });
+      if (response?.success) {
+        this.showStatus('success', 'Cleared', 'All vocabulary entries were removed.');
+      } else {
+        this.showStatus('error', 'Error', response?.error ?? 'Failed to clear vocabulary');
+      }
+    } catch (error) {
+      console.error('clearAllVocabulary:', error);
+      this.showStatus('error', 'Error', error?.message ?? 'Failed to clear vocabulary');
     }
   }
 
@@ -479,19 +605,19 @@ class OptionsManager {
 
       if (response?.success) {
         testResultText.textContent = response.translatedText ?? '';
-        testResult.className = 'p-4 bg-gray-50 rounded-lg test-result-success';
+        testResult.className = 'test-result test-result-success';
         testResult.classList.remove('hidden');
         this.showStatus('success', 'Test Successful', 'Translation completed successfully');
       } else {
         testResultText.textContent = `Error: ${response?.error ?? 'Unknown error'}`;
-        testResult.className = 'p-4 bg-gray-50 rounded-lg test-result-error';
+        testResult.className = 'test-result test-result-error';
         testResult.classList.remove('hidden');
         this.showStatus('error', 'Test Failed', response?.error ?? 'Translation failed');
       }
     } catch (error) {
       console.error('Test translation error:', error);
       testResultText.textContent = `Error: ${error?.message ?? 'Unknown error'}`;
-      testResult.className = 'p-4 bg-gray-50 rounded-lg test-result-error';
+      testResult.className = 'test-result test-result-error';
       testResult.classList.remove('hidden');
       this.showStatus('error', 'Test Failed', error?.message ?? 'Failed to connect to translation service');
     } finally {

@@ -114,11 +114,160 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     case 'getLanguages':
       sendResponse({ success: true, languages: LANGUAGE_NAMES });
       return true;
+    case 'getVocabulary':
+      handleGetVocabulary(sendResponse);
+      return true;
+    case 'vocabularyStatus':
+      handleVocabularyStatus(request, sendResponse);
+      return true;
+    case 'saveVocabularyEntry':
+      handleSaveVocabularyEntry(request, sendResponse);
+      return true;
+    case 'deleteVocabularyEntry':
+      handleDeleteVocabularyEntry(request, sendResponse);
+      return true;
+    case 'clearVocabulary':
+      handleClearVocabulary(sendResponse);
+      return true;
     default:
       sendResponse({ success: false, error: `Unknown action: ${action}` });
       return false;
   }
 });
+
+function isBlankNewTabUrl(url) {
+  if (url == null || url === '') return true;
+  const u = String(url);
+  if (u === 'about:blank') return true;
+  if (u.startsWith('chrome://newtab')) return true;
+  if (u.startsWith('edge://newtab')) return true;
+  return false;
+}
+
+/** ms — defer vocab redirect so `target="_blank"` links can commit their URL first */
+const NEW_TAB_VOCAB_REDIRECT_DELAY_MS = 400;
+
+chrome.tabs.onCreated.addListener((tab) => {
+  if (tab.id == null) return;
+  const url = tab.pendingUrl || tab.url || '';
+  if (!isBlankNewTabUrl(url)) return;
+  chrome.storage.local.get(STORAGE_KEY_NEW_TAB_VOCAB, (r) => {
+    if (chrome.runtime.lastError) return;
+    if (r[STORAGE_KEY_NEW_TAB_VOCAB] !== true) return;
+    const tabId = tab.id;
+    setTimeout(() => {
+      chrome.tabs.get(tabId, (t) => {
+        if (chrome.runtime.lastError || !t) return;
+        const u = t.pendingUrl || t.url || '';
+        if (!isBlankNewTabUrl(u)) return;
+        const dest = chrome.runtime.getURL('vocabulary/vocabulary.html');
+        chrome.tabs.update(tabId, { url: dest }, () => void chrome.runtime.lastError);
+      });
+    }, NEW_TAB_VOCAB_REDIRECT_DELAY_MS);
+  });
+});
+
+async function handleGetVocabulary(sendResponse) {
+  try {
+    const data = await chrome.storage.local.get(STORAGE_KEY_VOCABULARY);
+    const list = Array.isArray(data[STORAGE_KEY_VOCABULARY]) ? data[STORAGE_KEY_VOCABULARY] : [];
+    sendResponse({ success: true, vocabulary: list });
+  } catch (error) {
+    sendResponse({ success: false, error: error?.message ?? 'Failed to load vocabulary' });
+  }
+}
+
+async function handleVocabularyStatus(request, sendResponse) {
+  try {
+    const orig = typeof request.original === 'string' ? request.original.trim() : '';
+    const data = await chrome.storage.local.get(STORAGE_KEY_VOCABULARY);
+    const list = Array.isArray(data[STORAGE_KEY_VOCABULARY]) ? data[STORAGE_KEY_VOCABULARY] : [];
+    const isFull = list.length >= MAX_VOCAB_ENTRIES;
+    const isDuplicate = orig
+      ? list.some((e) => e && typeof e.original === 'string' && e.original.trim() === orig)
+      : false;
+    sendResponse({ success: true, isFull, isDuplicate, count: list.length });
+  } catch (error) {
+    sendResponse({ success: false, error: error?.message ?? 'Failed vocabulary status' });
+  }
+}
+
+async function handleSaveVocabularyEntry(request, sendResponse) {
+  try {
+    const entry = request.entry;
+    if (!entry || typeof entry.original !== 'string' || typeof entry.translation !== 'string') {
+      sendResponse({ success: false, error: 'Invalid entry' });
+      return;
+    }
+    const trimmedOriginal = entry.original.trim();
+    const data = await chrome.storage.local.get(STORAGE_KEY_VOCABULARY);
+    let list = Array.isArray(data[STORAGE_KEY_VOCABULARY]) ? [...data[STORAGE_KEY_VOCABULARY]] : [];
+    if (list.length >= MAX_VOCAB_ENTRIES) {
+      sendResponse({ success: false, reason: 'full' });
+      return;
+    }
+    if (list.some((e) => e && typeof e.original === 'string' && e.original.trim() === trimmedOriginal)) {
+      sendResponse({ success: false, reason: 'duplicate' });
+      return;
+    }
+    const row = {
+      id: typeof entry.id === 'string' && entry.id ? entry.id : crypto.randomUUID(),
+      original: trimmedOriginal,
+      translation: String(entry.translation),
+      romanization:
+        entry.romanization == null || entry.romanization === ''
+          ? null
+          : String(entry.romanization),
+      sourceLang: typeof entry.sourceLang === 'string' ? entry.sourceLang : '',
+      targetLang: typeof entry.targetLang === 'string' ? entry.targetLang : '',
+      sourceUrl: typeof entry.sourceUrl === 'string' ? entry.sourceUrl : '',
+      savedAt: typeof entry.savedAt === 'number' ? entry.savedAt : Date.now()
+    };
+    list.unshift(row);
+    if (list.length > MAX_VOCAB_ENTRIES) {
+      list = list.slice(0, MAX_VOCAB_ENTRIES);
+    }
+    await chrome.storage.local.set({ [STORAGE_KEY_VOCABULARY]: list });
+    sendResponse({ success: true, entry: row });
+  } catch (error) {
+    sendResponse({ success: false, error: error?.message ?? 'Failed to save' });
+  }
+}
+
+async function handleDeleteVocabularyEntry(request, sendResponse) {
+  try {
+    const id = request.id;
+    if (!id) {
+      sendResponse({ success: false, error: 'Missing id' });
+      return;
+    }
+    const data = await chrome.storage.local.get([STORAGE_KEY_VOCABULARY, STORAGE_KEY_VOCAB_REVIEWED_IDS]);
+    let list = Array.isArray(data[STORAGE_KEY_VOCABULARY]) ? data[STORAGE_KEY_VOCABULARY] : [];
+    list = list.filter((e) => e && e.id !== id);
+    const reviewedRaw = data[STORAGE_KEY_VOCAB_REVIEWED_IDS];
+    const reviewed = Array.isArray(reviewedRaw) ? reviewedRaw.filter((x) => x !== id) : [];
+    await chrome.storage.local.set({
+      [STORAGE_KEY_VOCABULARY]: list,
+      [STORAGE_KEY_VOCAB_REVIEWED_IDS]: reviewed
+    });
+    sendResponse({ success: true });
+  } catch (error) {
+    sendResponse({ success: false, error: error?.message ?? 'Failed to delete' });
+  }
+}
+
+async function handleClearVocabulary(sendResponse) {
+  try {
+    await chrome.storage.local.set({
+      [STORAGE_KEY_VOCABULARY]: [],
+      [STORAGE_KEY_VOCAB_REVIEWED_IDS]: [],
+      [STORAGE_KEY_VOCAB_REVIEW_DAY]: ''
+    });
+    sendResponse({ success: true });
+  } catch (error) {
+    sendResponse({ success: false, error: error?.message ?? 'Failed to clear' });
+  }
+}
 
 /**
  * Validate and sanitize translation input
@@ -784,10 +933,12 @@ async function getSettings() {
     const merged = { ...DEFAULT_SETTINGS, ...result };
     // MyMemory is always on; legacy installs may have libretranslateEnabled: false
     merged.libretranslateEnabled = true;
+    const localFlags = await chrome.storage.local.get(STORAGE_KEY_SHOW_PHONETICS);
+    merged.showPhoneticsNonLatin = localFlags[STORAGE_KEY_SHOW_PHONETICS] !== false;
     return merged;
   } catch (error) {
     console.error('Error getting settings:', error);
-    return { ...DEFAULT_SETTINGS, libretranslateEnabled: true };
+    return { ...DEFAULT_SETTINGS, libretranslateEnabled: true, showPhoneticsNonLatin: true };
   }
 }
 

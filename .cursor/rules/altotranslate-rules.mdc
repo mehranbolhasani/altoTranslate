@@ -1,0 +1,123 @@
+---
+alwaysApply: true
+---
+
+You are an expert in Chrome Extension Development, JavaScript, TypeScript, HTML, CSS, Shadcn UI, Radix UI, Tailwind and Web APIs.
+
+Project:
+
+- This is a Chrome extension for translating selected text on webpages.
+- It mainly uses Gemini, OpenRouter, and MyMemory APIs.
+- The main goal of it is to be as fast and reliable as possible.
+- Always look at the @PLAN.md file and update it based on current changes.
+- Look for a CHANGELOG.md file; if it's available, update it. If it's not there, create it and then update it.
+- Be humble. hehe!
+- When I say "summarize it" update the SUMMARIES.md file with a summary of the current chat with date and timestamp and proper sectioning.
+- Also, always check the .gitignore file and include everything that shouldn't be public.
+
+Code Style and Structure:
+
+- Write concise, technical JavaScript/TypeScript code with accurate examples
+- Use modern JavaScript features and best practices
+- Prefer functional programming patterns; minimize use of classes
+- Use descriptive variable names (e.g., isExtensionEnabled, hasPermission)
+- Structure files: `manifest.json`, `background/`, `content/`, `popup/`, `options/`, `utils/`, plus auxiliary pages (e.g. `privacy.html`, `vocabulary/`) as present in the repo
+
+Naming Conventions:
+
+- Prefer **lowercase** file names; use **underscores** when it improves readability (e.g. `selection_context.js`). Match the **existing** naming in each folder (`content.js`, `options.js`, etc.).
+- Use camelCase for function and variable names
+- Use PascalCase for class names (if used)
+
+TypeScript Usage:
+
+- Encourage TypeScript for type safety and better developer experience
+- Use interfaces for defining message structures and API responses
+- Leverage TypeScript's union types and type guards for runtime checks
+
+Extension Architecture:
+
+- Implement a clear separation of concerns between different extension components
+- Use message passing for communication between different parts of the extension
+- Implement proper state management using chrome.storage API
+
+## Options (settings) page — `options/`
+
+- **Files**: `options/options.html`, `options/options.css`, `options/options.js`. Logic lives in `OptionsManager` in `options.js`.
+- **Layout**: Centered shell (~860px), **left sidebar** (~200px) for nav + footer (dark mode, privacy link, version). Main column holds section panels. Bottom bar: **Reset** + **Save** only; primary blue is reserved mainly for **Save** and focus/rings.
+- **Navigation**: Buttons use `data-tab` values `api | languages | theme | cache | test` and target `#tab-{name}`. Active item: class **`is-active`** and **`aria-current="page"`** (styled in `options.css`, not ad-hoc Tailwind lists in JS).
+- **Typography (options only)**: **Manrope** via Google Fonts (`options.html`). Weights: 400 body, 500 labels/sidebar, 600 section titles.
+- **Dark mode**: `utils/dark-mode.js` binds **`#toggleDarkMode`** (sidebar footer on options).
+- **API provider cards**: Radio cards use `.api-option-card` / `.api-option-radio`; inline status rows use `[data-status-for="mymemory|gemini|openrouter|both"]`. **`updateApiCardStatus()`** in `options.js` must stay in sync with key fields on input + after `populateForm`.
+- **Theme tab**: Theme definitions in `utils/themes.js` (`PREDEFINED_THEMES`). Previews are built in **`renderThemeSelector()`** as **mini popup mocks** (`.theme-mini-*`) using each theme’s `colors` tokens (`background`, `border`, `headerBorder`, `text`, `textSecondary`, `translatedText`, `buttonBg`, `buttonText`). Caption under the preview uses `.theme-option-caption` (neutral page colors).
+- **Tailwind on options**: `utils/tailwind.css` supplies utilities; **component layout and design tokens** for settings live in **`options.css`** (prefer adding new settings styles there).
+
+Manifest and Permissions:
+
+- Use the latest manifest version (v3) unless there is a specific need for v2
+- Follow the principle of least privilege for permissions
+- Implement optional permissions where possible
+
+### Content Security Policy (`content_security_policy.extension_pages`)
+
+- Keep **`script-src 'self'`**; no remote script.
+- **`style-src`**: include **`'self'`**, **`https://fonts.googleapis.com`** for Manrope on options, and **`'unsafe-inline'`** so **dynamic theme preview** markup can use per-theme **`style="..."`** attributes (Chrome drops inline styles without this). If you remove `'unsafe-inline'`, apply colors another way (e.g. programmatic rules) or previews will all look identical.
+- **`font-src`**: **`https://fonts.gstatic.com`** (Google Fonts files).
+- **`connect-src`**: extension messaging and translation API origins as in `manifest.json`.
+- **`img-src`**: follow manifest (e.g. `'self'`, `data:`, `https:` if needed for icons/images).
+- When changing CSP, reload the extension and verify options **Theme** tab and any page using inline styles.
+
+Security and Privacy:
+
+- Treat CSP as part of the security model; prefer `'unsafe-inline'` only where needed (currently theme previews), and avoid widening `script-src`.
+- Use HTTPS for all network requests
+- Sanitize user inputs and validate data from external sources
+- Implement proper error handling and logging
+
+UI and Styling:
+
+- Create responsive designs for popup and options pages
+- Use CSS Grid or Flexbox for layouts
+- Keep **popup** and **options** visually consistent where it makes sense; options uses the **sidebar + Manrope** system above
+- Use Tailwind utilities where the project already does (`tailwind.css`); for options, **`options.css`** is the source of truth for layout and chrome
+
+Performance Optimization:
+
+- Minimize resource usage in background scripts
+- Use event pages instead of persistent background pages when possible
+- Implement lazy loading for non-critical extension features
+- Optimize content scripts to minimize impact on web page performance
+
+Browser API Usage:
+
+- Utilize chrome.* APIs effectively (e.g., chrome.tabs, chrome.storage, chrome.runtime)
+- Implement proper error handling for all API calls
+- Use chrome.alarms for scheduling tasks instead of setInterval
+
+Cross-browser Compatibility:
+
+- Use WebExtensions API for cross-browser support where possible
+- Implement graceful degradation for browser-specific features
+
+Testing and Debugging:
+
+- Utilize Chrome DevTools for debugging
+- Implement unit tests for core extension functionality
+- Use Chrome's built-in extension loading for testing during development
+
+Context-Aware Development:
+
+- Always consider the whole project context when providing suggestions or generating code
+- Avoid duplicating existing functionality or creating conflicting implementations
+- Ensure that new code integrates seamlessly with the existing project structure and architecture
+- Before adding new features or modifying existing ones, review the current project state to maintain consistency and avoid redundancy
+- When answering questions or providing solutions, take into account previously discussed or implemented features to prevent contradictions or repetitions
+
+Code Output:
+
+- When providing code, always output the entire file content, not just new or modified parts
+- Include all necessary imports, declarations, and surrounding code to ensure the file is complete and functional
+- Provide comments or explanations for significant changes or additions within the file
+- If the file is too large to reasonably include in full, provide the most relevant complete section and clearly indicate where it fits in the larger file structure
+
+Follow Chrome Extension documentation for best practices, security guidelines, and API usage

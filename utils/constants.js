@@ -85,4 +85,15 @@ const SMART_FALLBACK_LLM_FIRST_MIN_CHARS = 2000;
 const STORAGE_RETRY_ATTEMPTS = 3;
 const STORAGE_RETRY_BASE_DELAY = 100; // Base delay in milliseconds for exponential backoff
 
+/**
+ * Feature flags and vocabulary (chrome.storage.local)
+ */
+const STORAGE_KEY_SHOW_PHONETICS = 'altoShowPhoneticsNonLatin';
+const STORAGE_KEY_VOCABULARY = 'altoVocabulary';
+const STORAGE_KEY_VOCAB_REVIEWED_IDS = 'altoVocabReviewedTodayIds';
+const STORAGE_KEY_VOCAB_REVIEW_DAY = 'altoVocabReviewCalendarDay';
+const STORAGE_KEY_NEW_TAB_VOCAB = 'altoOpenVocabularyNewTab';
+
+const MAX_VOCAB_ENTRIES = 500;
+
 

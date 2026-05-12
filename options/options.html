@@ -5,242 +5,219 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Alto Translate - Settings</title>
   <link rel="stylesheet" href="../utils/tailwind.css">
-
-  <link rel="preconnect" href="https://rsms.me/">
-  <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
-  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="options.css">
 </head>
-<body class="bg-gray-100 dark:bg-gray-900 min-h-screen">
-  <div class="max-w-5xl mx-auto p-6">
-    <!-- Header -->
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md/50 dark:shadow-lg/50 mb-6 fade-in">
-      <div class="p-6 border-b border-gray-200 dark:border-gray-700">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center space-x-4">
-            <div class="w-12 h-12 rounded-lg flex items-center justify-center shadow-md dark:shadow-lg">
-              <span class="text-white font-bold text-lg main-icon">
-                <img src="../icons/icon.svg" alt="Alto Translate" class="w-full h-full object-cover">
-              </span>
+<body class="options-body min-h-screen">
+  <div class="options-layout">
+    <form id="settingsForm" class="settings-form">
+      <div class="settings-shell">
+        <aside class="settings-sidebar" aria-label="Settings navigation">
+          <div class="settings-brand">
+            <div class="settings-brand-mark">
+              <img src="../icons/icon.svg" alt="altoTranslate logo" width="32" height="32" class="settings-logo">
             </div>
-            <div>
-              <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100 m-0">Alto Translate</h1>
-              <p class="text-sm text-gray-400 dark:text-gray-500 m-1">Configure your translation settings</p>
+            <div class="settings-brand-text">
+              <span class="settings-wordmark">altoTranslate</span>
             </div>
           </div>
-          <div class="flex items-center gap-4">
-            <div id="versionDisplay" class="text-sm text-gray-500 dark:text-gray-400">
-              Version 1.3.2
-            </div>
-            <button id="toggleDarkMode" class="text-xs bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 px-2 py-1 rounded hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">
-              Toggle Dark
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
 
-    <!-- Settings Form -->
-    <form id="settingsForm" class="space-y-6">
-      <!-- Tab Navigation -->
-      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md/50 dark:shadow-lg/50 mb-6">
-        <div class="border-b border-gray-200 dark:border-gray-700">
-          <nav class="flex px-2 pt-2" aria-label="Tabs">
-            <button type="button" data-tab="api" class="tab-button active px-4 py-3 text-sm font-medium transition-all duration-200 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 border-b-2 border-blue-600 dark:border-blue-400 bg-white dark:bg-gray-800 cursor-pointer">
-              <span class="flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                API Settings
-              </span>
+          <nav class="settings-nav" aria-label="Settings sections">
+            <button type="button" data-tab="api" class="tab-button settings-nav-item is-active">
+              <svg xmlns="http://www.w3.org/2000/svg" class="settings-nav-icon" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <span>API Settings</span>
             </button>
-            <button type="button" data-tab="languages" class="tab-button px-4 py-3 text-sm font-medium transition-all duration-200 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 bg-white dark:bg-gray-800 cursor-pointer">
-              <span class="flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
-                </svg>
-                Languages
-              </span>
+            <button type="button" data-tab="languages" class="tab-button settings-nav-item">
+              <svg xmlns="http://www.w3.org/2000/svg" class="settings-nav-icon" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+              </svg>
+              <span>Languages</span>
             </button>
-            <button type="button" data-tab="theme" class="tab-button px-4 py-3 text-sm font-medium transition-all duration-200 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 bg-white dark:bg-gray-800 cursor-pointer">
-              <span class="flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
-                </svg>
-                Theme
-              </span>
+            <button type="button" data-tab="vocabulary" class="tab-button settings-nav-item">
+              <svg xmlns="http://www.w3.org/2000/svg" class="settings-nav-icon" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
+              </svg>
+              <span>Vocabulary</span>
             </button>
-            <button type="button" data-tab="cache" class="tab-button px-4 py-3 text-sm font-medium transition-all duration-200 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 bg-white dark:bg-gray-800 cursor-pointer">
-              <span class="flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
-                </svg>
-                Cache
-              </span>
+            <button type="button" data-tab="theme" class="tab-button settings-nav-item">
+              <svg xmlns="http://www.w3.org/2000/svg" class="settings-nav-icon" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+              </svg>
+              <span>Theme</span>
             </button>
-            <button type="button" data-tab="test" class="tab-button px-4 py-3 text-sm font-medium transition-all duration-200 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 bg-white dark:bg-gray-800 cursor-pointer">
-              <span class="flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                </svg>
-                Test
-              </span>
+            <button type="button" data-tab="cache" class="tab-button settings-nav-item">
+              <svg xmlns="http://www.w3.org/2000/svg" class="settings-nav-icon" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
+              </svg>
+              <span>Cache</span>
+            </button>
+            <button type="button" data-tab="test" class="tab-button settings-nav-item">
+              <svg xmlns="http://www.w3.org/2000/svg" class="settings-nav-icon" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+              </svg>
+              <span>Test</span>
             </button>
           </nav>
-        </div>
 
-        <!-- Tab Content -->
-        <div class="p-6">
-          <!-- API Settings Tab -->
-          <div id="tab-api" class="tab-content">
-            <!-- API Selection -->
-            <div class="mb-6">
-              <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Translation API</h3>
-              <p class="text-sm text-gray-400 dark:text-gray-500 mb-4">Choose which translation service to use</p>
-              <div class="flex gap-3 options-tabs-container">
-                <label for="apiLibreTranslate" class="flex items-center border border-gray-400 dark:border-gray-600 rounded-lg p-3 gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer w-full">
-                  <input type="radio" id="apiLibreTranslate" name="apiPreference" value="libretranslate" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 dark:bg-gray-700">
-                  <div class="flex-1">
-                    <div class="text-sm font-medium text-gray-900 dark:text-gray-100">MyMemory API</div>
-                    <div class="text-xs text-gray-400 dark:text-gray-500">Free, no key</div>
-                  </div>
-                </label>
-                <label for="apiGemini" class="flex items-center border border-gray-400 dark:border-gray-600 rounded-lg p-3 gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer w-full">
-                  <input type="radio" id="apiGemini" name="apiPreference" value="gemini" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 dark:bg-gray-700">
-                  <div class="flex-1">
-                    <div class="text-sm font-medium text-gray-900 dark:text-gray-100">Google Gemini</div>
-                    <div class="text-xs text-gray-400 dark:text-gray-500">Free tier available</div>
-                  </div>
-                </label>
-                <label for="apiOpenRouter" class="flex items-center border border-gray-400 dark:border-gray-600 rounded-lg p-3 gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer w-full">
-                  <input type="radio" id="apiOpenRouter" name="apiPreference" value="openrouter" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 dark:bg-gray-700">
-                  <div class="flex-1">
-                    <div class="text-sm font-medium text-gray-900 dark:text-gray-100">OpenRouter</div>
-                    <div class="text-xs text-gray-400 dark:text-gray-500">500+ models</div>
-                  </div>
-                </label>
-                <label for="apiAll" class="flex items-center border border-gray-400 dark:border-gray-600 rounded-lg p-3 gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer w-full">
-                  <input type="radio" id="apiAll" name="apiPreference" value="both" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 dark:bg-gray-700">
-                  <div class="flex-1">
-                    <div class="text-sm font-medium text-gray-900 dark:text-gray-100">All (fallback)</div>
-                    <div class="text-xs text-gray-400 dark:text-gray-500">MyMemory first (short); Gemini → OpenRouter first when text is long</div>
-                  </div>
-                </label>
-              </div>
-            </div>
+          <div class="settings-sidebar-spacer" aria-hidden="true"></div>
 
-            <!-- API Keys -->
-            <div class="space-y-6">
-              <div>
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">API Keys</h3>
-                
-                <!-- Gemini API Key -->
-                <div class="mb-6">
-                  <label for="geminiApiKey" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Gemini API Key
-                  </label>
-                  <div class="relative flex items-center gap-2">
-                    <input type="password" id="geminiApiKey" name="geminiApiKey" 
-                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-blue-500 focus:border-blue-500 h-10"
-                           placeholder="Enter your Gemini API key">
-                    <button type="button" id="toggleGeminiKey" class="inset-y-0 flex items-center h-10 w-10 justify-center rounded-lg bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-eye-icon lucide-eye text-gray-600 dark:text-gray-400"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>
-                    </button>
-                  </div>
-                  <div class="flex items-center gap-2 mt-2">
-                    <a href="https://makersuite.google.com/app/apikey" target="_blank" class="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">Get API key</a>
-                    <button type="button" id="validateGeminiBtn" class="text-xs text-gray-500 dark:text-gray-400 rounded-lg bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 px-3 py-1 transition-colors">
-                      Validate
-                    </button>
-                  </div>
-                </div>
+          <footer class="settings-sidebar-footer">
+            <button type="button" id="toggleDarkMode" class="settings-footer-dark">Dark mode</button>
+            <a href="#" id="openVocabularyPageFooter" class="settings-footer-link">Open Vocabulary Page</a>
+            <a href="../privacy.html" target="_blank" rel="noopener noreferrer" class="settings-footer-link">Privacy Policy</a>
+            <p id="versionFooter" class="settings-footer-version"></p>
+          </footer>
+        </aside>
 
-                <!-- OpenRouter API Key -->
-                <div class="mb-6">
-                  <label for="openrouterApiKey" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    OpenRouter API Key
-                  </label>
-                  <div class="relative flex items-center gap-2">
-                    <input type="password" id="openrouterApiKey" name="openrouterApiKey"
-                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-blue-500 focus:border-blue-500 h-10"
-                           placeholder="Enter your OpenRouter API key">
-                    <button type="button" id="toggleOpenRouterKey" class="inset-y-0 flex items-center h-10 w-10 justify-center rounded-lg bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-eye-icon lucide-eye text-gray-600 dark:text-gray-400"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>
-                    </button>
-                  </div>
-                  <div class="flex items-center gap-2 mt-2">
-                    <a href="https://openrouter.ai/" target="_blank" class="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">Get API key</a>
-                    <button type="button" id="validateOpenRouterBtn" class="text-xs text-gray-500 dark:text-gray-400 rounded-lg bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 px-3 py-1 transition-colors">
-                      Validate
-                    </button>
-                  </div>
-                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-2 leading-relaxed">
-                    Key only; Alto picks a working free-tier translation model from its catalog automatically.
-                  </p>
-                </div>
-
-                <!-- MyMemory API Status -->
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    MyMemory API Status
-                  </label>
-                  <div class="flex items-center gap-2">
-                    <div class="px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700 text-green-700 dark:text-green-300 text-sm">
-                      ✓ No API key required
+        <div class="settings-main">
+          <!-- API Settings -->
+          <div id="tab-api" class="tab-content settings-panel">
+            <div class="settings-section settings-section--first">
+              <h3 class="settings-section-title">Translation API</h3>
+              <p class="settings-helper settings-helper--below-title">Choose which translation service to use</p>
+              <div class="options-tabs-container api-options-grid">
+                <label for="apiLibreTranslate" class="api-option-card">
+                  <input type="radio" id="apiLibreTranslate" name="apiPreference" value="libretranslate" class="api-option-radio">
+                  <span class="api-option-check" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                  </span>
+                  <div class="api-option-content">
+                    <div class="api-option-topline">
+                      <span class="api-option-title">MyMemory API</span>
+                      <span class="api-card-status" data-status-for="mymemory">
+                        <span class="status-dot status-dot--ok" aria-hidden="true"></span>
+                        <span class="status-label">Ready</span>
+                      </span>
                     </div>
-                    <button type="button" id="validateLibreTranslateBtn" class="text-xs text-gray-500 dark:text-gray-400 rounded-lg bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 px-3 py-1 transition-colors">
-                      Test Connection
-                    </button>
+                    <p class="settings-helper api-option-desc">Free, no key</p>
                   </div>
-                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                    Free translation service with 1000 requests/day limit
-                  </p>
-                </div>
-              </div>
-            </div>
-
-          </div>
-
-          <!-- Theme Tab -->
-          <div id="tab-theme" class="tab-content hidden">
-            <div>
-              <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Popup Theme</h3>
-              <p class="text-sm text-gray-400 dark:text-gray-500 mb-6">Choose a color theme for the translation popup</p>
-              
-              <div id="themeSelector" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                <!-- Themes will be loaded dynamically -->
-              </div>
-            </div>
-          </div>
-
-          <!-- Languages Tab -->
-          <div id="tab-languages" class="tab-content hidden">
-            <div>
-              <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Language Settings</h3>
-              <p class="text-sm text-gray-400 dark:text-gray-500 mb-6">Configure source and target languages</p>
-              
-              <!-- Behavior Settings -->
-              <div class="mb-6 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">Behavior</h4>
-                <label class="flex items-center gap-3 cursor-pointer">
-                  <input type="checkbox" id="disableInputFields" name="disableInputFields" 
-                         class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded">
-                  <div>
-                    <div class="text-sm font-medium text-gray-900 dark:text-gray-100">Disable for input fields</div>
-                    <div class="text-xs text-gray-500 dark:text-gray-400">Prevent translation popup from appearing when selecting text in input fields and textareas</div>
+                </label>
+                <label for="apiGemini" class="api-option-card">
+                  <input type="radio" id="apiGemini" name="apiPreference" value="gemini" class="api-option-radio">
+                  <span class="api-option-check" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                  </span>
+                  <div class="api-option-content">
+                    <div class="api-option-topline">
+                      <span class="api-option-title">Google Gemini</span>
+                      <span class="api-card-status" data-status-for="gemini">
+                        <span class="status-dot status-dot--muted" aria-hidden="true"></span>
+                        <span class="status-label">No key</span>
+                      </span>
+                    </div>
+                    <p class="settings-helper api-option-desc">Free tier available</p>
+                  </div>
+                </label>
+                <label for="apiOpenRouter" class="api-option-card">
+                  <input type="radio" id="apiOpenRouter" name="apiPreference" value="openrouter" class="api-option-radio">
+                  <span class="api-option-check" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                  </span>
+                  <div class="api-option-content">
+                    <div class="api-option-topline">
+                      <span class="api-option-title">OpenRouter</span>
+                      <span class="api-card-status" data-status-for="openrouter">
+                        <span class="status-dot status-dot--muted" aria-hidden="true"></span>
+                        <span class="status-label">No key</span>
+                      </span>
+                    </div>
+                    <p class="settings-helper api-option-desc">500+ models</p>
+                  </div>
+                </label>
+                <label for="apiAll" class="api-option-card">
+                  <input type="radio" id="apiAll" name="apiPreference" value="both" class="api-option-radio">
+                  <span class="api-option-check" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                  </span>
+                  <div class="api-option-content">
+                    <div class="api-option-topline">
+                      <span class="api-option-title">All (fallback)</span>
+                      <span class="api-card-status" data-status-for="both">
+                        <span class="status-dot status-dot--muted" aria-hidden="true"></span>
+                        <span class="status-label">No keys</span>
+                      </span>
+                    </div>
+                    <p class="settings-helper api-option-desc">MyMemory first (short); Gemini → OpenRouter first when text is long</p>
                   </div>
                 </label>
               </div>
-              
-              <div class="flex gap-6">
-                <!-- Source Language -->
-                <div class="w-full">
-                  <label for="sourceLanguage" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Source Language
-                  </label>
-                  <select id="sourceLanguage" name="sourceLanguage" 
-                          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-blue-500 focus:border-blue-500 h-10">
+            </div>
+
+            <div class="settings-section">
+              <h3 class="settings-section-title">API Keys</h3>
+              <div class="settings-field-stack">
+                <div class="settings-field">
+                  <label for="geminiApiKey" class="settings-label">Gemini API Key</label>
+                  <div class="settings-input-row">
+                    <input type="password" id="geminiApiKey" name="geminiApiKey" class="settings-input" placeholder="Enter your Gemini API key">
+                    <button type="button" id="toggleGeminiKey" class="settings-input-affix" aria-label="Show or hide Gemini API key">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>
+                    </button>
+                  </div>
+                  <div class="settings-inline-actions">
+                    <a href="https://makersuite.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="settings-link">Get API key</a>
+                    <button type="button" id="validateGeminiBtn" class="settings-btn-secondary">Validate</button>
+                  </div>
+                </div>
+
+                <div class="settings-field">
+                  <label for="openrouterApiKey" class="settings-label">OpenRouter API Key</label>
+                  <div class="settings-input-row">
+                    <input type="password" id="openrouterApiKey" name="openrouterApiKey" class="settings-input" placeholder="Enter your OpenRouter API key">
+                    <button type="button" id="toggleOpenRouterKey" class="settings-input-affix" aria-label="Show or hide OpenRouter API key">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>
+                    </button>
+                  </div>
+                  <div class="settings-inline-actions">
+                    <a href="https://openrouter.ai/" target="_blank" rel="noopener noreferrer" class="settings-link">Get API key</a>
+                    <button type="button" id="validateOpenRouterBtn" class="settings-btn-secondary">Validate</button>
+                  </div>
+                  <p class="settings-helper">Key only; Alto picks a working free-tier translation model from its catalog automatically.</p>
+                </div>
+
+                <div class="settings-field">
+                  <span class="settings-label">MyMemory API Status</span>
+                  <div class="settings-inline-actions settings-inline-actions--block">
+                    <div class="settings-status-pill settings-status-pill--ok">No API key required</div>
+                    <button type="button" id="validateLibreTranslateBtn" class="settings-btn-secondary">Test Connection</button>
+                  </div>
+                  <p class="settings-helper">Free translation service with 1000 requests/day limit</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Languages -->
+          <div id="tab-languages" class="tab-content settings-panel hidden">
+            <div class="settings-section settings-section--first">
+              <h3 class="settings-section-title">Language Settings</h3>
+              <p class="settings-helper settings-helper--below-title">Configure source and target languages</p>
+              <div class="settings-callout">
+                <h4 class="settings-callout-title">Behavior</h4>
+                <label class="settings-check-row">
+                  <input type="checkbox" id="disableInputFields" name="disableInputFields" class="settings-checkbox">
+                  <div>
+                    <div class="settings-check-label">Disable for input fields</div>
+                    <p class="settings-helper">Prevent translation popup from appearing when selecting text in input fields and textareas</p>
+                  </div>
+                </label>
+                <label class="settings-check-row">
+                  <input type="checkbox" id="showPhoneticsNonLatin" name="showPhoneticsNonLatin" class="settings-checkbox" checked>
+                  <div>
+                    <div class="settings-check-label">Show phonetics for non-Latin scripts</div>
+                    <p class="settings-helper">When using Gemini, show romanization under the original text for languages like Chinese, Japanese, Arabic, etc.</p>
+                  </div>
+                </label>
+              </div>
+              <div class="settings-lang-row">
+                <div class="settings-field">
+                  <label for="sourceLanguage" class="settings-label">Source Language</label>
+                  <select id="sourceLanguage" name="sourceLanguage" class="settings-input settings-select">
                     <option value="auto">Auto-detect</option>
                     <option value="en">English</option>
                     <option value="es">Spanish</option>
@@ -298,14 +275,9 @@
                     <option value="tr">Turkish</option>
                   </select>
                 </div>
-
-                <!-- Target Language -->
-                <div class="w-full">
-                  <label for="targetLanguage" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Target Language
-                  </label>
-                  <select id="targetLanguage" name="targetLanguage"
-                          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-blue-500 focus:border-blue-500 h-10">
+                <div class="settings-field">
+                  <label for="targetLanguage" class="settings-label">Target Language</label>
+                  <select id="targetLanguage" name="targetLanguage" class="settings-input settings-select">
                     <option value="en">English</option>
                     <option value="es">Spanish</option>
                     <option value="fr">French</option>
@@ -366,82 +338,94 @@
             </div>
           </div>
 
-          <!-- Cache Tab -->
-          <div id="tab-cache" class="tab-content hidden">
-            <div>
-              <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Translation Cache</h3>
-              <p class="text-sm text-gray-400 dark:text-gray-500 mb-6">Manage cached translations for faster performance</p>
-              
-              <!-- Cache Statistics -->
-              <div id="cacheStats" class="flex gap-4 mb-6">
-                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 w-full">
-                  <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">Total Entries</div>
-                  <div id="cacheTotalEntries" class="text-2xl font-bold text-gray-900 dark:text-gray-100">-</div>
-                  <div class="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                    <span id="cacheMemoryEntries" class="text-blue-600 dark:text-blue-400">-</span> in memory
+          <!-- Vocabulary -->
+          <div id="tab-vocabulary" class="tab-content settings-panel hidden">
+            <div class="settings-section settings-section--first">
+              <h3 class="settings-section-title">Vocabulary</h3>
+              <p class="settings-helper settings-helper--below-title">Saved words and daily review live on the vocabulary page</p>
+              <div class="settings-callout">
+                <label class="settings-check-row">
+                  <input type="checkbox" id="openVocabNewTab" name="openVocabNewTab" class="settings-checkbox">
+                  <div>
+                    <div class="settings-check-label">Open vocabulary page in every new tab</div>
+                    <p class="settings-helper">Turn your new tab into a daily vocabulary review space.</p>
                   </div>
+                </label>
+                <div class="settings-inline-actions settings-inline-actions--block" style="margin-top: 1rem;">
+                  <a href="#" id="openVocabularyFromSettings" class="settings-link">Open Vocabulary Page</a>
                 </div>
-                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 w-full">
-                  <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">Valid Entries</div>
-                  <div id="cacheValidEntries" class="text-2xl font-bold text-green-600 dark:text-green-400">-</div>
-                  <div class="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                    <span id="cacheExpiredEntries" class="text-red-600 dark:text-red-400">-</span> expired
-                  </div>
+                <div class="settings-actions-row" style="margin-top: 1.5rem;">
+                  <button type="button" id="clearAllVocabularyBtn" class="settings-btn-danger">Clear all vocabulary</button>
                 </div>
-                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 w-full">
-                  <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">Cache Size</div>
-                  <div id="cacheSize" class="text-2xl font-bold text-gray-900 dark:text-gray-100">-</div>
-                  <div class="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                    <span id="cacheUsagePercent" class="font-medium">-</span> of <span id="cacheMaxSize">-</span>
-                  </div>
-                </div>
-                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 w-full">
-                  <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">TTL</div>
-                  <div id="cacheTTL" class="text-2xl font-bold text-gray-900 dark:text-gray-100">-</div>
-                  <div class="text-xs text-gray-400 dark:text-gray-500 mt-1">Auto-expires</div>
-                </div>
+                <p class="settings-helper settings-helper--block-top">This removes all saved words and today’s review progress.</p>
               </div>
-              
-              <!-- Cache Actions -->
-              <div class="flex gap-3">
-                <button type="button" id="refreshCacheStatsBtn" 
-                        class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm">
-                  Refresh Stats
-                </button>
-                <button type="button" id="clearCacheBtn" 
-                        class="px-4 py-2 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-800 rounded-lg font-medium transition-colors text-sm">
-                  Clear Cache
-                </button>
-              </div>
-              
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-4">
-                Cached translations expire after 7 days. Clearing the cache will remove all stored translations.
-              </p>
             </div>
           </div>
 
-          <!-- Test Tab -->
-          <div id="tab-test" class="tab-content hidden">
-            <div>
-              <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Test Translation</h3>
-              <p class="text-sm text-gray-400 dark:text-gray-500 mb-6">Test your configuration with a sample translation</p>
-              
-              <div class="space-y-4">
-                <div>
-                  <label for="testText" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Test Text
-                  </label>
-                  <textarea id="testText" rows="4" 
-                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-blue-500 focus:border-blue-500 resize-none"
-                            placeholder="Enter text to translate...">Hello, world! This is a test translation.</textarea>
+          <!-- Theme -->
+          <div id="tab-theme" class="tab-content settings-panel hidden">
+            <div class="settings-section settings-section--first">
+              <h3 class="settings-section-title">Popup Theme</h3>
+              <p class="settings-helper settings-helper--below-title">Choose a color theme for the translation popup</p>
+              <div id="themeSelector" class="theme-selector-grid"></div>
+            </div>
+          </div>
+
+          <!-- Cache -->
+          <div id="tab-cache" class="tab-content settings-panel hidden">
+            <div class="settings-section settings-section--first">
+              <h3 class="settings-section-title">Translation Cache</h3>
+              <p class="settings-helper settings-helper--below-title">Manage cached translations for faster performance</p>
+              <div id="cacheStats" class="cache-stats-grid">
+                <div class="cache-stat-card">
+                  <div class="cache-stat-label">Total Entries</div>
+                  <div id="cacheTotalEntries" class="cache-stat-value">-</div>
+                  <div class="settings-helper cache-stat-sub">
+                    <span id="cacheMemoryEntries" class="cache-stat-accent">-</span> in memory
+                  </div>
                 </div>
-                <button type="button" id="testBtn" 
-                        class="bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800 py-2 px-4 rounded-lg font-medium transition-colors">
-                  Test Translation
-                </button>
-                <div id="testResult" class="hidden p-4 bg-gray-50 dark:bg-gray-700 rounded-lg min-h-20">
-                  <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Result:</div>
-                  <div id="testResultText" class="text-sm text-gray-600 dark:text-gray-400"></div>
+                <div class="cache-stat-card">
+                  <div class="cache-stat-label">Valid Entries</div>
+                  <div id="cacheValidEntries" class="cache-stat-value cache-stat-value--ok">-</div>
+                  <div class="settings-helper cache-stat-sub">
+                    <span id="cacheExpiredEntries" class="cache-stat-danger">-</span> expired
+                  </div>
+                </div>
+                <div class="cache-stat-card">
+                  <div class="cache-stat-label">Cache Size</div>
+                  <div id="cacheSize" class="cache-stat-value">-</div>
+                  <div class="settings-helper cache-stat-sub">
+                    <span id="cacheUsagePercent" class="font-medium">-</span> of <span id="cacheMaxSize">-</span>
+                  </div>
+                </div>
+                <div class="cache-stat-card">
+                  <div class="cache-stat-label">TTL</div>
+                  <div id="cacheTTL" class="cache-stat-value">-</div>
+                  <div class="settings-helper cache-stat-sub">Auto-expires</div>
+                </div>
+              </div>
+              <div class="settings-actions-row">
+                <button type="button" id="refreshCacheStatsBtn" class="settings-btn-secondary">Refresh Stats</button>
+                <button type="button" id="clearCacheBtn" class="settings-btn-danger">Clear Cache</button>
+              </div>
+              <p class="settings-helper settings-helper--block-top">Cached translations expire after 7 days. Clearing the cache will remove all stored translations.</p>
+            </div>
+          </div>
+
+          <!-- Test -->
+          <div id="tab-test" class="tab-content settings-panel hidden">
+            <div class="settings-section settings-section--first">
+              <h3 class="settings-section-title">Test Translation</h3>
+              <p class="settings-helper settings-helper--below-title">Test your configuration with a sample translation</p>
+              <div class="settings-field-stack">
+                <div class="settings-field">
+                  <label for="testText" class="settings-label">Test Text</label>
+                  <textarea id="testText" rows="4" class="settings-input settings-textarea" placeholder="Enter text to translate...">Hello, world! This is a test translation.</textarea>
+                </div>
+                <button type="button" id="testBtn" class="settings-btn-secondary">Test Translation</button>
+                <div id="testResult" class="test-result hidden">
+                  <div class="settings-label test-result-heading">Result</div>
+                  <div id="testResultText" class="test-result-body"></div>
                 </div>
               </div>
             </div>
@@ -449,31 +433,18 @@
         </div>
       </div>
 
-      <!-- Save Button (Fixed at bottom) -->
-      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md/50 dark:shadow-lg/50 p-6">
-        <div class="flex justify-between items-center gap-3 flex-wrap">
-          <a href="../privacy.html" target="_blank" rel="noopener noreferrer" class="text-sm text-blue-600 dark:text-blue-400 hover:underline order-last sm:order-first">
-            Privacy policy
-          </a>
-          <div class="flex justify-end space-x-3 ml-auto">
-          <button type="button" id="resetBtn" 
-                  class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-            Reset to Defaults
-          </button>
-          <button type="submit" id="saveBtn"
-                  class="px-6 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-medium transition-all duration-200 transform hover:scale-105 shadow-md">
-            Save Settings
-          </button>
-          </div>
+      <div class="settings-footer-actions">
+        <div class="settings-footer-actions-inner">
+          <button type="button" id="resetBtn" class="settings-btn-ghost">Reset to Defaults</button>
+          <button type="submit" id="saveBtn" class="settings-btn-primary">Save Settings</button>
         </div>
       </div>
     </form>
 
-    <!-- Toast Container (Fixed Top Right) -->
-    <div id="toastContainer" class="fixed top-4 right-4 z-50 flex flex-col gap-3 pointer-events-none"></div>
+    <div id="toastContainer" class="toast-container"></div>
   </div>
 
-  <script src="options.js"></script>
+  <script type="module" src="options.mjs"></script>
   <script src="../utils/dark-mode.js"></script>
 </body>
 </html>

@@ -1,4 +1,13 @@
 // Popup script for Alto Translate extension
+import { animate } from '../vendor/motion-lib.js';
+
+function prefersReducedMotion() {
+  try {
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  } catch {
+    return false;
+  }
+}
 
 class PopupManager {
   constructor() {
@@ -23,8 +32,19 @@ class PopupManager {
     // Check API status
     this.checkApiStatus();
 
+    this.popupShellIntro();
+
     // Add event listeners
     this.addEventListeners();
+  }
+
+  popupShellIntro() {
+    if (prefersReducedMotion()) return;
+    const shell = document.querySelector('body > div.w-80');
+    if (!shell) return;
+    requestAnimationFrame(() => {
+      void animate(shell, { opacity: [0, 1], y: [8, 0] }, { duration: 0.22, ease: [0.22, 1, 0.36, 1] });
+    });
   }
 
   updateVersion() {
@@ -138,6 +158,15 @@ class PopupManager {
     if (testTranslationBtn) {
       testTranslationBtn.addEventListener('click', () => {
         this.showTestModal();
+      });
+    }
+
+    // Footer: settings (icon)
+    const popupFooterSettingsLink = document.getElementById('popupFooterSettingsLink');
+    if (popupFooterSettingsLink) {
+      popupFooterSettingsLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        chrome.runtime.openOptionsPage();
       });
     }
 

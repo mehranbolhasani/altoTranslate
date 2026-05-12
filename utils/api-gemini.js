@@ -270,12 +270,87 @@ async function translateWithGemini(text, targetLanguage, apiKey, sourceLanguage 
 }
 
 /**
- * Gemini prompt for translation; optional page context improves disambiguation.
+ * Normalize BCP-47 / ISO codes to primary subtag for comparisons (e.g. zh-CN → zh).
+ * @param {string} code
+ * @returns {string}
+ */
+function normalizeLanguageBaseCode(code) {
+  if (!code || typeof code !== 'string') return '';
+  const trimmed = code.trim().toLowerCase();
+  if (!trimmed) return '';
+  const base = trimmed.split(/[-_]/)[0];
+  return base || trimmed;
+}
+
+/**
+ * JSON-only Gemini reply: translation, optional romanization, detected source language.
+ * @param {string} raw
+ * @returns {{ translatedText: string, romanization: string|null, detectedLanguage: string|null }}
+ */
+function parseGeminiTranslationJson(raw) {
+  let s = (raw || '').trim();
+  if (!s) {
+    return { translatedText: '', romanization: null, detectedLanguage: null };
+  }
+  const fence = s.match(/^```(?:json)?\s*([\s\S]*?)```\s*$/i);
+  if (fence) {
+    s = fence[1].trim();
+  }
+  try {
+    const o = JSON.parse(s);
+    const translation = typeof o.translation === 'string' ? o.translation.trim() : '';
+    let romanization = o.romanization;
+    if (romanization !== null && romanization !== undefined) {
+      if (typeof romanization !== 'string') {
+        romanization = null;
+      } else {
+        romanization = romanization.trim();
+        if (romanization.length === 0) {
+          romanization = null;
+        }
+      }
+    } else {
+      romanization = null;
+    }
+    let detected = null;
+    if (typeof o.detectedLanguage === 'string' && o.detectedLanguage.trim()) {
+      detected = normalizeLanguageBaseCode(o.detectedLanguage);
+    }
+    return { translatedText: translation, romanization, detectedLanguage: detected };
+  } catch {
+    return { translatedText: s, romanization: null, detectedLanguage: null };
+  }
+}
+
+/**
+ * Effective source code for downstream UI: user-fixed language wins unless auto.
+ * @param {string} sourceLanguage
+ * @param {string|null} detectedBase
+ * @returns {string}
+ */
+function effectiveGeminiSourceLanguage(sourceLanguage, detectedBase) {
+  if (sourceLanguage === 'auto') {
+    if (detectedBase && detectedBase.length > 0) {
+      return detectedBase;
+    }
+    return 'auto';
+  }
+  return normalizeLanguageBaseCode(sourceLanguage) || sourceLanguage;
+}
+
+/**
+ * Gemini prompt for translation (JSON output); optional page context improves disambiguation.
  * @param {string|null|undefined} rawContext
  */
-function buildGeminiTranslationPrompt(text, targetLanguage, sourceLanguage, rawContext) {
+function buildGeminiTranslationPromptForJson(text, targetLanguage, sourceLanguage, rawContext) {
   const targetLangName = getLanguageName(targetLanguage);
   const sourceLangName = sourceLanguage === 'auto' ? 'auto-detect' : getLanguageName(sourceLanguage);
+
+  const jsonRules =
+    `Reply with a single JSON object only (no markdown). Keys:\n` +
+    `- "translation": string — the translated segment only.\n` +
+    `- "romanization": string or null — phonetic romanization of the ORIGINAL segment when the source uses a non-Latin script (e.g. pinyin, romaji, revised romanization); use null when the source is Latin script or romanization does not apply.\n` +
+    `- "detectedLanguage": string — ISO 639-1 (or primary subtag) code for the source language of the segment (e.g. en, zh, ja, ko, ar).\n`;
 
   const capped =
     rawContext && typeof rawContext === 'string' && typeof clampContextSnippetForApi === 'function'
@@ -285,23 +360,21 @@ function buildGeminiTranslationPrompt(text, targetLanguage, sourceLanguage, rawC
   if (capped) {
     if (sourceLanguage === 'auto') {
       return (
-        `Surrounding context (reference only; helps disambiguate — do not reply with a translation of the whole context):\n` +
+        `Surrounding context (reference only; helps disambiguate — do not translate or romanize the whole context):\n` +
         `${capped}\n\n` +
-        `Translate ONLY the following segment to ${targetLangName}. ` +
-        `Output only the translated text of that segment with no quotes and no extra explanation:\n\n${text}`
+        `Translate ONLY the following segment to ${targetLangName}. ${jsonRules}\n\nSegment:\n${text}`
       );
     }
     return (
-      `Surrounding context (reference only; helps disambiguate — do not reply with a translation of the whole context):\n` +
+      `Surrounding context (reference only; helps disambiguate — do not translate or romanize the whole context):\n` +
       `${capped}\n\n` +
-      `Translate ONLY the following segment from ${sourceLangName} to ${targetLangName}. ` +
-      `Output only the translated text of that segment with no quotes and no extra explanation:\n\n${text}`
+      `Translate ONLY the following segment from ${sourceLangName} to ${targetLangName}. ${jsonRules}\n\nSegment:\n${text}`
     );
   }
 
   return sourceLanguage === 'auto'
-    ? `Translate the following text to ${targetLangName}. Only return the translated text, nothing else:\n\n${text}`
-    : `Translate the following text from ${sourceLangName} to ${targetLangName}. Only return the translated text, nothing else:\n\n${text}`;
+    ? `Translate the following text to ${targetLangName}. ${jsonRules}\n\nText:\n${text}`
+    : `Translate the following text from ${sourceLangName} to ${targetLangName}. ${jsonRules}\n\nText:\n${text}`;
 }
 
 /**
@@ -313,7 +386,7 @@ async function tryTranslateWithModel(text, targetLanguage, apiKey, sourceLanguag
   // Try preferred API version first, then fallback to others
   const apiVersions = [preferredApiVersion, 'v1beta', 'v1'].filter((v, i, arr) => arr.indexOf(v) === i); // Remove duplicates
 
-  const prompt = buildGeminiTranslationPrompt(text, targetLanguage, sourceLanguage, contextSnippet);
+  const prompt = buildGeminiTranslationPromptForJson(text, targetLanguage, sourceLanguage, contextSnippet);
 
   const requestBody = {
     contents: [{
@@ -323,7 +396,8 @@ async function tryTranslateWithModel(text, targetLanguage, apiKey, sourceLanguag
       temperature: 0.1,
       topK: 1,
       topP: 0.8,
-      maxOutputTokens: TRANSLATION_MAX_OUTPUT_TOKENS
+      maxOutputTokens: TRANSLATION_MAX_OUTPUT_TOKENS,
+      responseMimeType: 'application/json'
     }
   };
 
@@ -376,15 +450,20 @@ async function tryTranslateWithModel(text, targetLanguage, apiKey, sourceLanguag
       if (!candidate?.text) {
       throw new Error('Invalid response format from Gemini API');
     }
-    
+
+    const parsed = parseGeminiTranslationJson(candidate.text);
+    const effectiveSource = effectiveGeminiSourceLanguage(sourceLanguage, parsed.detectedLanguage);
+
     return {
       success: true,
-        translatedText: candidate.text.trim(),
-        sourceLanguage,
-        targetLanguage,
-        api: 'gemini',
-        usage: data.usageMetadata ?? null
-      };
+      translatedText: parsed.translatedText,
+      romanization: parsed.romanization,
+      detectedLanguage: parsed.detectedLanguage,
+      sourceLanguage: effectiveSource,
+      targetLanguage,
+      api: 'gemini',
+      usage: data.usageMetadata ?? null
+    };
   } catch (error) {
       // If this is the last API version, throw the error
       if (apiVersions.indexOf(apiVersion) === apiVersions.length - 1) {
