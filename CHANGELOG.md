@@ -4,6 +4,12 @@ All notable changes to Alto Translate are documented in this file.
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-05-20
+
+### Added
+
+- **First-run onboarding flow**: a 5-screen wizard that opens in a new tab on first install. Covers target language, translation engine selection, API key setup, a live sandbox demo, and optional extras. Skippable at every step. Replayable from the settings sidebar footer ([`onboarding/onboarding.html`](onboarding/onboarding.html), [`background/background.js`](background/background.js)).
+
 ## [1.4.0] - 2026-05-12
 
 ### Fixed
@@ -23,6 +29,8 @@ All notable changes to Alto Translate are documented in this file.
 
 ### Changed
 
+- **Typography**: **Inter / rsms.me** removed; **Manrope** via Google Fonts on [**`popup/popup.html`**](popup/popup.html) and [**`privacy.html`**](privacy.html). The **content script** translation bubble uses a **bundled** Manrope variable font ([**`utils/fonts/Manrope-Variable.woff2`](utils/fonts/Manrope-Variable.woff2), **`@font-face`** in [**`content/content.css`**](content/content.css)) so strict host **CSP** cannot block loading it.
+- **Package metadata**: [`package.json`](package.json) `version` aligned with **`manifest.json`** (`1.4.0`); **`license`** set to **`MIT`** to match [`LICENSE`](LICENSE).
 - **Node tooling**: [`package.json`](package.json) with `motion` + `esbuild`; [`scripts/build-motion.mjs`](scripts/build-motion.mjs) bundles exports for the extension.
 - **Popup / vocabulary**: settings **gear** opens options — browser-action footer [`popup/popup.html`](popup/popup.html); vocabulary tab bar [`vocabulary/vocabulary.html`](vocabulary/vocabulary.html) uses `chrome.runtime.openOptionsPage`; **in-page translation** footer [`content/content.js`](content/content.js) uses `sendMessage({ action: 'openSettings' })` (content scripts cannot call `openOptionsPage`).
 - **Vocabulary page** ([`vocabulary/vocabulary.html`](vocabulary/vocabulary.html), [`vocabulary/vocabulary.css`](vocabulary/vocabulary.css), [`vocabulary/vocabulary.mjs`](vocabulary/vocabulary.mjs)): **Review** / **All words** tabs with **cross-fade + slide** Motion; **empty ↔ deck** celebration and resume transitions; **All words** table no longer re-animates rows on every refresh (delete/restore/filter/storage); optional `renderTable({ animateRows: true })` still runs a **light parallel** row nudge (no cascading stagger); first-visit **all caught up** entrance after `is-ready`; page intro unchanged otherwise; deck float pauses on Words tab.

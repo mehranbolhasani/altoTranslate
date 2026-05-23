@@ -2,6 +2,7 @@
  * Vocabulary page — Motion-driven UI (bundled MV3-safe module).
  */
 import { animate } from '../vendor/motion-lib.js';
+import { enhanceAllSelects } from '../utils/alto-select.js';
 
 const STORAGE_VOCAB = 'altoVocabulary';
 const STORAGE_REVIEW_IDS = 'altoVocabReviewedTodayIds';
@@ -52,7 +53,7 @@ function formatSavedAt(ts) {
   try {
     return new Date(ts).toLocaleDateString(undefined, {
       year: 'numeric',
-      month: 'short',
+      month: 'numeric',
       day: 'numeric'
     });
   } catch {
@@ -75,7 +76,11 @@ function faviconUrlForPageUrl(pageUrl) {
   return `https://www.google.com/s2/favicons?sz=32&domain=${encodeURIComponent(host)}`;
 }
 
+/** @type {boolean} set during init from chrome.storage.local */
+let _userReduceMotion = false;
+
 function prefersReducedMotion() {
+  if (_userReduceMotion) return true;
   try {
     return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   } catch {
@@ -119,10 +124,8 @@ class VocabularyPageApp {
     /** @type {unknown[]} */
     this._rowAnimControls = [];
     this._completeMotionBusy = false;
-    /** @type {ReturnType<typeof animate> | null} */
-    this._floatCtlBefore = null;
-    /** @type {ReturnType<typeof animate> | null} */
-    this._floatCtlAfter = null;
+    /** Whether `runReviewCompleteEnterMotion` has run to completion on this page load. */
+    this._completeHasShown = false;
   }
 
   flushPendingRefreshIfNeeded() {
@@ -131,66 +134,16 @@ class VocabularyPageApp {
     void this.refresh();
   }
 
-  /** @returns {{ face: Element | null; layerBefore: Element | null; layerAfter: Element | null }} */
-  static deckEls(stack) {
-    const face = stack?.querySelector?.('.vocab-review-content');
-    const layerBefore = stack?.querySelector?.('.vocab-deck-layer--before');
-    const layerAfter = stack?.querySelector?.('.vocab-deck-layer--after');
-    return { face, layerBefore, layerAfter };
-  }
-
-  stopDeckFloat() {
-    stopMotion(this._floatCtlBefore);
-    stopMotion(this._floatCtlAfter);
-    this._floatCtlBefore = null;
-    this._floatCtlAfter = null;
-  }
-
-  /** Idle drift on ghost layers (paused during exit/shake paths). */
-  maybeStartDeckFloat() {
-    this.stopDeckFloat();
-    if (prefersReducedMotion()) return;
-
-    /** Intro adds `body.is-ready` after Motion settles; floating mid-intro fights hidden layout. */
-    if (!document.body.classList.contains('is-ready')) return;
-
-    const reviewPanel = document.getElementById('tabPanelReview');
-    if (!reviewPanel || reviewPanel.hidden) return;
-
-    const active = document.getElementById('reviewActive');
-    if (!active || active.hidden || this.reviewAnimBusy) return;
-
-    const stack = document.querySelector('.vocab-review-card-stack');
-    const { layerBefore, layerAfter } = VocabularyPageApp.deckEls(stack);
-    if (!layerBefore || !layerAfter) return;
-
-    this._floatCtlBefore = animate(
-      layerBefore,
-      {
-        transform: [
-          'translate(10px, 4px) rotate(3deg)',
-          'translate(10px, 10px) rotate(3deg)',
-          'translate(10px, 4px) rotate(3deg)'
-        ]
-      },
-      { duration: 5, repeat: Infinity, ease: 'easeInOut' }
-    );
-
-    this._floatCtlAfter = animate(
-      layerAfter,
-      {
-        transform: [
-          'translate(-10px, -4px) rotate(-5deg)',
-          'translate(-10px, -10px) rotate(-5deg)',
-          'translate(-10px, -4px) rotate(-5deg)'
-        ]
-      },
-      { duration: 5.5, repeat: Infinity, ease: 'easeInOut', delay: 2.5 }
-    );
-  }
-
   async init() {
+    try {
+      const r = await chrome.storage.local.get('altoReduceMotion');
+      _userReduceMotion = r.altoReduceMotion === true;
+    } catch {
+      _userReduceMotion = false;
+    }
+
     this.bind();
+    enhanceAllSelects();
     chrome.storage.onChanged.addListener((changes, area) => {
       if (area !== 'local') return;
       if (
@@ -208,27 +161,22 @@ class VocabularyPageApp {
 
     await this.refresh();
 
-    if (!prefersReducedMotion()) await this.runPageIntroMotion();
-
-    document.body.classList.add('is-ready');
-
     if (!prefersReducedMotion()) {
+      document.body.classList.remove('is-ready');
+
       const c = document.getElementById('reviewComplete');
       if (c && !c.hidden && buildQueue(this.list, this.reviewedIds).length === 0) {
         animate(c, { opacity: 0, y: 22 }, { duration: 0 });
-        const ic = c.querySelector('.vocab-review-complete-icon');
-        if (ic) animate(ic, { scale: 0.88 }, { duration: 0 });
       }
+
+      await this.runPageIntroMotion();
+
+      document.body.classList.add('is-ready');
     }
 
-    queueMicrotask(() => {
-      if (prefersReducedMotion()) return;
-      if (buildQueue(this.list, this.reviewedIds).length > 0) return;
+    if (!prefersReducedMotion() && buildQueue(this.list, this.reviewedIds).length === 0) {
       void this.runReviewCompleteEnterMotion();
-    });
-
-    /** @remarks First float after DOM visible */
-    queueMicrotask(() => this.maybeStartDeckFloat());
+    }
   }
 
   bind() {
@@ -307,9 +255,6 @@ class VocabularyPageApp {
       applyChrome();
       reviewPanel.hidden = isWords;
       wordsPanel.hidden = !isWords;
-      if (isWords) {
-        this.stopDeckFloat();
-      } else queueMicrotask(() => this.maybeStartDeckFloat());
       return;
     }
 
@@ -336,10 +281,6 @@ class VocabularyPageApp {
 
       animate(outgoing, { opacity: 1, y: 0 }, { duration: 0 });
       animate(incoming, { opacity: 1, y: 0 }, { duration: 0 });
-
-      if (isWords) {
-        this.stopDeckFloat();
-      } else queueMicrotask(() => this.maybeStartDeckFloat());
     } finally {
       this._tabAnimating = false;
     }
@@ -367,7 +308,6 @@ class VocabularyPageApp {
 
     const rows = [...document.querySelectorAll('#vocabRows tr')];
     const maxRows = 20;
-    /** Parallel subtle nudge — no per-row stagger (feels calmer than cascading). */
     const duration = 0.14;
     const y = 3;
 
@@ -381,118 +321,166 @@ class VocabularyPageApp {
     });
   }
 
-  async runReviewCompleteEnterMotion() {
-    if (prefersReducedMotion()) return;
-
-    const reviewTab = document.getElementById('tabPanelReview');
-    if (!reviewTab || reviewTab.hidden) return;
-
-    const el = document.getElementById('reviewComplete');
-    if (!el || el.hidden) return;
-    if (this._completeMotionBusy) return;
-
-    const icon = el.querySelector('.vocab-review-complete-icon');
-
-    this._completeMotionBusy = true;
-    try {
-      animate(el, { opacity: 0, y: 22 }, { duration: 0 });
-      if (icon) animate(icon, { scale: 0.88 }, { duration: 0 });
-
-      /** Parent `el` opacity fades the whole block; icon uses scale only (no nested opacity). */
-      /** @type {Promise<unknown>[]} */
-      const jobs = [
-        animate(el, { opacity: [0, 1], y: [22, 0] }, { duration: 0.42, ease: EASE_OUT }).finished
-      ];
-      if (icon) {
-        jobs.push(
-          animate(icon, { scale: [0.88, 1] }, { duration: 0.36, ease: EASE_OUT, delay: 0.05 }).finished
-        );
-      }
-      await Promise.all(jobs);
-    } finally {
-      this._completeMotionBusy = false;
-      animate(el, { opacity: 1, y: 0 }, { duration: 0 });
-      if (icon) animate(icon, { scale: 1 }, { duration: 0 });
-    }
-  }
-
-  async runReviewResumeFromEmptyMotion() {
-    if (prefersReducedMotion()) return;
-    const reviewTab = document.getElementById('tabPanelReview');
-    if (!reviewTab || reviewTab.hidden) return;
-
-    const active = document.getElementById('reviewActive');
-    const heading = document.getElementById('reviewHeading');
-    if (!active || active.hidden) return;
-
-    /** @type {Promise<unknown>[]} */
-    const jobs = [];
-    if (heading && !heading.hidden) {
-      jobs.push(
-        animate(heading, { opacity: [0, 1], y: [12, 0] }, { duration: 0.34, ease: EASE_OUT }).finished
-      );
-    }
-    jobs.push(
-      animate(active, { opacity: [0, 1], y: [16, 0] }, { duration: 0.38, ease: EASE_OUT, delay: 0.04 }).finished
-    );
-    await Promise.all(jobs);
-  }
+  // ── Page intro (shell card presents itself) ──────────────────────────────
 
   async runPageIntroMotion() {
     if (prefersReducedMotion()) return;
 
+    const shell = document.querySelector('.vocab-shell');
     const brand = document.querySelector('.vocab-brand');
     const headerText = document.querySelector('.vocab-header-text');
+    const mainTitleIcon = document.querySelector('.main-title-icon');
+    const heading = document.getElementById('reviewHeading');
     const tabsStrip = document.getElementById('vocabTabBar');
-    const heading = document.querySelector('.vocab-review-heading');
+    const settingsLink = document.getElementById('vocabSettingsLink');
     const reveal = document.querySelector('.vocab-review-reveal');
     const face = document.querySelector('.vocab-review-card-stack .vocab-review-content');
-    const layerBefore = document.querySelector('.vocab-deck-layer--before');
-    const layerAfter = document.querySelector('.vocab-deck-layer--after');
-    const d = 0.36;
 
     /** @type {Promise<unknown>[]} */
     const jobs = [];
 
-    if (brand) jobs.push(animate(brand, { opacity: [0, 1], y: [8, 0] }, { duration: d, ease: EASE_OUT }).finished);
+    if (shell) {
+      jobs.push(
+        animate(shell, { opacity: [0, 1], scale: [0.97, 1] }, { duration: 0.35, ease: EASE_OUT }).finished
+      );
+    }
+
+    await Promise.all(jobs);
+    jobs.length = 0;
+
+    if (brand) jobs.push(animate(brand, { opacity: [0, 1], y: [8, 0] }, { duration: 0.28, ease: EASE_OUT }).finished);
 
     if (headerText)
       jobs.push(
-        animate(headerText, { opacity: [0, 1], y: [8, 0] }, { duration: d, ease: EASE_OUT, delay: 0.055 }).finished
+        animate(headerText, { opacity: [0, 1], y: [8, 0] }, { duration: 0.28, ease: EASE_OUT, delay: 0.05 }).finished
       );
 
-    if (tabsStrip)
+    if (mainTitleIcon)
       jobs.push(
-        animate(tabsStrip, { opacity: [0, 1], y: [8, 0] }, { duration: d, ease: EASE_OUT, delay: 0.082 }).finished
+        animate(mainTitleIcon, { opacity: [0, 1], y: [8, 0] }, { duration: 0.28, ease: EASE_OUT, delay: 0.07 }).finished
       );
 
     if (heading && !heading.hidden)
       jobs.push(
-        animate(heading, { opacity: [0, 1], y: [8, 0] }, { duration: d, ease: EASE_OUT, delay: 0.11 }).finished
+        animate(heading, { opacity: [0, 1], y: [8, 0] }, { duration: 0.28, ease: EASE_OUT, delay: 0.09 }).finished
+      );
+
+    if (tabsStrip)
+      jobs.push(
+        animate(tabsStrip, { opacity: [0, 1], y: [8, 0] }, { duration: 0.26, ease: EASE_OUT, delay: 0.11 }).finished
+      );
+
+    if (settingsLink)
+      jobs.push(
+        animate(settingsLink, { opacity: [0, 1], scale: [0.85, 1] }, { duration: 0.24, ease: EASE_OUT, delay: 0.12 }).finished
       );
 
     if (face)
       jobs.push(
-        animate(face, { opacity: [0, 1], y: [8, 0] }, { duration: 0.34, ease: EASE_OUT, delay: 0.165 }).finished
+        animate(face, { opacity: [0, 1], y: [8, 0] }, { duration: 0.3, ease: EASE_OUT, delay: 0.13 }).finished
       );
 
     if (reveal)
       jobs.push(
-        animate(reveal, { opacity: [0, 1], y: [8, 0] }, { duration: 0.34, ease: EASE_OUT, delay: 0.68 }).finished
+        animate(reveal, { opacity: [0, 1], y: [8, 0] }, { duration: 0.28, ease: EASE_OUT, delay: 0.16 }).finished
       );
-
-    if (layerBefore)
-      jobs.push(animate(layerBefore, { opacity: [0, 0.5] }, { duration: 0.38, ease: EASE_OUT, delay: 0.52 }).finished);
-
-    if (layerAfter)
-      jobs.push(animate(layerAfter, { opacity: [0, 0.5] }, { duration: 0.38, ease: EASE_OUT, delay: 0.6 }).finished);
 
     await Promise.all(jobs);
   }
 
+  // ── Card exit / enter (no deck layers in new design) ─────────────────────
+
   getReviewCardAnimEl() {
     return document.querySelector('.vocab-review-card-anim');
   }
+
+  /**
+   * Exit animation: fade card face and reveal button out (slide up slightly).
+   */
+  async runCardExit() {
+    if (prefersReducedMotion()) return;
+
+    const root = this.getReviewCardAnimEl();
+    if (!root) return;
+
+    const face = root.querySelector('.vocab-review-card-stack .vocab-review-content');
+    const reveal = root.querySelector('.vocab-review-reveal');
+    if (!face && !reveal) return;
+
+    /** @type {Promise<unknown>[]} */
+    const jobs = [];
+    if (face) {
+      jobs.push(
+        animate(face, { opacity: [null, 0], y: [null, -12], scale: [null, 0.98] }, { duration: 0.24, ease: EASE_IN }).finished
+      );
+    }
+    if (reveal) {
+      jobs.push(
+        animate(reveal, { opacity: [null, 0], y: [null, -6] }, { duration: 0.2, ease: EASE_IN }).finished
+      );
+    }
+    await Promise.all(jobs);
+  }
+
+  /**
+   * Enter animation: fade card face and reveal button in (slide up into place).
+   */
+  async runCardEnter() {
+    if (prefersReducedMotion()) return;
+
+    const root = this.getReviewCardAnimEl();
+    if (!root) return;
+
+    const active = document.getElementById('reviewActive');
+    if (!active || active.hidden) return;
+
+    const reviewPanel = document.getElementById('tabPanelReview');
+    if (!reviewPanel || reviewPanel.hidden) return;
+
+    const face = root.querySelector('.vocab-review-card-stack .vocab-review-content');
+    const reveal = root.querySelector('.vocab-review-reveal');
+    if (!face) return;
+
+    /** @type {Promise<unknown>[]} */
+    const jobs = [];
+    jobs.push(
+      animate(face, { opacity: [0, 1], y: [12, 0], scale: [0.98, 1] }, { duration: 0.28, ease: EASE_OUT }).finished
+    );
+    if (reveal) {
+      jobs.push(
+        animate(reveal, { opacity: [0, 1], y: [6, 0] }, { duration: 0.24, ease: EASE_OUT, delay: 0.05 }).finished
+      );
+    }
+    await Promise.all(jobs);
+
+    /** Reset Motion offsets leaking into layout */
+    animate(face, { y: 0, scale: 1 }, { duration: 0 });
+    if (reveal) animate(reveal, { y: 0 }, { duration: 0 });
+  }
+
+  /**
+   * Blackout → swap DOM → enter.
+   * @param {() => void | Promise<void>} swapFn
+   */
+  async runSwapPhaseThenEnter(swapFn) {
+    const card = document.getElementById('reviewCard');
+
+    if (!card || prefersReducedMotion()) {
+      await Promise.resolve(swapFn());
+      await this.runCardEnter();
+      return;
+    }
+
+    card.classList.add('is-review-swap-hide');
+    try {
+      await Promise.resolve(swapFn());
+    } finally {
+      card.classList.remove('is-review-swap-hide');
+    }
+    await this.runCardEnter();
+  }
+
+  // ── Flip reveal ──────────────────────────────────────────────────────────
 
   async revealTranslationMotion() {
     const flipInner = document.getElementById('reviewFlipInner');
@@ -539,128 +527,56 @@ class VocabularyPageApp {
     if (trans) trans.hidden = true;
   }
 
-  /** @param {HTMLElement | null} [anim] */
-  async runDeckExit(anim) {
+  // ── All caught up celebration ────────────────────────────────────────────
+
+  async runReviewCompleteEnterMotion() {
     if (prefersReducedMotion()) return;
-    const root = anim || this.getReviewCardAnimEl();
-    if (!root) return;
+    if (this._completeHasShown) return;
 
-    const stack = root.querySelector('.vocab-review-card-stack');
-    const reveal = root.querySelector('.vocab-review-reveal');
-    if (!stack) return;
+    const reviewTab = document.getElementById('tabPanelReview');
+    if (!reviewTab || reviewTab.hidden) return;
 
-    const { face, layerBefore, layerAfter } = VocabularyPageApp.deckEls(stack);
-    if (!face || !layerBefore || !layerAfter || !reveal) return;
+    const el = document.getElementById('reviewComplete');
+    if (!el || el.hidden) return;
+    if (this._completeMotionBusy) return;
 
-    this.stopDeckFloat();
+    this._completeMotionBusy = true;
+    try {
+      animate(el, { opacity: 0, y: 22 }, { duration: 0 });
 
-    await Promise.all([
-      animate(
-        face,
-        { opacity: [null, 0], x: [null, 52], y: [null, 6], scale: [null, 0.992] },
-        { duration: 0.32, ease: EASE_IN }
-      ).finished,
-      animate(
-        layerBefore,
-        { opacity: [null, 0], x: [null, 76], y: [null, -2], rotate: [null, 9] },
-        { duration: 0.32, ease: EASE_IN, delay: 0.055 }
-      ).finished,
-      animate(
-        layerAfter,
-        { opacity: [null, 0], x: [null, 52], y: [null, -10], rotate: [null, -14] },
-        { duration: 0.32, ease: EASE_IN, delay: 0.11 }
-      ).finished,
-      animate(reveal, { opacity: [null, 0], x: [null, 34], y: [null, 6] }, { duration: 0.3, ease: EASE_IN, delay: 0.165 })
-        .finished
-    ]);
+      await animate(el, { opacity: [0, 1], y: [22, 0] }, { duration: 0.42, ease: EASE_OUT }).finished;
+    } finally {
+      this._completeMotionBusy = false;
+      this._completeHasShown = true;
+      animate(el, { opacity: 1, y: 0 }, { duration: 0 });
+    }
   }
 
-  /** @returns {Promise<void>} */
-  async runDeckEnter() {
-    if (prefersReducedMotion()) return;
+  // ── Resume from empty (word added back to queue) ──────────────────────────
 
-    const root = this.getReviewCardAnimEl();
-    const stack = root?.querySelector('.vocab-review-card-stack');
-    const reveal = root?.querySelector('.vocab-review-reveal');
-    if (!stack) return Promise.resolve();
+  async runReviewResumeFromEmptyMotion() {
+    if (prefersReducedMotion()) return;
+    const reviewTab = document.getElementById('tabPanelReview');
+    if (!reviewTab || reviewTab.hidden) return;
 
     const active = document.getElementById('reviewActive');
-    if (!active || active.hidden) return Promise.resolve();
+    const heading = document.getElementById('reviewHeading');
+    if (!active || active.hidden) return;
 
-    const reviewPanel = document.getElementById('tabPanelReview');
-    if (!reviewPanel || reviewPanel.hidden) return Promise.resolve();
-
-    const { face, layerBefore, layerAfter } = VocabularyPageApp.deckEls(stack);
-    if (!face || !layerBefore || !layerAfter || !reveal) return Promise.resolve();
-
-    await Promise.all([
-      animate(
-        layerAfter,
-        {
-          opacity: [0, 0.5],
-          x: [-22, -10],
-          y: [12, -4],
-          rotate: [-12, -5]
-        },
-        { duration: 0.36, ease: EASE_OUT }
-      ).finished,
-      animate(
-        layerBefore,
-        {
-          opacity: [0, 0.5],
-          x: [-8, 10],
-          y: [16, 4],
-          rotate: [-1, 3]
-        },
-        { duration: 0.36, ease: EASE_OUT, delay: 0.07 }
-      ).finished,
-      animate(
-        face,
-        {
-          opacity: [0, 1],
-          x: [-22, 0],
-          y: [8, 0],
-          scale: [0.993, 1]
-        },
-        { duration: 0.36, ease: EASE_OUT, delay: 0.135 }
-      ).finished,
-      animate(reveal, { opacity: [0, 1], x: [-16, 0], y: [5, 0] }, { duration: 0.34, ease: EASE_OUT, delay: 0.2 })
-        .finished
-    ]);
-
-    /** Reset Motion offsets leaking into layout */
-    animate(stack, { x: 0 }, { duration: 0 });
-    animate(reveal, { x: 0, y: 0 }, { duration: 0 });
-
-    this.maybeStartDeckFloat();
+    /** @type {Promise<unknown>[]} */
+    const jobs = [];
+    if (heading && !heading.hidden) {
+      jobs.push(
+        animate(heading, { opacity: [0, 1], y: [12, 0] }, { duration: 0.34, ease: EASE_OUT }).finished
+      );
+    }
+    jobs.push(
+      animate(active, { opacity: [0, 1], y: [16, 0] }, { duration: 0.38, ease: EASE_OUT, delay: 0.04 }).finished
+    );
+    await Promise.all(jobs);
   }
 
-  /**
-   * @param {() => void | Promise<void>} swapFn
-   * @returns {Promise<void>}
-   */
-  async runSwapPhaseThenEnter(swapFn) {
-    const card = document.getElementById('reviewCard');
-
-    /** @returns {Promise<void>} */
-    const runDeckEnterWrapped = async () => {
-      await this.runDeckEnter();
-    };
-
-    if (!card || prefersReducedMotion()) {
-      await Promise.resolve(swapFn());
-      await runDeckEnterWrapped();
-      return;
-    }
-
-    card.classList.add('is-review-swap-hide');
-    try {
-      await Promise.resolve(swapFn());
-    } finally {
-      card.classList.remove('is-review-swap-hide');
-    }
-    await runDeckEnterWrapped();
-  }
+  // ── Persist & refresh ────────────────────────────────────────────────────
 
   async persistCurrentGotItAndRefresh() {
     const queue = buildQueue(this.list, this.reviewedIds);
@@ -695,8 +611,6 @@ class VocabularyPageApp {
     this.updateLangFilterOptions(list);
     this.renderReview();
     this.renderTable();
-
-    queueMicrotask(() => this.maybeStartDeckFloat());
   }
 
   updateLangFilterOptions(list) {
@@ -731,7 +645,6 @@ class VocabularyPageApp {
     const hasQueue = queue.length > 0;
     const active = document.getElementById('reviewActive');
     const complete = document.getElementById('reviewComplete');
-    const heading = document.getElementById('reviewHeading');
     const panel = document.getElementById('reviewPanel');
     const card = document.getElementById('reviewCard');
 
@@ -744,20 +657,18 @@ class VocabularyPageApp {
       card?.classList.add('is-review-empty');
       if (active) active.hidden = true;
       if (complete) complete.hidden = false;
-      if (heading) heading.hidden = true;
       if (panel) {
         panel.removeAttribute('aria-labelledby');
-        panel.setAttribute('aria-label', "Today’s review — all caught up");
+        panel.setAttribute('aria-label', "Today's review — all caught up");
       }
       this._hadReviewQueue = false;
-      if (shouldAnimStates && prevHad === true) void this.runReviewCompleteEnterMotion();
+      if (shouldAnimStates && prevHad === true && !this._completeHasShown) void this.runReviewCompleteEnterMotion();
       return;
     }
 
     card?.classList.remove('is-review-empty');
     if (active) active.hidden = false;
     if (complete) complete.hidden = true;
-    if (heading) heading.hidden = false;
     if (panel) {
       panel.setAttribute('aria-labelledby', 'reviewHeading');
       panel.removeAttribute('aria-label');
@@ -786,6 +697,8 @@ class VocabularyPageApp {
     if (shouldAnimStates && prevHad === false) void this.runReviewResumeFromEmptyMotion();
   }
 
+  // ── Button handlers ──────────────────────────────────────────────────────
+
   async onGotIt() {
     const queue = buildQueue(this.list, this.reviewedIds);
     if (queue.length === 0) return;
@@ -801,14 +714,14 @@ class VocabularyPageApp {
     }
 
     const anim = this.getReviewCardAnimEl();
-    if (!anim || !anim.querySelector('.vocab-review-card-stack')) {
+    if (!anim) {
       await this.persistCurrentGotItAndRefresh();
       return;
     }
 
     this.reviewAnimBusy = true;
     try {
-      await this.runDeckExit(anim);
+      await this.runCardExit();
       await this.runSwapPhaseThenEnter(async () => {
         await this.persistCurrentGotItAndRefresh();
       });
@@ -833,8 +746,7 @@ class VocabularyPageApp {
     }
 
     const anim = this.getReviewCardAnimEl();
-    const stack = anim?.querySelector('.vocab-review-card-stack');
-    if (!anim || !stack) {
+    if (!anim) {
       this.reviewCursor++;
       this.resetRevealUi();
       this.renderReview();
@@ -843,9 +755,8 @@ class VocabularyPageApp {
 
     this.reviewAnimBusy = true;
     try {
-      this.stopDeckFloat();
-      await animate(stack, { x: [0, -10, 10, -8, 8, 0] }, { duration: 0.4, ease: 'easeInOut' }).finished;
-      await this.runDeckExit(anim);
+      await animate(anim, { x: [0, -10, 10, -8, 8, 0] }, { duration: 0.4, ease: 'easeInOut' }).finished;
+      await this.runCardExit();
 
       await this.runSwapPhaseThenEnter(async () => {
         this.reviewCursor++;

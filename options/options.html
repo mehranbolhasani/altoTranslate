@@ -10,7 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="options.css">
 </head>
-<body class="options-body min-h-screen">
+<body class="options-body min-h-screen is-ready">
   <div class="options-layout">
     <form id="settingsForm" class="settings-form">
       <div class="settings-shell">
@@ -70,6 +70,7 @@
             <button type="button" id="toggleDarkMode" class="settings-footer-dark">Dark mode</button>
             <a href="#" id="openVocabularyPageFooter" class="settings-footer-link">Open Vocabulary Page</a>
             <a href="../privacy.html" target="_blank" rel="noopener noreferrer" class="settings-footer-link">Privacy Policy</a>
+            <a href="#" id="replayOnboarding" class="settings-footer-link">Replay setup tour</a>
             <p id="versionFooter" class="settings-footer-version"></p>
           </footer>
         </aside>
@@ -81,6 +82,7 @@
               <h3 class="settings-section-title">Translation API</h3>
               <p class="settings-helper settings-helper--below-title">Choose which translation service to use</p>
               <div class="options-tabs-container api-options-grid">
+                <!-- MyMemory -->
                 <label for="apiLibreTranslate" class="api-option-card">
                   <input type="radio" id="apiLibreTranslate" name="apiPreference" value="libretranslate" class="api-option-radio">
                   <span class="api-option-check" aria-hidden="true">
@@ -95,8 +97,85 @@
                       </span>
                     </div>
                     <p class="settings-helper api-option-desc">Free, no key</p>
+                    <p class="api-option-meta">⚡ Fast · 100+ languages</p>
+                    <div class="api-key-panel">
+                      <div class="settings-inline-actions settings-inline-actions--block" style="margin-top:0.6rem">
+                        <div class="settings-status-pill settings-status-pill--ok">No API key required</div>
+                        <button type="button" id="validateLibreTranslateBtn" class="settings-btn-secondary">Test Connection</button>
+                      </div>
+                      <p class="settings-helper">Free translation service with 1000 requests/day limit</p>
+                    </div>
                   </div>
                 </label>
+
+                <!-- DeepL -->
+                <label for="apiDeepL" class="api-option-card">
+                  <input type="radio" id="apiDeepL" name="apiPreference" value="deepl" class="api-option-radio">
+                  <span class="api-option-check" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                  </span>
+                  <div class="api-option-content">
+                    <div class="api-option-topline">
+                      <span class="api-option-title">DeepL</span>
+                      <span class="api-card-status" data-status-for="deepl">
+                        <span class="status-dot status-dot--muted" aria-hidden="true"></span>
+                        <span class="status-label">No key</span>
+                      </span>
+                    </div>
+                    <p class="settings-helper api-option-desc">High quality, especially for European languages</p>
+                    <p class="api-option-meta">✨ Best quality for EU languages · 30+ languages</p>
+                    <div class="api-key-panel">
+                      <label for="deeplApiKey" class="settings-label" style="margin-top:0.6rem">DeepL API Key</label>
+                      <div class="settings-input-row">
+                        <input type="password" id="deeplApiKey" name="deeplApiKey" class="settings-input" placeholder="Enter your DeepL API key">
+                        <button type="button" id="toggleDeepLKey" class="settings-input-affix" aria-label="Show or hide DeepL API key">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                      </div>
+                      <div class="settings-inline-actions">
+                        <a href="https://www.deepl.com/en/your-account/keys" target="_blank" rel="noopener noreferrer" class="settings-link">Get a free key →</a>
+                        <button type="button" id="validateDeepLBtn" class="settings-btn-secondary">Validate</button>
+                      </div>
+                    </div>
+                  </div>
+                </label>
+
+                <!-- Microsoft Azure -->
+                <label for="apiAzure" class="api-option-card">
+                  <input type="radio" id="apiAzure" name="apiPreference" value="azure" class="api-option-radio">
+                  <span class="api-option-check" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                  </span>
+                  <div class="api-option-content">
+                    <div class="api-option-topline">
+                      <span class="api-option-title">Microsoft Translator</span>
+                      <span class="api-card-status" data-status-for="azure">
+                        <span class="status-dot status-dot--muted" aria-hidden="true"></span>
+                        <span class="status-label">No key</span>
+                      </span>
+                    </div>
+                    <p class="settings-helper api-option-desc">2M free characters/month. Best free volume.</p>
+                    <p class="api-option-meta">🌍 Widest free volume · 100+ languages</p>
+                    <div class="api-key-panel">
+                      <label for="azureApiKey" class="settings-label" style="margin-top:0.6rem">Microsoft Translator API Key</label>
+                      <div class="settings-input-row">
+                        <input type="password" id="azureApiKey" name="azureApiKey" class="settings-input" placeholder="Enter your Azure API key">
+                        <button type="button" id="toggleAzureKey" class="settings-input-affix" aria-label="Show or hide Azure API key">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                      </div>
+                      <label for="azureRegion" class="settings-label" style="margin-top:0.5rem">Azure region</label>
+                      <input type="text" id="azureRegion" name="azureRegion" class="settings-input" placeholder="e.g. westeurope" style="width: 100%">
+                      <div class="settings-inline-actions">
+                        <a href="https://portal.azure.com" target="_blank" rel="noopener noreferrer" class="settings-link">Get a free key on Azure →</a>
+                        <button type="button" id="validateAzureBtn" class="settings-btn-secondary">Validate</button>
+                      </div>
+                      <p class="settings-helper">2M free characters/month, no expiry.</p>
+                    </div>
+                  </div>
+                </label>
+
+                <!-- Google Gemini -->
                 <label for="apiGemini" class="api-option-card">
                   <input type="radio" id="apiGemini" name="apiPreference" value="gemini" class="api-option-radio">
                   <span class="api-option-check" aria-hidden="true">
@@ -111,24 +190,57 @@
                       </span>
                     </div>
                     <p class="settings-helper api-option-desc">Free tier available</p>
+                    <p class="api-option-meta">✨ Best for long text · Context-aware · 100+ languages</p>
+                    <div class="api-key-panel">
+                      <label for="geminiApiKey" class="settings-label" style="margin-top:0.6rem">Gemini API Key</label>
+                      <div class="settings-input-row">
+                        <input type="password" id="geminiApiKey" name="geminiApiKey" class="settings-input" placeholder="Enter your Gemini API key">
+                        <button type="button" id="toggleGeminiKey" class="settings-input-affix" aria-label="Show or hide Gemini API key">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                      </div>
+                      <div class="settings-inline-actions">
+                        <a href="https://makersuite.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="settings-link">Get API key</a>
+                        <button type="button" id="validateGeminiBtn" class="settings-btn-secondary">Validate</button>
+                      </div>
+                    </div>
                   </div>
                 </label>
-                <label for="apiOpenRouter" class="api-option-card">
-                  <input type="radio" id="apiOpenRouter" name="apiPreference" value="openrouter" class="api-option-radio">
+
+                <!-- Alto Cloud -->
+                <label for="apiAltoCloud" class="api-option-card">
+                  <input type="radio" id="apiAltoCloud" name="apiPreference" value="alto-cloud" class="api-option-radio">
                   <span class="api-option-check" aria-hidden="true">
                     <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
                   </span>
                   <div class="api-option-content">
                     <div class="api-option-topline">
-                      <span class="api-option-title">OpenRouter</span>
-                      <span class="api-card-status" data-status-for="openrouter">
+                      <span class="api-option-title">Alto Cloud</span>
+                      <span class="api-card-status" data-status-for="alto-cloud">
                         <span class="status-dot status-dot--muted" aria-hidden="true"></span>
-                        <span class="status-label">No key</span>
+                        <span class="status-label">Needs key</span>
                       </span>
                     </div>
-                    <p class="settings-helper api-option-desc">500+ models</p>
+                    <p class="settings-helper api-option-desc">Managed by Alto. No API keys needed.</p>
+                    <p class="api-option-meta">☁️ Powered by Alto · All languages</p>
+                    <div class="api-key-panel">
+                      <label for="altoCloudApiKey" class="settings-label" style="margin-top:0.6rem">Your Alto Cloud key</label>
+                      <div class="settings-input-row">
+                        <input type="text" id="altoCloudApiKey" name="altoCloudApiKey" class="settings-input" placeholder="alto-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" autocomplete="off">
+                      </div>
+                      <p class="settings-helper" style="margin-top:0.35rem">Paste this key into the Alto extension settings under Alto Cloud.</p>
+                      <div class="settings-inline-actions">
+                        <a href="https://altotranslate.xyz/pricing" target="_blank" rel="noopener noreferrer" class="settings-link">Get a key →</a>
+                        <a href="https://altotranslate.xyz/dashboard" target="_blank" rel="noopener noreferrer" class="settings-link">Manage your subscription →</a>
+                        <button type="button" id="validateAltoCloudBtn" class="settings-btn-secondary">Validate</button>
+                        <button type="button" id="saveAltoCloudBtn" class="settings-btn-secondary">Save</button>
+                      </div>
+                      <div id="altoCloudValidationResult" class="settings-helper" style="margin-top:0.35rem"></div>
+                    </div>
                   </div>
                 </label>
+
+                <!-- All (fallback) -->
                 <label for="apiAll" class="api-option-card">
                   <input type="radio" id="apiAll" name="apiPreference" value="both" class="api-option-radio">
                   <span class="api-option-check" aria-hidden="true">
@@ -142,52 +254,14 @@
                         <span class="status-label">No keys</span>
                       </span>
                     </div>
-                    <p class="settings-helper api-option-desc">MyMemory first (short); Gemini → OpenRouter first when text is long</p>
+                    <p class="settings-helper api-option-desc">MyMemory first (short text); DeepL → Gemini → Azure → Alto Cloud</p>
+                    <p class="api-option-meta">Smart routing across all saved providers</p>
+                    <div class="api-key-panel">
+                      <p class="settings-helper" style="margin-top:0.6rem">Configure keys above for providers you want included in fallback.</p>
+                      <div id="fallbackKeySummary" class="fallback-key-summary" style="margin-top:0.4rem"></div>
+                    </div>
                   </div>
                 </label>
-              </div>
-            </div>
-
-            <div class="settings-section">
-              <h3 class="settings-section-title">API Keys</h3>
-              <div class="settings-field-stack">
-                <div class="settings-field">
-                  <label for="geminiApiKey" class="settings-label">Gemini API Key</label>
-                  <div class="settings-input-row">
-                    <input type="password" id="geminiApiKey" name="geminiApiKey" class="settings-input" placeholder="Enter your Gemini API key">
-                    <button type="button" id="toggleGeminiKey" class="settings-input-affix" aria-label="Show or hide Gemini API key">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>
-                    </button>
-                  </div>
-                  <div class="settings-inline-actions">
-                    <a href="https://makersuite.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="settings-link">Get API key</a>
-                    <button type="button" id="validateGeminiBtn" class="settings-btn-secondary">Validate</button>
-                  </div>
-                </div>
-
-                <div class="settings-field">
-                  <label for="openrouterApiKey" class="settings-label">OpenRouter API Key</label>
-                  <div class="settings-input-row">
-                    <input type="password" id="openrouterApiKey" name="openrouterApiKey" class="settings-input" placeholder="Enter your OpenRouter API key">
-                    <button type="button" id="toggleOpenRouterKey" class="settings-input-affix" aria-label="Show or hide OpenRouter API key">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>
-                    </button>
-                  </div>
-                  <div class="settings-inline-actions">
-                    <a href="https://openrouter.ai/" target="_blank" rel="noopener noreferrer" class="settings-link">Get API key</a>
-                    <button type="button" id="validateOpenRouterBtn" class="settings-btn-secondary">Validate</button>
-                  </div>
-                  <p class="settings-helper">Key only; Alto picks a working free-tier translation model from its catalog automatically.</p>
-                </div>
-
-                <div class="settings-field">
-                  <span class="settings-label">MyMemory API Status</span>
-                  <div class="settings-inline-actions settings-inline-actions--block">
-                    <div class="settings-status-pill settings-status-pill--ok">No API key required</div>
-                    <button type="button" id="validateLibreTranslateBtn" class="settings-btn-secondary">Test Connection</button>
-                  </div>
-                  <p class="settings-helper">Free translation service with 1000 requests/day limit</p>
-                </div>
               </div>
             </div>
           </div>
@@ -217,121 +291,121 @@
               <div class="settings-lang-row">
                 <div class="settings-field">
                   <label for="sourceLanguage" class="settings-label">Source Language</label>
-                  <select id="sourceLanguage" name="sourceLanguage" class="settings-input settings-select">
+                  <select id="sourceLanguage" name="sourceLanguage" class="settings-select">
                     <option value="auto">Auto-detect</option>
+                    <option value="ar">Arabic</option>
+                    <option value="eu">Basque</option>
+                    <option value="bn">Bengali</option>
+                    <option value="bg">Bulgarian</option>
+                    <option value="ca">Catalan</option>
+                    <option value="zh">Chinese</option>
+                    <option value="hr">Croatian</option>
+                    <option value="cs">Czech</option>
+                    <option value="da">Danish</option>
+                    <option value="nl">Dutch</option>
                     <option value="en">English</option>
-                    <option value="es">Spanish</option>
+                    <option value="et">Estonian</option>
+                    <option value="tl">Filipino</option>
+                    <option value="fi">Finnish</option>
                     <option value="fr">French</option>
                     <option value="de">German</option>
-                    <option value="it">Italian</option>
-                    <option value="pt">Portuguese</option>
-                    <option value="ru">Russian</option>
-                    <option value="zh">Chinese</option>
-                    <option value="ja">Japanese</option>
-                    <option value="ko">Korean</option>
-                    <option value="ar">Arabic</option>
-                    <option value="fa">Persian/Farsi</option>
-                    <option value="hi">Hindi</option>
-                    <option value="ur">Urdu</option>
-                    <option value="bn">Bengali</option>
-                    <option value="ta">Tamil</option>
-                    <option value="te">Telugu</option>
-                    <option value="ml">Malayalam</option>
-                    <option value="kn">Kannada</option>
+                    <option value="el">Greek</option>
                     <option value="gu">Gujarati</option>
-                    <option value="pa">Punjabi</option>
-                    <option value="mr">Marathi</option>
-                    <option value="th">Thai</option>
-                    <option value="vi">Vietnamese</option>
-                    <option value="id">Indonesian</option>
-                    <option value="ms">Malay</option>
-                    <option value="tl">Filipino</option>
                     <option value="he">Hebrew</option>
-                    <option value="uk">Ukrainian</option>
-                    <option value="cs">Czech</option>
-                    <option value="sk">Slovak</option>
+                    <option value="hi">Hindi</option>
                     <option value="hu">Hungarian</option>
-                    <option value="ro">Romanian</option>
-                    <option value="bg">Bulgarian</option>
-                    <option value="hr">Croatian</option>
-                    <option value="sr">Serbian</option>
-                    <option value="sl">Slovenian</option>
-                    <option value="et">Estonian</option>
+                    <option value="is">Icelandic</option>
+                    <option value="id">Indonesian</option>
+                    <option value="ga">Irish</option>
+                    <option value="it">Italian</option>
+                    <option value="ja">Japanese</option>
+                    <option value="kn">Kannada</option>
+                    <option value="ko">Korean</option>
                     <option value="lv">Latvian</option>
                     <option value="lt">Lithuanian</option>
-                    <option value="el">Greek</option>
-                    <option value="is">Icelandic</option>
+                    <option value="ms">Malay</option>
+                    <option value="ml">Malayalam</option>
                     <option value="mt">Maltese</option>
-                    <option value="cy">Welsh</option>
-                    <option value="ga">Irish</option>
-                    <option value="eu">Basque</option>
-                    <option value="ca">Catalan</option>
-                    <option value="nl">Dutch</option>
-                    <option value="sv">Swedish</option>
-                    <option value="da">Danish</option>
+                    <option value="mr">Marathi</option>
                     <option value="no">Norwegian</option>
-                    <option value="fi">Finnish</option>
+                    <option value="fa">Persian/Farsi</option>
                     <option value="pl">Polish</option>
+                    <option value="pt">Portuguese</option>
+                    <option value="pa">Punjabi</option>
+                    <option value="ro">Romanian</option>
+                    <option value="ru">Russian</option>
+                    <option value="sr">Serbian</option>
+                    <option value="sk">Slovak</option>
+                    <option value="sl">Slovenian</option>
+                    <option value="es">Spanish</option>
+                    <option value="sv">Swedish</option>
+                    <option value="ta">Tamil</option>
+                    <option value="te">Telugu</option>
+                    <option value="th">Thai</option>
                     <option value="tr">Turkish</option>
+                    <option value="uk">Ukrainian</option>
+                    <option value="ur">Urdu</option>
+                    <option value="vi">Vietnamese</option>
+                    <option value="cy">Welsh</option>
                   </select>
                 </div>
                 <div class="settings-field">
                   <label for="targetLanguage" class="settings-label">Target Language</label>
-                  <select id="targetLanguage" name="targetLanguage" class="settings-input settings-select">
+                  <select id="targetLanguage" name="targetLanguage" class="settings-select">
+                    <option value="ar">Arabic</option>
+                    <option value="eu">Basque</option>
+                    <option value="bn">Bengali</option>
+                    <option value="bg">Bulgarian</option>
+                    <option value="ca">Catalan</option>
+                    <option value="zh">Chinese</option>
+                    <option value="hr">Croatian</option>
+                    <option value="cs">Czech</option>
+                    <option value="da">Danish</option>
+                    <option value="nl">Dutch</option>
                     <option value="en">English</option>
-                    <option value="es">Spanish</option>
+                    <option value="et">Estonian</option>
+                    <option value="tl">Filipino</option>
+                    <option value="fi">Finnish</option>
                     <option value="fr">French</option>
                     <option value="de">German</option>
-                    <option value="it">Italian</option>
-                    <option value="pt">Portuguese</option>
-                    <option value="ru">Russian</option>
-                    <option value="zh">Chinese</option>
-                    <option value="ja">Japanese</option>
-                    <option value="ko">Korean</option>
-                    <option value="ar">Arabic</option>
-                    <option value="fa">Persian/Farsi</option>
-                    <option value="hi">Hindi</option>
-                    <option value="ur">Urdu</option>
-                    <option value="bn">Bengali</option>
-                    <option value="ta">Tamil</option>
-                    <option value="te">Telugu</option>
-                    <option value="ml">Malayalam</option>
-                    <option value="kn">Kannada</option>
+                    <option value="el">Greek</option>
                     <option value="gu">Gujarati</option>
-                    <option value="pa">Punjabi</option>
-                    <option value="mr">Marathi</option>
-                    <option value="th">Thai</option>
-                    <option value="vi">Vietnamese</option>
-                    <option value="id">Indonesian</option>
-                    <option value="ms">Malay</option>
-                    <option value="tl">Filipino</option>
                     <option value="he">Hebrew</option>
-                    <option value="uk">Ukrainian</option>
-                    <option value="cs">Czech</option>
-                    <option value="sk">Slovak</option>
+                    <option value="hi">Hindi</option>
                     <option value="hu">Hungarian</option>
-                    <option value="ro">Romanian</option>
-                    <option value="bg">Bulgarian</option>
-                    <option value="hr">Croatian</option>
-                    <option value="sr">Serbian</option>
-                    <option value="sl">Slovenian</option>
-                    <option value="et">Estonian</option>
+                    <option value="is">Icelandic</option>
+                    <option value="id">Indonesian</option>
+                    <option value="ga">Irish</option>
+                    <option value="it">Italian</option>
+                    <option value="ja">Japanese</option>
+                    <option value="kn">Kannada</option>
+                    <option value="ko">Korean</option>
                     <option value="lv">Latvian</option>
                     <option value="lt">Lithuanian</option>
-                    <option value="el">Greek</option>
-                    <option value="is">Icelandic</option>
+                    <option value="ms">Malay</option>
+                    <option value="ml">Malayalam</option>
                     <option value="mt">Maltese</option>
-                    <option value="cy">Welsh</option>
-                    <option value="ga">Irish</option>
-                    <option value="eu">Basque</option>
-                    <option value="ca">Catalan</option>
-                    <option value="nl">Dutch</option>
-                    <option value="sv">Swedish</option>
-                    <option value="da">Danish</option>
+                    <option value="mr">Marathi</option>
                     <option value="no">Norwegian</option>
-                    <option value="fi">Finnish</option>
+                    <option value="fa">Persian/Farsi</option>
                     <option value="pl">Polish</option>
+                    <option value="pt">Portuguese</option>
+                    <option value="pa">Punjabi</option>
+                    <option value="ro">Romanian</option>
+                    <option value="ru">Russian</option>
+                    <option value="sr">Serbian</option>
+                    <option value="sk">Slovak</option>
+                    <option value="sl">Slovenian</option>
+                    <option value="es">Spanish</option>
+                    <option value="sv">Swedish</option>
+                    <option value="ta">Tamil</option>
+                    <option value="te">Telugu</option>
+                    <option value="th">Thai</option>
                     <option value="tr">Turkish</option>
+                    <option value="uk">Ukrainian</option>
+                    <option value="ur">Urdu</option>
+                    <option value="vi">Vietnamese</option>
+                    <option value="cy">Welsh</option>
                   </select>
                 </div>
               </div>
@@ -349,6 +423,13 @@
                   <div>
                     <div class="settings-check-label">Open vocabulary page in every new tab</div>
                     <p class="settings-helper">Turn your new tab into a daily vocabulary review space.</p>
+                  </div>
+                </label>
+                <label class="settings-check-row">
+                  <input type="checkbox" id="reduceMotion" name="reduceMotion" class="settings-checkbox">
+                  <div>
+                    <div class="settings-check-label">Reduce motion</div>
+                    <p class="settings-helper">Disable all animations across the extension for a more static experience.</p>
                   </div>
                 </label>
                 <div class="settings-inline-actions settings-inline-actions--block" style="margin-top: 1rem;">

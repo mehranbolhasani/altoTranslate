@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Alto Translate — Setup</title>
+        <link rel="stylesheet" href="../utils/tailwind.css" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap" rel="stylesheet" />
+        <link rel="stylesheet" href="onboarding.css" />
+    </head>
+    <body class="onboarding-body is-ready">
+        <div class="onboarding-container">
+            <div class="onboarding-shell">
+
+                <div class="onboarding-header">
+                    <!-- Progress dots -->
+                    <div class="onboarding-progress" role="progressbar" aria-label="Setup progress" aria-valuenow="1" aria-valuemin="1" aria-valuemax="5">
+                        <span class="onboarding-dot is-active" data-dot="1" aria-label="Step 1 of 5"></span>
+                        <span class="onboarding-dot" data-dot="2" aria-label="Step 2 of 5"></span>
+                        <span class="onboarding-dot" data-dot="3" aria-label="Step 3 of 5"></span>
+                        <span class="onboarding-dot" data-dot="4" aria-label="Step 4 of 5"></span>
+                        <span class="onboarding-dot" data-dot="5" aria-label="Step 5 of 5"></span>
+                    </div>
+
+                    <!-- Skip button -->
+                    <button type="button" class="onboarding-skip" id="skipBtn" aria-label="Skip setup">Skip setup</button>
+                </div>
+
+                <!-- Screens -->
+                <div class="onboarding-screens">
+                    <!-- Screen 1 — Welcome -->
+                    <div class="onboarding-screen is-active" data-screen="1">
+                        <h1 class="onboarding-screen-headline">
+                            <div class="brand">
+                                <img src="../icons/icon.svg" alt="" width="36" height="36" class="logo" />
+                                <span class="wordmark">altoTranslate</span>
+                            </div>
+                            <span>... is ready. Let's make it yours.</span>
+                        </h1>
+                        <p class="onboarding-screen-subhead">
+                            Two minutes to set things up the way you like. You can skip this and come back anytime.
+                        </p>
+                        <div class="onboarding-screen-body"></div>
+                        <div class="onboarding-nav">
+                            <button type="button" class="onboarding-btn-ghost onboarding-btn-ghost--danger" id="skipToEndBtn">
+                                Skip, I'll explore
+                            </button>
+                            <button type="button" class="onboarding-btn-primary" id="screen1NextBtn">Get started</button>
+                        </div>
+                    </div>
+
+                    <!-- Screen 2 — Target language -->
+                    <div class="onboarding-screen" data-screen="2">
+                        <h1 class="onboarding-screen-headline">What language do you want things translated into?</h1>
+                        <div class="onboarding-screen-body">
+                            <div class="onboarding-chips" id="languageChips">
+                                <button type="button" class="onboarding-chip" data-lang="en">
+                                    <span>🇬🇧</span>
+                                    <span>English</span>
+                                </button>
+                                <button type="button" class="onboarding-chip" data-lang="es">
+                                    <span>🇪🇸</span>
+                                    <span>Spanish</span>
+                                </button>
+                                <button type="button" class="onboarding-chip" data-lang="fr">
+                                    <span>🇫🇷</span>
+                                    <span>French</span>
+                                </button>
+                                <button type="button" class="onboarding-chip" data-lang="de">
+                                    <span>🇩🇪</span>
+                                    <span>German</span>
+                                </button>
+                                <button type="button" class="onboarding-chip" data-lang="zh">
+                                    <span>🇨🇳</span>
+                                    <span>Chinese</span>
+                                </button>
+                                <button type="button" class="onboarding-chip" data-lang="ar">
+                                    <span>🇸🇦</span>
+                                    <span>Arabic</span>
+                                </button>
+                                <button type="button" class="onboarding-chip" data-lang="">
+                                    <span>🌍</span>
+                                    <span>Other</span>
+                                </button>
+                            </div>
+                            <div id="onboardingOtherLangWrap" class="is-hidden">
+                                <label for="targetLanguageSelect" class="onboarding-label">Choose a language</label>
+                                <select id="targetLanguageSelect" class="onboarding-select">
+                                    <option value="bn">Bengali</option>
+                                    <option value="bg">Bulgarian</option>
+                                    <option value="ca">Catalan</option>
+                                    <option value="hr">Croatian</option>
+                                    <option value="cs">Czech</option>
+                                    <option value="da">Danish</option>
+                                    <option value="nl">Dutch</option>
+                                    <option value="et">Estonian</option>
+                                    <option value="tl">Filipino</option>
+                                    <option value="fi">Finnish</option>
+                                    <option value="el">Greek</option>
+                                    <option value="gu">Gujarati</option>
+                                    <option value="he">Hebrew</option>
+                                    <option value="hi">Hindi</option>
+                                    <option value="hu">Hungarian</option>
+                                    <option value="is">Icelandic</option>
+                                    <option value="id">Indonesian</option>
+                                    <option value="ga">Irish</option>
+                                    <option value="it">Italian</option>
+                                    <option value="ja">Japanese</option>
+                                    <option value="kn">Kannada</option>
+                                    <option value="ko">Korean</option>
+                                    <option value="lv">Latvian</option>
+                                    <option value="lt">Lithuanian</option>
+                                    <option value="ms">Malay</option>
+                                    <option value="ml">Malayalam</option>
+                                    <option value="mt">Maltese</option>
+                                    <option value="mr">Marathi</option>
+                                    <option value="no">Norwegian</option>
+                                    <option value="fa">Persian/Farsi</option>
+                                    <option value="pl">Polish</option>
+                                    <option value="pt">Portuguese</option>
+                                    <option value="pa">Punjabi</option>
+                                    <option value="ro">Romanian</option>
+                                    <option value="ru">Russian</option>
+                                    <option value="sr">Serbian</option>
+                                    <option value="sk">Slovak</option>
+                                    <option value="sl">Slovenian</option>
+                                    <option value="sv">Swedish</option>
+                                    <option value="ta">Tamil</option>
+                                    <option value="te">Telugu</option>
+                                    <option value="th">Thai</option>
+                                    <option value="tr">Turkish</option>
+                                    <option value="uk">Ukrainian</option>
+                                    <option value="ur">Urdu</option>
+                                    <option value="vi">Vietnamese</option>
+                                    <option value="cy">Welsh</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="onboarding-nav">
+                            <button type="button" class="onboarding-btn-ghost" id="screen2BackBtn">Back</button>
+                            <button type="button" class="onboarding-btn-primary" id="screen2NextBtn">Continue</button>
+                        </div>
+                    </div>
+
+                    <!-- Screen 3 — Translation engine -->
+                    <div class="onboarding-screen" data-screen="3">
+                        <h1 class="onboarding-screen-headline">Pick your translation engine</h1>
+                        <p class="onboarding-screen-subhead">You can change this any time in settings.</p>
+                        <div class="onboarding-screen-body">
+                            <div class="onboarding-api-cards" id="engineCards">
+                                <!-- MyMemory -->
+                                <label class="onboarding-api-card is-selected" data-engine="libretranslate">
+                                    <input type="radio" name="onboardingEngine" value="libretranslate" checked class="onboarding-api-card-radio" />
+                                    <span class="onboarding-api-card-check" aria-hidden="true">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
+                                    </span>
+                                    <div class="onboarding-api-card-content">
+                                        <div class="onboarding-api-card-top">
+                                            <span class="onboarding-api-card-title">MyMemory</span>
+                                            <span class="onboarding-api-card-pill">Ready · Free · No setup</span>
+                                        </div>
+                                        <p class="onboarding-api-card-desc">Good for casual use. Has daily limits.</p>
+                                    </div>
+                                </label>
+                                <!-- DeepL -->
+                                <label class="onboarding-api-card" data-engine="deepl">
+                                    <input type="radio" name="onboardingEngine" value="deepl" class="onboarding-api-card-radio" />
+                                    <span class="onboarding-api-card-check" aria-hidden="true">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
+                                    </span>
+                                    <div class="onboarding-api-card-content">
+                                        <div class="onboarding-api-card-top">
+                                            <span class="onboarding-api-card-title">DeepL</span>
+                                            <span class="onboarding-api-card-pill">Recommended · Free tier</span>
+                                        </div>
+                                        <p class="onboarding-api-card-desc">Best quality, especially for European languages. Needs a free API key (2 min).</p>
+                                    </div>
+                                </label>
+                                <!-- Microsoft Translator -->
+                                <label class="onboarding-api-card" data-engine="azure">
+                                    <input type="radio" name="onboardingEngine" value="azure" class="onboarding-api-card-radio" />
+                                    <span class="onboarding-api-card-check" aria-hidden="true">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
+                                    </span>
+                                    <div class="onboarding-api-card-content">
+                                        <div class="onboarding-api-card-top">
+                                            <span class="onboarding-api-card-title">Microsoft Translator</span>
+                                            <span class="onboarding-api-card-pill">Best free volume</span>
+                                        </div>
+                                        <p class="onboarding-api-card-desc">2M free characters/month. Needs a free Azure key (5 min).</p>
+                                    </div>
+                                </label>
+                                <!-- Gemini -->
+                                <label class="onboarding-api-card" data-engine="gemini">
+                                    <input type="radio" name="onboardingEngine" value="gemini" class="onboarding-api-card-radio" />
+                                    <span class="onboarding-api-card-check" aria-hidden="true">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
+                                    </span>
+                                    <div class="onboarding-api-card-content">
+                                        <div class="onboarding-api-card-top">
+                                            <span class="onboarding-api-card-title">Google Gemini</span>
+                                            <span class="onboarding-api-card-pill">Recommended · Free tier</span>
+                                        </div>
+                                        <p class="onboarding-api-card-desc">Best for long or contextual text. Needs a free API key (2 min).</p>
+                                    </div>
+                                </label>
+                                <!-- Alto Cloud -->
+                                <label class="onboarding-api-card" data-engine="alto-cloud">
+                                    <input type="radio" name="onboardingEngine" value="alto-cloud" class="onboarding-api-card-radio" />
+                                    <span class="onboarding-api-card-check" aria-hidden="true">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
+                                    </span>
+                                    <div class="onboarding-api-card-content">
+                                        <div class="onboarding-api-card-top">
+                                            <span class="onboarding-api-card-title">Alto Cloud</span>
+                                            <span class="onboarding-api-card-pill">☁️ Managed · No setup</span>
+                                        </div>
+                                        <p class="onboarding-api-card-desc">Translations managed by Alto. Paste your Alto Cloud key and you're done. Get a key at altotranslate.xyz/pricing.</p>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="onboarding-nav">
+                            <button type="button" class="onboarding-btn-ghost" id="screen3BackBtn">Back</button>
+                            <button type="button" class="onboarding-btn-primary" id="screen3NextBtn">Continue</button>
+                        </div>
+                    </div>
+
+                    <!-- Screen 3.5 — API key (conditional) -->
+                    <div class="onboarding-screen" data-screen="3-5">
+                        <h1 class="onboarding-screen-headline" id="apiKeyHeadline">Let's connect your Gemini key</h1>
+                        <div class="onboarding-screen-body">
+                            <ol class="onboarding-steps" id="apiKeySteps">
+                                <li class="onboarding-step">
+                                    <span id="providerNameStep1">Click the button below to open Google AI Studio in a new tab.</span>
+                                </li>
+                                <li class="onboarding-step">Create a free key and copy it.</li>
+                                <li class="onboarding-step">Paste it here and hit Validate.</li>
+                            </ol>
+                            <div class="onboarding-inline-actions" style="margin-bottom: 1rem">
+                                <a href="#" id="getKeyBtn" target="_blank" rel="noopener noreferrer" class="onboarding-btn-secondary" style="text-decoration: none">
+                                    Get my key &rarr;
+                                </a>
+                                <a href="#" id="openDashboardBtn" target="_blank" rel="noopener noreferrer" class="onboarding-btn-secondary is-hidden" style="text-decoration: none">
+                                    Open dashboard &rarr;
+                                </a>
+                            </div>
+                            <label for="apiKeyInput" class="onboarding-label">Paste your API key</label>
+                            <div class="onboarding-input-row">
+                                <input type="password" id="apiKeyInput" class="onboarding-input" placeholder="Paste your API key here" />
+                                <button type="button" id="toggleApiKey" class="onboarding-input-affix" aria-label="Show or hide API key">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>
+                                </button>
+                            </div>
+                            <div id="apiRegionWrap" class="is-hidden" style="margin-top: 0.75rem">
+                                <label for="apiRegionInput" class="onboarding-label">Azure region</label>
+                                <input type="text" id="apiRegionInput" class="onboarding-input" placeholder="e.g. westeurope" />
+                            </div>
+                            <div class="onboarding-inline-actions">
+                                <button type="button" id="validateApiKeyBtn" class="onboarding-btn-secondary">Validate</button>
+                            </div>
+                            <div id="validationResult" class="onboarding-validation-result"></div>
+                            <div style="margin-top: 0.75rem">
+                                <button type="button" id="skipApiKeyBtn" class="onboarding-link-btn">Skip for now, use MyMemory</button>
+                            </div>
+                        </div>
+                        <div class="onboarding-nav">
+                            <button type="button" class="onboarding-btn-ghost" id="screen35BackBtn">Back</button>
+                            <button type="button" class="onboarding-btn-primary" id="screen35NextBtn" disabled>Continue</button>
+                        </div>
+                    </div>
+
+                    <!-- Screen 4 — Try it -->
+                    <div class="onboarding-screen" data-screen="4">
+                        <h1 class="onboarding-screen-headline">Try it out</h1>
+                        <p class="onboarding-screen-subhead">Select any text below to see Alto in action.</p>
+                        <div class="onboarding-screen-body">
+                            <div class="onboarding-sandbox" id="sandbox">
+                                El pequeño café de la esquina abre todos los días a las siete de la mañana. Su especialidad es un cruasán recién
+                                horneado con café cortado.
+                                <div class="onboarding-sandbox-translation" id="sandboxTranslation" hidden></div>
+                            </div>
+                            <span class="onboarding-sandbox-badge" id="sandboxBadge" hidden></span>
+                            <div class="onboarding-sandbox-confirm" id="sandboxConfirm">
+                                Nice &mdash; that's all there is to it. Alto works on every page now.
+                            </div>
+                        </div>
+                        <div class="onboarding-nav">
+                            <button type="button" class="onboarding-btn-ghost" id="screen4BackBtn">Back</button>
+                            <button type="button" class="onboarding-btn-primary" id="screen4NextBtn">Continue</button>
+                        </div>
+                    </div>
+
+                    <!-- Screen 5 — A few extras -->
+                    <div class="onboarding-screen" data-screen="5">
+                        <h1 class="onboarding-screen-headline">A few extras (all optional)</h1>
+                        <div class="onboarding-screen-body">
+                            <div class="onboarding-toggles">
+                                <label class="onboarding-toggle">
+                                    <input type="checkbox" class="onboarding-toggle-checkbox" id="toggleVocabulary" />
+                                    <div class="onboarding-toggle-text">
+                                        <div class="onboarding-toggle-label">Save words to vocabulary as I translate</div>
+                                        <p class="onboarding-toggle-desc">Build a personal word list. Review later in the vocabulary page.</p>
+                                    </div>
+                                </label>
+                                <label class="onboarding-toggle">
+                                    <input type="checkbox" class="onboarding-toggle-checkbox" id="toggleShortcut" />
+                                    <div class="onboarding-toggle-text">
+                                        <div class="onboarding-toggle-label">Keyboard shortcut: Alt+T to translate selection</div>
+                                        <p class="onboarding-toggle-desc">
+                                            You can change this any time in <code>chrome://extensions/shortcuts</code>.
+                                        </p>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="onboarding-nav">
+                            <button type="button" class="onboarding-btn-ghost" id="screen5BackBtn">Back</button>
+                            <button type="button" class="onboarding-btn-primary" id="screen5DoneBtn">Done</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script src="../utils/dark-mode.js"></script>
+        <script type="module" src="onboarding.mjs"></script>
+    </body>
+</html>

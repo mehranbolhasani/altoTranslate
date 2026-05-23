@@ -21,8 +21,8 @@ function getErrorMessage(errorType, context = {}) {
       message: 'No translation services configured',
       steps: [
         'Open the extension settings',
-        'Configure at least one API key (Gemini or OpenRouter)',
-        'Or enable LibreTranslate/MyMemory API (no key required)',
+        'Configure at least one API key (Gemini, DeepL, or Azure)',
+        'MyMemory API is always available (no key required)',
         'Save your settings'
       ],
       helpLink: null
@@ -38,16 +38,37 @@ function getErrorMessage(errorType, context = {}) {
       ],
       helpLink: 'https://makersuite.google.com/app/apikey'
     },
-    'OPENROUTER_API_KEY_MISSING': {
-      message: 'OpenRouter API key not configured',
+    'DEEPL_API_KEY_MISSING': {
+      message: 'DeepL API key not configured',
       steps: [
-        'Get an API key from OpenRouter',
+        'Get a free API key from DeepL',
         'Open extension settings',
-        'Enter your OpenRouter API key',
+        'Enter your DeepL API key',
         'Click "Validate" to test the key',
         'Save your settings'
       ],
-      helpLink: 'https://openrouter.ai/'
+      helpLink: 'https://www.deepl.com/en/your-account/keys'
+    },
+    'AZURE_API_KEY_MISSING': {
+      message: 'Microsoft Translator API key not configured',
+      steps: [
+        'Get a free API key from the Azure portal',
+        'Open extension settings',
+        'Enter your Azure API key and region',
+        'Click "Validate" to test the key',
+        'Save your settings'
+      ],
+      helpLink: 'https://portal.azure.com'
+    },
+    'MYMEMORY_QUOTA_EXCEEDED': {
+      message: "MyMemory's daily limit has been reached. Switch to Alto Cloud or another provider for unlimited translations.",
+      steps: [
+        'Open extension settings',
+        'Select a different provider (Alto Cloud, Gemini, DeepL, or Azure)',
+        'Enter the required API key for that provider',
+        'Save your settings'
+      ],
+      helpLink: null
     },
     'LIBRETRANSLATE_DISABLED': {
       message: 'LibreTranslate (MyMemory API) is not enabled',
@@ -68,7 +89,8 @@ function getErrorMessage(errorType, context = {}) {
         'Get a new key if needed'
       ],
       helpLink: context.apiType === 'gemini' ? 'https://makersuite.google.com/app/apikey' : 
-                context.apiType === 'openrouter' ? 'https://openrouter.ai/' : null
+                context.apiType === 'deepl' ? 'https://www.deepl.com/en/your-account/keys' : 
+                context.apiType === 'azure' ? 'https://portal.azure.com' : null
     },
     'API_ERROR': {
       message: `${context.apiType || 'Translation'} API error: ${context.error || 'Unknown error'}`,
@@ -172,8 +194,14 @@ function getErrorTypeFromMessage(errorMessage) {
   if (lowerMessage.includes('gemini') && (lowerMessage.includes('not configured') || lowerMessage.includes('missing'))) {
     return 'GEMINI_API_KEY_MISSING';
   }
-  if (lowerMessage.includes('openrouter') && (lowerMessage.includes('not configured') || lowerMessage.includes('missing'))) {
-    return 'OPENROUTER_API_KEY_MISSING';
+  if (lowerMessage.includes('deepl') && (lowerMessage.includes('not configured') || lowerMessage.includes('missing'))) {
+    return 'DEEPL_API_KEY_MISSING';
+  }
+  if ((lowerMessage.includes('azure') || lowerMessage.includes('microsoft')) && (lowerMessage.includes('not configured') || lowerMessage.includes('missing'))) {
+    return 'AZURE_API_KEY_MISSING';
+  }
+  if (lowerMessage.includes('mymemory') && lowerMessage.includes('quota')) {
+    return 'MYMEMORY_QUOTA_EXCEEDED';
   }
   if (lowerMessage.includes('rate limit') || lowerMessage.includes('429')) {
     return 'RATE_LIMIT';

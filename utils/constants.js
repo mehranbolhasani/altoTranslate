@@ -43,24 +43,16 @@ const GEMINI_MODELS = [
 ];
 
 /**
- * OpenRouter API configuration
- *
- * Ordered list of free-tier chat model ids (see https://openrouter.ai/models).
- * Translation tries each in turn so users only paste an API key — no model UI.
- * When OpenRouter deprecates an id (404), a later candidate may still work.
+ * DeepL API configuration
  */
-const OPENROUTER_FREE_MODEL_CANDIDATES = [
-  // Verified against OpenRouter catalog (pricing prompt+completion = 0); Gemma 3 :free ids were retired (404 "No endpoints found").
-  'google/gemma-4-26b-a4b-it:free',
-  'google/gemma-4-31b-it:free',
-  'meta-llama/llama-3.3-70b-instruct:free',
-  'z-ai/glm-4.5-air:free',
-  'meta-llama/llama-3.2-3b-instruct:free',
-  'nvidia/nemotron-nano-9b-v2:free',
-  'liquid/lfm-2.5-1.2b-instruct:free',
-  'openai/gpt-oss-20b:free'
-];
-const OPENROUTER_API_BASE = 'https://openrouter.ai/api/v1/chat/completions';
+const DEEPL_API_BASE = 'https://api-free.deepl.com/v2/translate';
+const DEEPL_KEY_URL = 'https://www.deepl.com/en/your-account/keys';
+
+/**
+ * Microsoft Azure Translator API configuration
+ */
+const AZURE_API_BASE = 'https://api.cognitive.microsofttranslator.com/translate?api-version=3.0';
+const AZURE_KEY_URL = 'https://portal.azure.com';
 
 /**
  * Max tokens for translation completions. 1000 is too low for long selections
@@ -75,9 +67,9 @@ const MYMEMORY_API_BASE = 'https://api.mymemory.translated.net/get';
 
 /**
  * Smart fallback (`apiPreference` both): selections with at least this many characters
- * run Gemini/OpenRouter before MyMemory when an LLM key exists (long passages, fewer URL issues, better quality).
+ * run LLM/DeepL before MyMemory when a high-quality key exists (long passages, fewer URL issues, better quality).
  */
-const SMART_FALLBACK_LLM_FIRST_MIN_CHARS = 2000;
+const SMART_FALLBACK_LLM_FIRST_MIN_CHARS = 500;
 
 /**
  * Storage operation retry configuration
@@ -93,6 +85,14 @@ const STORAGE_KEY_VOCABULARY = 'altoVocabulary';
 const STORAGE_KEY_VOCAB_REVIEWED_IDS = 'altoVocabReviewedTodayIds';
 const STORAGE_KEY_VOCAB_REVIEW_DAY = 'altoVocabReviewCalendarDay';
 const STORAGE_KEY_NEW_TAB_VOCAB = 'altoOpenVocabularyNewTab';
+
+const STORAGE_KEY_ONBOARDING_COMPLETED = 'altoOnboardingCompleted';
+const STORAGE_KEY_ONBOARDING_VERSION = 'altoOnboardingVersion';
+
+const STORAGE_KEY_TRANSLATION_COUNT = 'translationCount';
+const STORAGE_KEY_REVIEW_NUDGE_DISMISSED = 'reviewNudgeDismissed';
+
+const REVIEW_NUDGE_THRESHOLD = 50;
 
 const MAX_VOCAB_ENTRIES = 500;
 

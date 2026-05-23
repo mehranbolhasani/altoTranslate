@@ -9,8 +9,10 @@ importScripts(
   '../utils/mymemory_infer_source.js',
   '../utils/selection_context.js',
   '../utils/api-gemini.js',
-  '../utils/api-openrouter.js',
-  '../utils/api-libretranslate.js'
+  '../utils/api-deepl.js',
+  '../utils/api-azure.js',
+  '../utils/api-libretranslate.js',
+  '../utils/api-alto-cloud.js'
 );
 
 // PREDEFINED_THEMES is imported from utils/themes.js via importScripts
@@ -22,7 +24,10 @@ importScripts(
 const DEFAULT_SETTINGS = {
   apiPreference: 'gemini',
   geminiApiKey: '',
-  openrouterApiKey: '',
+  deeplApiKey: '',
+  azureApiKey: '',
+  azureRegion: '',
+  apiKey_alto: '',
   libretranslateEnabled: true, // Legacy field; MyMemory always on (normalized in getSettings)
   sourceLanguage: 'auto',
   targetLanguage: 'en',
@@ -32,6 +37,24 @@ const DEFAULT_SETTINGS = {
 
 // Constants are now imported from utils/constants.js via importScripts
 // GEMINI_MODELS, CACHE_TTL, CACHE_PREFIX, MAX_CACHE_SIZE_MB, MAX_CACHE_SIZE_BYTES, EVICTION_THRESHOLD
+
+/**
+ * Migrate stored provider from openrouter → mymemory (libretranslate).
+ * Runs once per SW load, idempotent: subsequent runs hit the "do nothing" branch.
+ */
+async function migrateOpenRouterProvider() {
+  try {
+    const result = await chrome.storage.sync.get('apiPreference');
+    if (result.apiPreference === 'openrouter') {
+      await chrome.storage.sync.set({ apiPreference: 'libretranslate' });
+      console.log('[Alto] Migrated provider from openrouter → mymemory');
+    }
+  } catch (error) {
+    console.log('[Alto] OpenRouter migration check failed:', error);
+  }
+}
+
+migrateOpenRouterProvider();
 
 /**
  * In-memory cache for fast lookups
@@ -44,10 +67,19 @@ const memoryCache = new Map();
  */
 const lruOrder = [];
 
+// Open settings page on extension icon click (no popup)
+chrome.action.onClicked.addListener(() => {
+  chrome.runtime.openOptionsPage();
+});
+
 // Handle extension installation
 chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === 'install') {
-    chrome.runtime.openOptionsPage();
+    chrome.storage.local.set({
+      [STORAGE_KEY_ONBOARDING_COMPLETED]: false,
+      [STORAGE_KEY_ONBOARDING_VERSION]: 1
+    });
+    chrome.tabs.create({ url: chrome.runtime.getURL('onboarding/onboarding.html') });
   }
 });
 
@@ -128,6 +160,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       return true;
     case 'clearVocabulary':
       handleClearVocabulary(sendResponse);
+      return true;
+    case 'replayOnboarding':
+      chrome.tabs.create({ url: chrome.runtime.getURL('onboarding/onboarding.html') });
+      sendResponse({ success: true });
+      return true;
+    case 'openReviewPage':
+      chrome.tabs.create({ url: 'https://chromewebstore.google.com/detail/EXTENSION_ID/reviews' });
+      sendResponse({ success: true });
       return true;
     default:
       sendResponse({ success: false, error: `Unknown action: ${action}` });
@@ -330,7 +370,7 @@ async function handleTranslation(request, sendResponse) {
     settings = await getSettings();
     apiPreference = settings.apiPreference;
 
-    // MyMemory is always available (no toggle). Gemini/OpenRouter need keys when selected.
+    // MyMemory is always available (no toggle). Other providers need keys when selected.
 
     // Generate cache key
     const cacheKey = await generateCacheKey(sanitizedText, sourceLanguage, targetLanguage, apiPreference);
@@ -364,29 +404,62 @@ async function handleTranslation(request, sendResponse) {
             sourceLanguage,
             llmContext
           );
-          // No automatic fallback when user explicitly selects Gemini - show the error
           break;
           
-        case 'openrouter':
-          if (!settings.openrouterApiKey) {
+        case 'deepl':
+          if (!settings.deeplApiKey) {
             sendResponse({ 
               success: false, 
-              error: formatErrorMessage('OPENROUTER_API_KEY_MISSING'),
-              errorDetails: getErrorMessage('OPENROUTER_API_KEY_MISSING')
+              error: formatErrorMessage('DEEPL_API_KEY_MISSING'),
+              errorDetails: getErrorMessage('DEEPL_API_KEY_MISSING')
             });
             return;
           }
-          result = await translateWithOpenRouter(
+          result = await translateWithDeepL(
             sanitizedText,
             targetLanguage,
-            settings.openrouterApiKey,
-            sourceLanguage,
-            llmContext
+            settings.deeplApiKey,
+            sourceLanguage
+          );
+          break;
+          
+        case 'azure':
+          if (!settings.azureApiKey) {
+            sendResponse({ 
+              success: false, 
+              error: formatErrorMessage('AZURE_API_KEY_MISSING'),
+              errorDetails: getErrorMessage('AZURE_API_KEY_MISSING')
+            });
+            return;
+          }
+          result = await translateWithAzure(
+            sanitizedText,
+            targetLanguage,
+            settings.azureApiKey,
+            settings.azureRegion,
+            sourceLanguage
           );
           break;
           
         case 'libretranslate':
           result = await translateWithLibreTranslate(sanitizedText, targetLanguage, sourceLanguage);
+          break;
+
+        case 'alto-cloud':
+          if (!settings.apiKey_alto) {
+            sendResponse({
+              success: false,
+              error: 'Alto Cloud key not configured. Go to extension settings to add your Alto Cloud key.',
+              errorDetails: getErrorMessage('NO_API_KEYS')
+            });
+            return;
+          }
+          result = await translateWithAltoCloud(
+            sanitizedText,
+            targetLanguage,
+            settings.apiKey_alto,
+            sourceLanguage
+          );
           break;
           
         case 'both':
@@ -412,9 +485,29 @@ async function handleTranslation(request, sendResponse) {
         };
       }
 
+      // Handle MyMemory quota exceeded with friendly message
+      if (!result.success && result.api === 'mymemory' && result.quotaExceeded) {
+        const errorMsg = getErrorMessage('MYMEMORY_QUOTA_EXCEEDED');
+        sendResponse({
+          success: false,
+          error: errorMsg.message,
+          errorDetails: errorMsg
+        });
+        return;
+      }
+
       // Cache successful translations only
       if (result.success) {
         await setCachedTranslation(cacheKey, result);
+
+        // Increment translation count for review nudge
+        try {
+          const stored = await chrome.storage.local.get(STORAGE_KEY_TRANSLATION_COUNT);
+          const count = typeof stored[STORAGE_KEY_TRANSLATION_COUNT] === 'number' ? stored[STORAGE_KEY_TRANSLATION_COUNT] : 0;
+          await chrome.storage.local.set({ [STORAGE_KEY_TRANSLATION_COUNT]: count + 1 });
+        } catch (_) {
+          // non-critical, silently fail
+        }
       }
 
       // Add cache indicator flag (false for new translations)
@@ -461,50 +554,37 @@ async function handleTranslation(request, sendResponse) {
  */
 async function translateWithAll(text, targetLanguage, sourceLanguage, settings, contextSnippet = null) {
   const geminiKey = String(settings?.geminiApiKey || '').trim();
-  const openrouterKey = String(settings?.openrouterApiKey || '').trim();
+  const deeplKey = String(settings?.deeplApiKey || '').trim();
+  const azureKey = String(settings?.azureApiKey || '').trim();
+  const azureRegion = String(settings?.azureRegion || '').trim();
+  const altoCloudKey = String(settings?.apiKey_alto || '').trim();
+  const hasAnyPaidKey = Boolean(deeplKey || geminiKey || azureKey || altoCloudKey);
+  const isLong = text.length > SMART_FALLBACK_LLM_FIRST_MIN_CHARS;
 
-  const hasAnyLlmKey = Boolean(geminiKey || openrouterKey);
-  const preferLlmFirst =
-    hasAnyLlmKey &&
-    typeof SMART_FALLBACK_LLM_FIRST_MIN_CHARS === 'number' &&
-    text.length >= SMART_FALLBACK_LLM_FIRST_MIN_CHARS;
+  let steps = [];
 
-  /** @type {{ id: string, run: () => Promise<*> }[]} */
-  const memorySteps = [];
-  if (typeof myMemorySupportsLanguagePair === 'function' && myMemorySupportsLanguagePair(sourceLanguage, targetLanguage)) {
-    memorySteps.push({
-      id: 'mymemory',
-      run: () => translateWithLibreTranslate(text, targetLanguage, sourceLanguage)
-    });
+  if (!isLong) {
+    // Short text: MyMemory first, then paid services on failure
+    steps.push({ id: 'mymemory', run: () => translateWithLibreTranslate(text, targetLanguage, sourceLanguage) });
+    if (deeplKey) steps.push({ id: 'deepl', run: () => translateWithDeepL(text, targetLanguage, deeplKey, sourceLanguage) });
+    if (geminiKey) steps.push({ id: 'gemini', run: () => translateWithGemini(text, targetLanguage, geminiKey, sourceLanguage, contextSnippet) });
+    if (azureKey) steps.push({ id: 'azure', run: () => translateWithAzure(text, targetLanguage, azureKey, azureRegion, sourceLanguage) });
+    if (altoCloudKey) steps.push({ id: 'alto-cloud', run: () => translateWithAltoCloud(text, targetLanguage, altoCloudKey, sourceLanguage) });
+  } else if (hasAnyPaidKey) {
+    // Long text with at least one key: paid services first
+    if (deeplKey) steps.push({ id: 'deepl', run: () => translateWithDeepL(text, targetLanguage, deeplKey, sourceLanguage) });
+    if (geminiKey) steps.push({ id: 'gemini', run: () => translateWithGemini(text, targetLanguage, geminiKey, sourceLanguage, contextSnippet) });
+    if (azureKey) steps.push({ id: 'azure', run: () => translateWithAzure(text, targetLanguage, azureKey, azureRegion, sourceLanguage) });
+    if (altoCloudKey) steps.push({ id: 'alto-cloud', run: () => translateWithAltoCloud(text, targetLanguage, altoCloudKey, sourceLanguage) });
+  } else {
+    // Long text with no keys: behave like MyMemory-only
+    steps.push({ id: 'mymemory', run: () => translateWithLibreTranslate(text, targetLanguage, sourceLanguage) });
   }
-
-  /** @type {{ id: string, run: () => Promise<*> }[]} */
-  const geminiSteps = [];
-  if (geminiKey) {
-    geminiSteps.push({
-      id: 'gemini',
-      run: () => translateWithGemini(text, targetLanguage, geminiKey, sourceLanguage, contextSnippet)
-    });
-  }
-
-  /** @type {{ id: string, run: () => Promise<*> }[]} */
-  const openrouterSteps = [];
-  if (openrouterKey) {
-    openrouterSteps.push({
-      id: 'openrouter',
-      run: () => translateWithOpenRouter(text, targetLanguage, openrouterKey, sourceLanguage, contextSnippet)
-    });
-  }
-
-  const steps = preferLlmFirst
-    ? [...geminiSteps, ...openrouterSteps, ...memorySteps]
-    : [...memorySteps, ...geminiSteps, ...openrouterSteps];
 
   if (steps.length === 0) {
     return {
       success: false,
-      error:
-        'Smart fallback has no usable path: this language pair is not supported by MyMemory, and no Gemini or OpenRouter API key is set. Add a key or pick a single API.',
+      error: 'Translation unavailable. All configured services failed or have no key.',
       api: 'both'
     };
   }
@@ -519,7 +599,7 @@ async function translateWithAll(text, targetLanguage, sourceLanguage, settings, 
           ...result,
           fallbackMode: true,
           fallbackWinner: step.id,
-          ...(preferLlmFirst ? { fallbackPreferLlmDueToLength: true } : {})
+          ...(isLong && hasAnyPaidKey ? { fallbackPreferLlmDueToLength: true } : {})
         };
       }
       lastFailure = result;
@@ -536,7 +616,7 @@ async function translateWithAll(text, targetLanguage, sourceLanguage, settings, 
   return (
     lastFailure ?? {
       success: false,
-      error: 'All translation services in the smart fallback chain failed',
+      error: 'Translation unavailable. All configured services failed or have no key.',
       api: 'both'
     }
   );
@@ -931,8 +1011,10 @@ async function getSettings() {
   try {
     const result = await chrome.storage.sync.get(DEFAULT_SETTINGS);
     const merged = { ...DEFAULT_SETTINGS, ...result };
-    // MyMemory is always on; legacy installs may have libretranslateEnabled: false
+
+    // libretranslateEnabled is always true (MyMemory is always on)
     merged.libretranslateEnabled = true;
+
     const localFlags = await chrome.storage.local.get(STORAGE_KEY_SHOW_PHONETICS);
     merged.showPhoneticsNonLatin = localFlags[STORAGE_KEY_SHOW_PHONETICS] !== false;
     return merged;
@@ -958,7 +1040,7 @@ async function saveSettings(settings) {
 }
 
 // Translation functions are now imported from utility modules via importScripts
-// translateWithGemini, translateWithOpenRouter, and translateWithLibreTranslate
+// translateWithGemini, translateWithDeepL, translateWithAzure, and translateWithLibreTranslate
 // are available from the imported modules
 
 // getLanguageName is now imported from utils/languages.js via importScripts
@@ -1136,20 +1218,28 @@ async function handleValidateApiKey(request, sendResponse) {
         isQuotaError: quotaExceeded,
         isModelUnavailable: has404Error && !has403Error
       });
-    } else if (apiType === 'openrouter') {
-      try {
-        const result = await validateOpenRouterApiKey(apiKey);
-        if (result.success) {
-          sendResponse({ success: true, message: result.message || 'OpenRouter API key is valid' });
-        } else {
-          sendResponse({ success: false, error: result.error });
-        }
-      } catch (error) {
-        sendResponse({
-          success: false,
-          error: `OpenRouter API key validation failed: ${error.message}\n\nPlease check:\n1. Your internet connection\n2. API key format\n3. OpenRouter account status`
-        });
-      }
+    } else if (apiType === 'deepl') {
+      const result = await validateDeepLApiKey(apiKey);
+      sendResponse({
+        success: result.ok,
+        error: result.ok ? undefined : (result.error || 'DeepL API key validation failed'),
+        message: result.ok ? 'DeepL API key is valid' : undefined
+      });
+    } else if (apiType === 'azure') {
+      const region = request.apiRegion || '';
+      const result = await validateAzureApiKey(apiKey, region);
+      sendResponse({
+        success: result.ok,
+        error: result.ok ? undefined : (result.error || 'Azure API key validation failed'),
+        message: result.ok ? 'Microsoft Translator API key is valid' : undefined
+      });
+    } else if (apiType === 'alto-cloud') {
+      const result = await validateAltoCloudKey(apiKey);
+      sendResponse({
+        success: result.ok,
+        error: result.ok ? undefined : (result.error || 'Alto Cloud key validation failed'),
+        message: result.ok ? 'Alto Cloud key is valid' : undefined
+      });
     } else if (apiType === 'libretranslate') {
       // LibreTranslate (MyMemory API) doesn't require API keys, just test connectivity
       try {

@@ -1,11 +1,11 @@
 # Alto Translate - Chrome Extension
 
-A minimal and elegant Chrome extension for translating selected text using Google Gemini, OpenRouter, and MyMemory APIs.
+A minimal and elegant Chrome extension for translating selected text using Google Gemini, DeepL, Microsoft Azure Translator, and MyMemory APIs.
 
 ## Features
 
 - **Simple Text Selection**: Select any text on a webpage and click the "ax" icon to translate
-- **Multiple API Support**: Choose MyMemory, Google Gemini, OpenRouter, or **smart fallback** (sequential: MyMemory-first for shorter text when supported, then Gemini and OpenRouter; **long selections** flip to Gemini/OpenRouter-first — see `SMART_FALLBACK_LLM_FIRST_MIN_CHARS` in `utils/constants.js`)
+- **Multiple API Support**: Choose MyMemory, Google Gemini, DeepL, Microsoft Azure Translator, or **smart fallback** (sequential: MyMemory-first for shorter text, then DeepL → Gemini → Azure; **long selections** flip to DeepL → Gemini first — see `SMART_FALLBACK_LLM_FIRST_MIN_CHARS` in `utils/constants.js`)
 - **Auto Language Detection**: Automatically detects source language
 - **50+ Languages**: Support for major world languages including RTL languages
 - **Clean UI**: Minimal, non-intrusive popup design with Tailwind CSS
@@ -33,7 +33,8 @@ A minimal and elegant Chrome extension for translating selected text using Googl
 
 1. **Get API Keys** (Optional):
    - **Gemini API**: Get a free API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
-   - **OpenRouter API**: Get an API key from [OpenRouter](https://openrouter.ai/)
+   - **DeepL API**: Get a free API key from [DeepL](https://www.deepl.com/en/your-account/keys)
+   - **Microsoft Azure Translator**: Get a free key from the [Azure portal](https://portal.azure.com) (2M chars/month free)
    - **MyMemory API**: No API key required! Works out of the box.
 
 2. **Configure Settings**:
@@ -52,15 +53,25 @@ A minimal and elegant Chrome extension for translating selected text using Googl
 5. **Copy text**: Use the copy button in the popup.
 
 ## API Configuration
-- Free tier: ~60 requests per minute
-- High-quality translations
+
+### Google Gemini
+- High-quality translations with context awareness
+- Free tier available with rate limits
 - Auto language detection
+- Supports romanization for non-Latin scripts
 - Get API key: [Google AI Studio](https://makersuite.google.com/app/apikey)
 
-### OpenRouter API
-- Paste an API key only — the extension **auto-selects a working free-tier model** by trying [`OPENROUTER_FREE_MODEL_CANDIDATES`](utils/constants.js) in order (releases update this list when OpenRouter rotates `:free` catalog ids).
-- Excellent for backup/fallback
-- Get API key: [OpenRouter](https://openrouter.ai/)
+### DeepL
+- Best quality for European languages
+- Free tier with character quota
+- 30+ languages supported
+- Get API key: [DeepL](https://www.deepl.com/en/your-account/keys)
+
+### Microsoft Azure Translator
+- 2 million free characters/month, no expiry
+- 100+ languages supported
+- Requires both an API key and Azure region
+- Get API key: [Azure portal](https://portal.azure.com)
 
 ### MyMemory API (Recommended)
 - **No API key required!**
@@ -95,13 +106,12 @@ A minimal and elegant Chrome extension for translating selected text using Googl
 ```
 altoTranslate/
 ├── manifest.json              # Extension manifest
-├── icons/                     # Extension icons
-│   ├── icon16.png
-│   ├── icon48.png
-│   └── icon128.png
+├── icons/                     # Extension icons (PNG + icon.svg — required sizes for Chrome Web Store)
+│   ├── icon16.png / icon48.png / icon128.png
+│   └── icon.svg
 ├── content/                   # Content script
 │   ├── content.js            # Text selection and popup logic
-│   └── content.css           # Popup styling
+│   └── content.css           # In-page popup styling (+ local @font-face fonts)
 ├── background/               # Background service worker
 │   └── background.js         # API routing and message handling
 ├── popup/                    # Extension popup
@@ -124,13 +134,15 @@ altoTranslate/
 ├── package.json
 ├── package-lock.json
 └── utils/                   # Utility modules
-    ├── tailwind.css         # Tailwind CSS utilities
-    ├── dark-mode.js         # Dark mode functionality
-    ├── storage.js           # Settings storage utilities
-    ├── mymemory_infer_source.js  # Source-language heuristic for MyMemory (auto)
-    ├── api-gemini.js        # Gemini API
-    ├── api-openrouter.js    # OpenRouter API
-    └── api-libretranslate.js # MyMemory API
+│   ├── fonts/               # Bundled .woff2 (Estedad, Manrope variable for content UI)
+│   ├── tailwind.css         # Tailwind CSS utilities
+│   ├── dark-mode.js         # Dark mode functionality
+│   ├── storage.js           # Settings storage utilities
+│   ├── mymemory_infer_source.js  # Source-language heuristic for MyMemory (auto)
+│   ├── api-gemini.js        # Gemini API
+│   ├── api-deepl.js         # DeepL API
+│   ├── api-azure.js         # Microsoft Azure Translator API
+│   └── api-libretranslate.js # MyMemory API
 ```
 
 ## Development
@@ -207,9 +219,18 @@ For issues, feature requests, or questions:
 
 ## Changelog
 
+See [`CHANGELOG.md`](CHANGELOG.md) for full release notes.
+
+### Version 1.4.0 (current)
+
+- Motion-powered UI on extension pages (`popup`, options tab panels, vocabulary).
+- Typography: **Manrope** — Google Fonts on popup, options, vocabulary, and `privacy.html`; **bundled** variable **`.woff2`** for the in-page translation UI (host CSP–safe).
+- Vocabulary review / “All words” flow fixes; content script opens settings via background message.
+
 ### Version 1.0.0
+
 - Initial release
-- Gemini, OpenRouter, and MyMemory API support
+- Gemini, DeepL, Azure, and MyMemory API support
 - Auto language detection
 - 50+ language support including RTL languages
 - Clean, minimal UI with Tailwind CSS

@@ -92,6 +92,19 @@ async function translateWithLibreTranslate(text, targetLanguage, sourceLanguage 
     }
 
     const data = await response.json();
+
+    // Check for MyMemory daily quota exceeded
+    const responseStatus = data?.responseStatus;
+    const responseDetails = data?.responseDetails || '';
+    if (responseStatus === 429 || responseDetails.includes('MYMEMORY WARNING: YOU USED ALL AVAILABLE FREE TRANSLATIONS FOR TODAY')) {
+      return {
+        success: false,
+        error: 'MyMemory quota exceeded',
+        api: 'mymemory',
+        quotaExceeded: true
+      };
+    }
+
     const translatedText = data?.responseData?.translatedText;
 
     if (!translatedText) {

@@ -10,8 +10,11 @@ function validateSaveSettings(settings) {
   if (settings.apiPreference === 'gemini' && !String(settings.geminiApiKey || '').trim()) {
     return { ok: false, reason: 'gemini_key' };
   }
-  if (settings.apiPreference === 'openrouter' && !String(settings.openrouterApiKey || '').trim()) {
-    return { ok: false, reason: 'openrouter_key' };
+  if (settings.apiPreference === 'deepl' && !String(settings.deeplApiKey || '').trim()) {
+    return { ok: false, reason: 'deepl_key' };
+  }
+  if (settings.apiPreference === 'azure' && !String(settings.azureApiKey || '').trim()) {
+    return { ok: false, reason: 'azure_key' };
   }
   return { ok: true };
 }
@@ -25,7 +28,8 @@ function run() {
     validateSaveSettings({
       apiPreference: 'libretranslate',
       geminiApiKey: '',
-      openrouterApiKey: ''
+      deeplApiKey: '',
+      azureApiKey: ''
     }).ok,
     'MyMemory-only save should pass without keys'
   );
@@ -34,18 +38,60 @@ function run() {
     !validateSaveSettings({
       apiPreference: 'gemini',
       geminiApiKey: '',
-      openrouterApiKey: ''
+      deeplApiKey: '',
+      azureApiKey: ''
     }).ok,
     'Gemini preference requires key'
+  );
+
+  assert(
+    !validateSaveSettings({
+      apiPreference: 'deepl',
+      geminiApiKey: '',
+      deeplApiKey: '',
+      azureApiKey: ''
+    }).ok,
+    'DeepL preference requires key'
+  );
+
+  assert(
+    !validateSaveSettings({
+      apiPreference: 'azure',
+      geminiApiKey: '',
+      deeplApiKey: '',
+      azureApiKey: ''
+    }).ok,
+    'Azure preference requires key'
   );
 
   assert(
     validateSaveSettings({
       apiPreference: 'both',
       geminiApiKey: 'x',
-      openrouterApiKey: ''
+      deeplApiKey: '',
+      azureApiKey: ''
     }).ok,
     'Both with at least one key passes'
+  );
+
+  assert(
+    validateSaveSettings({
+      apiPreference: 'both',
+      geminiApiKey: '',
+      deeplApiKey: 'x',
+      azureApiKey: ''
+    }).ok,
+    'Both with DeepL key passes'
+  );
+
+  assert(
+    validateSaveSettings({
+      apiPreference: 'both',
+      geminiApiKey: '',
+      deeplApiKey: '',
+      azureApiKey: 'x'
+    }).ok,
+    'Both with Azure key passes'
   );
 
   console.log('settings_save_rules tests: all passed');

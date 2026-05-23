@@ -1,136 +1,224 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Vocabulary — Alto Translate</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="vocabulary.css">
-</head>
-<body class="vocab-page">
-  <div class="vocab-shell">
-    <header class="vocab-header">
-      <div class="vocab-brand">
-        <img src="../icons/icon.svg" alt="" width="36" height="36" class="vocab-logo">
-        <div class="vocab-brand-text">
-          <span class="vocab-wordmark">altoTranslate</span>
-        </div>
-      </div>
-      <div class="vocab-header-text">
-        <h1 class="vocab-kicker">Vocabulary</h1>
-        <p class="vocab-stats" id="vocabStats" aria-live="polite">0 words saved · 0 reviewed today</p>
-      </div>
-    </header>
-
-    <main class="vocab-main">
-      <a href="#" id="vocabSettingsLink" class="vocab-settings-icon-link" aria-label="Extension settings" title="Settings">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-settings-icon lucide-settings"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg>
-      </a>
-      <div class="vocab-tab-bar" id="vocabTabBar">
-        <nav class="vocab-tabs" id="vocabTabs" role="tablist" aria-label="Vocabulary sections">
-          <button type="button" class="vocab-tab is-active" role="tab" id="tabBtnReview"
-          aria-controls="tabPanelReview" aria-selected="true" data-tab-target="review" tabindex="0">
-          Review
-          </button>
-          <button type="button" class="vocab-tab" role="tab" id="tabBtnWords"
-          aria-controls="tabPanelWords" aria-selected="false" data-tab-target="words" tabindex="-1">
-          All words
-          </button>
-        </nav>
-      </div>
-
-      <div class="vocab-tab-panels">
-        <section id="tabPanelReview" role="tabpanel" class="vocab-tab-panel vocab-tab-panel--review"
-          aria-labelledby="tabBtnReview" data-tab-panel="review">
-          <section class="vocab-review" id="reviewPanel" aria-labelledby="reviewHeading">
-            <h2 id="reviewHeading" class="vocab-review-heading">Today’s review</h2>
-            <div class="vocab-review-card" id="reviewCard">
-              <div id="reviewActive">
-                <div class="vocab-review-card-anim">
-                  <div class="vocab-review-card-stack">
-                    <div class="vocab-deck-layer vocab-deck-layer--before" aria-hidden="true"></div>
-                    <div class="vocab-deck-layer vocab-deck-layer--after" aria-hidden="true"></div>
-                    <div class="vocab-review-content">
-                      <div class="vocab-flip-scene">
-                        <div class="vocab-flip-inner" id="reviewFlipInner">
-                          <div class="vocab-flip-front">
-                            <div class="vocab-review-content-inner">
-                              <p class="vocab-review-original" id="reviewOriginal"></p>
-                              <p class="vocab-review-roman" id="reviewRoman" hidden></p>
-                            </div>
-                          </div>
-                          <div class="vocab-flip-back">
-                            <p class="vocab-review-translation" id="reviewTranslation" hidden></p>
-                            <div id="reviewAnswer" hidden>
-                              <div class="vocab-review-actions">
-                                <button type="button" class="vocab-btn vocab-btn-primary" id="reviewGotIt">Got it ✓</button>
-                                <button type="button" class="vocab-btn vocab-btn-secondary" id="reviewAgain">Again ↻</button>
-                              </div>
-                            </div>
-                          </div>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Vocabulary — Alto Translate</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap" rel="stylesheet" />
+        <link rel="stylesheet" href="vocabulary.css" />
+    </head>
+    <body class="vocab-page is-ready">
+        <div class="vocab-main-container">
+            <div class="vocab-shell">
+                <header class="vocab-header">
+                    <div class="vocab-brand">
+                        <img src="../icons/icon.svg" alt="" width="36" height="36" class="vocab-logo" />
+                        <div class="vocab-brand-text">
+                            <span class="vocab-wordmark">altoTranslate</span>
+                            <h1 class="vocab-kicker">Vocabulary</h1>
                         </div>
-                      </div>
                     </div>
-                  </div>
-                  <div class="vocab-review-reveal">
-                    <button type="button" class="vocab-btn vocab-btn-primary" id="reviewReveal">Reveal translation</button>
-                  </div>
-                </div>
-              </div>
-              <div class="vocab-review-complete" id="reviewComplete" hidden>
-                <div class="vocab-review-complete-icon">
-                  <div class="vocab-review-complete-icon-shades">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                  </div>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-party-popper-icon lucide-party-popper"><path d="M5.8 11.3 2 22l10.7-3.79"/><path d="M4 3h.01"/><path d="M22 8h.01"/><path d="M15 2h.01"/><path d="M22 20h.01"/><path d="m22 2-2.24.75a2.9 2.9 0 0 0-1.96 3.12c.1.86-.57 1.63-1.45 1.63h-.38c-.86 0-1.6.6-1.76 1.44L14 10"/><path d="m22 13-.82-.33c-.86-.34-1.82.2-1.98 1.11c-.11.7-.72 1.22-1.43 1.22H17"/><path d="m11 2 .33.82c.34.86-.2 1.82-1.11 1.98C9.52 4.9 9 5.52 9 6.23V7"/><path d="M11 13c1.93 1.93 2.83 4.17 2 5-.83.83-3.07-.07-5-2-1.93-1.93-2.83-4.17-2-5 .83-.83 3.07.07 5 2Z"/></svg>
-                </div>
-                <p class="vocab-review-complete-text-container">
-                  <span class="vocab-review-complete-text">All caught up for today.</span>
-                  <span class="vocab-review-complete-text-small">Take a break and come back tomorrow! You can always add to your vocabulary while browsing the web, or restore your previous saves from the "All words" tab!</span>
-                </p>
-              </div>
-            </div>
-          </section>
-        </section>
+                    <div class="vocab-header-text">
+                        <p class="vocab-stats" id="vocabStats" aria-live="polite">0 words saved · 0 reviewed today</p>
+                    </div>
+                </header>
 
-        <section id="tabPanelWords" role="tabpanel" class="vocab-tab-panel vocab-tab-panel--words" hidden
-          aria-labelledby="tabBtnWords" data-tab-panel="words">
-          <section class="vocab-list-section" aria-labelledby="listHeading">
-            <div class="vocab-list-head">
-              <h2 id="listHeading" class="vocab-list-heading">All words</h2>
-              <label class="vocab-filter">
-                <span class="vocab-filter-label">Language</span>
-                <select id="langFilter" class="vocab-select" aria-label="Filter by source language">
-                  <option value="">All</option>
-                </select>
-              </label>
+                <main class="vocab-main">
+                    <div class="main-top-bar">
+                        <div class="main-title">
+                            <div class="main-title-icon">
+                                <span>👋</span>
+                            </div>
+                            <h2 id="reviewHeading" class="vocab-review-heading">Today’s review</h2>
+                        </div>
+                        <div class="tabs-settings-wrapper">
+                            <div class="vocab-tab-bar" id="vocabTabBar">
+                                <nav class="vocab-tabs" id="vocabTabs" role="tablist" aria-label="Vocabulary sections">
+                                    <button
+                                        type="button"
+                                        class="vocab-tab is-active"
+                                        role="tab"
+                                        id="tabBtnReview"
+                                        aria-controls="tabPanelReview"
+                                        aria-selected="true"
+                                        data-tab-target="review"
+                                        tabindex="0"
+                                    >
+                                        Review
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="vocab-tab"
+                                        role="tab"
+                                        id="tabBtnWords"
+                                        aria-controls="tabPanelWords"
+                                        aria-selected="false"
+                                        data-tab-target="words"
+                                        tabindex="-1"
+                                    >
+                                        All words
+                                    </button>
+                                </nav>
+                            </div>
+
+                            <a href="#" id="vocabSettingsLink" class="vocab-settings-icon-link" aria-label="Extension settings" title="Settings">
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    width="20"
+                                    height="20"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    class="lucide lucide-settings-icon lucide-settings"
+                                >
+                                    <path
+                                        d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"
+                                    />
+                                    <circle cx="12" cy="12" r="3" />
+                                </svg>
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="vocab-tab-panels">
+                        <section
+                            id="tabPanelReview"
+                            role="tabpanel"
+                            class="vocab-tab-panel vocab-tab-panel--review"
+                            aria-labelledby="tabBtnReview"
+                            data-tab-panel="review"
+                        >
+                            <section class="vocab-review" id="reviewPanel" aria-labelledby="reviewHeading">
+
+                                <div class="vocab-review-card" id="reviewCard">
+                                    <div id="reviewActive">
+                                        <div class="vocab-review-card-anim">
+                                            <div class="vocab-review-card-stack">
+                                                <div class="vocab-review-content">
+                                                    <div class="vocab-flip-scene">
+                                                        <div class="vocab-flip-inner" id="reviewFlipInner">
+                                                            <div class="vocab-flip-front">
+                                                                <div class="vocab-review-content-inner">
+                                                                    <p class="vocab-review-original" id="reviewOriginal"></p>
+                                                                    <p class="vocab-review-roman" id="reviewRoman" hidden></p>
+                                                                </div>
+                                                            </div>
+                                                            <div class="vocab-flip-back">
+                                                                <p class="vocab-review-translation" id="reviewTranslation" hidden></p>
+                                                                <div id="reviewAnswer" hidden>
+                                                                    <div class="vocab-review-actions">
+                                                                        <button type="button" class="vocab-btn vocab-btn-primary" id="reviewGotIt">
+                                                                            Got it ✓
+                                                                        </button>
+                                                                        <button type="button" class="vocab-btn vocab-btn-secondary" id="reviewAgain">
+                                                                            Again ↻
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="vocab-review-reveal">
+                                                <button type="button" class="vocab-btn vocab-btn-primary" id="reviewReveal">
+                                                    Reveal translation
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="vocab-review-complete" id="reviewComplete" hidden>
+                                        <div class="vocab-review-complete-icon">
+                                            <div class="vocab-review-complete-icon-shades">
+                                                <span></span>
+                                                <span></span>
+                                                <span></span>
+                                                <span></span>
+                                            </div>
+                                            <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                width="48"
+                                                height="48"
+                                                viewBox="0 0 24 24"
+                                                fill="none"
+                                                stroke="#000"
+                                                stroke-width="1.5"
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                class="lucide lucide-party-popper-icon lucide-party-popper"
+                                            >
+                                                <path d="M5.8 11.3 2 22l10.7-3.79" />
+                                                <path d="M4 3h.01" />
+                                                <path d="M22 8h.01" />
+                                                <path d="M15 2h.01" />
+                                                <path d="M22 20h.01" />
+                                                <path
+                                                    d="m22 2-2.24.75a2.9 2.9 0 0 0-1.96 3.12c.1.86-.57 1.63-1.45 1.63h-.38c-.86 0-1.6.6-1.76 1.44L14 10"
+                                                />
+                                                <path d="m22 13-.82-.33c-.86-.34-1.82.2-1.98 1.11c-.11.7-.72 1.22-1.43 1.22H17" />
+                                                <path d="m11 2 .33.82c.34.86-.2 1.82-1.11 1.98C9.52 4.9 9 5.52 9 6.23V7" />
+                                                <path
+                                                    d="M11 13c1.93 1.93 2.83 4.17 2 5-.83.83-3.07-.07-5-2-1.93-1.93-2.83-4.17-2-5 .83-.83 3.07.07 5 2Z"
+                                                />
+                                            </svg>
+                                        </div>
+                                        <p class="vocab-review-complete-text-container">
+                                            <span class="vocab-review-complete-text">All caught up for today.</span>
+                                            <span class="vocab-review-complete-text-small"
+                                                >Take a break and come back tomorrow! You can always add to your vocabulary while browsing the web, or
+                                                restore your previous saves from the "All words" tab!</span
+                                            >
+                                        </p>
+                                    </div>
+                                </div>
+                            </section>
+                        </section>
+
+                        <section
+                            id="tabPanelWords"
+                            role="tabpanel"
+                            class="vocab-tab-panel vocab-tab-panel--words"
+                            hidden
+                            aria-labelledby="tabBtnWords"
+                            data-tab-panel="words"
+                        >
+                            <section class="vocab-list-section" aria-labelledby="listHeading">
+                                <div class="vocab-list-head">
+                                    <h2 id="listHeading" class="vocab-list-heading">All words</h2>
+                                    <label class="vocab-filter">
+                                        <span class="vocab-filter-label">Language</span>
+                                        <select id="langFilter" class="vocab-select" aria-label="Filter by source language">
+                                            <option value="">All</option>
+                                        </select>
+                                    </label>
+                                </div>
+                                <div class="vocab-table-wrap">
+                                    <table class="vocab-table">
+                                        <thead>
+                                            <tr>
+                                                <th scope="col">Original</th>
+                                                <th scope="col">Romanization</th>
+                                                <th scope="col">Translation</th>
+                                                <th scope="col">Lang</th>
+                                                <th scope="col">Source</th>
+                                                <th scope="col">Saved</th>
+                                                <th scope="col" class="vocab-th-actions">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="vocabRows"></tbody>
+                                    </table>
+                                </div>
+                            </section>
+                        </section>
+                    </div>
+                </main>
             </div>
-            <div class="vocab-table-wrap">
-              <table class="vocab-table">
-                <thead>
-                  <tr>
-                    <th scope="col">Original</th>
-                    <th scope="col">Romanization</th>
-                    <th scope="col">Translation</th>
-                    <th scope="col">Lang</th>
-                    <th scope="col">Source</th>
-                    <th scope="col">Saved</th>
-                    <th scope="col" class="vocab-th-actions">Actions</th>
-                  </tr>
-                </thead>
-                <tbody id="vocabRows"></tbody>
-              </table>
-            </div>
-          </section>
-        </section>
-      </div>
-    </main>
-  </div>
-  <script type="module" src="vocabulary.mjs"></script>
-</body>
+        </div>
+        <script type="module" src="vocabulary.mjs"></script>
+    </body>
 </html>

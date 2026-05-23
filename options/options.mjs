@@ -1,5 +1,9 @@
 // Options page script for Alto Translate extension
 import { animate } from '../vendor/motion-lib.js';
+import { enhanceAllSelects } from '../utils/alto-select.js';
+
+const EASE_OUT = [0.22, 1, 0.36, 1];
+const EASE_IN = [0.42, 0, 1, 1];
 
 function prefersReducedMotion() {
   try {
@@ -9,13 +13,28 @@ function prefersReducedMotion() {
   }
 }
 
+/** Reads the user's stored reduce-motion preference. Called once at init. */
+async function loadReduceMotionPref() {
+  try {
+    const r = await chrome.storage.local.get('altoReduceMotion');
+    return r.altoReduceMotion === true;
+  } catch {
+    return false;
+  }
+}
+
 class OptionsManager {
   constructor() {
     this.settings = null;
+    this._tabAnimating = false;
+    this._reduceMotion = false;
     this.init();
   }
 
   async init() {
+    // Load reduce-motion preference before any animation decisions
+    this._reduceMotion = await loadReduceMotionPref();
+
     // Load current settings
     await this.loadSettings();
     
@@ -26,17 +45,25 @@ class OptionsManager {
     this.populateForm();
     await this.refreshOpenVocabNewTabCheckbox();
 
+    enhanceAllSelects();
+
     // Load themes and render selector
     await this.loadThemes();
     
     // Load cache statistics
     await this.loadCacheStats();
     
-    // Initialize tabs
+    // Initialize tabs (no animation on first load)
     this.initTabs();
     
     // Add event listeners
     this.addEventListeners();
+
+    if (!this.shouldReduceMotion()) {
+      document.body.classList.remove('is-ready');
+      await this.runPageIntroMotion();
+      document.body.classList.add('is-ready');
+    }
   }
 
   updateVersion() {
@@ -56,35 +83,127 @@ class OptionsManager {
     }
   }
 
-  initTabs() {
-    // Set default tab to 'api'
-    this.switchTab('api');
+  /** @returns {boolean} true if animations should be skipped (OS or user preference) */
+  shouldReduceMotion() {
+    return prefersReducedMotion() || this._reduceMotion;
   }
 
-  switchTab(tabName) {
-    document.querySelectorAll('.tab-content').forEach(content => {
-      content.classList.add('hidden');
-    });
-
-    document.querySelectorAll('.tab-button').forEach(button => {
-      button.classList.remove('is-active');
-      button.removeAttribute('aria-current');
-    });
-
-    const selectedTab = document.getElementById(`tab-${tabName}`);
-    if (selectedTab) {
-      selectedTab.classList.remove('hidden');
-      if (!prefersReducedMotion()) {
-        requestAnimationFrame(() => {
-          void animate(selectedTab, { opacity: [0, 1], y: [6, 0] }, { duration: 1, ease: [0.33, 1, 0.68, 1] });
-        });
+  initTabs() {
+    const firstBtn = document.querySelector('[data-tab="api"]');
+    if (firstBtn) {
+      firstBtn.classList.add('is-active');
+      firstBtn.setAttribute('aria-current', 'page');
+    }
+    // Ensure only API panel is visible; clear any stale Motion inline styles
+    document.querySelectorAll('.tab-content').forEach((tab) => {
+      if (tab.id === 'tab-api') {
+        tab.classList.remove('hidden');
+        tab.style.opacity = '';
+        tab.style.transform = '';
+      } else {
+        tab.classList.add('hidden');
       }
+    });
+  }
+
+  async runPageIntroMotion() {
+    if (this.shouldReduceMotion()) return;
+
+    const shell = document.querySelector('.settings-shell');
+    const brand = document.querySelector('.settings-brand');
+    const navItems = [...document.querySelectorAll('.settings-nav-item')];
+    const footer = document.querySelector('.settings-sidebar-footer');
+    const panel = document.querySelector('.tab-content:not(.hidden)');
+
+    const jobs = [];
+
+    if (shell) {
+      jobs.push(
+        animate(shell, { opacity: [0, 1], scale: [0.97, 1] }, { duration: 0.3, ease: EASE_OUT }).finished
+      );
     }
 
+    if (brand) {
+      jobs.push(
+        animate(brand, { opacity: [0, 1], y: [8, 0] }, { duration: 0.24, ease: EASE_OUT, delay: 0.03 }).finished
+      );
+    }
+
+    navItems.forEach((el, i) => {
+      jobs.push(
+        animate(el, { opacity: [0, 1], y: [6, 0] }, { duration: 0.2, ease: EASE_OUT, delay: 0.04 * i + 0.04 }).finished
+      );
+    });
+
+    if (footer) {
+      jobs.push(
+        animate(footer, { opacity: [0, 1] }, { duration: 0.2, ease: EASE_OUT, delay: 0.1 }).finished
+      );
+    }
+
+    await Promise.all(jobs);
+
+    if (panel) {
+      await animate(panel, { opacity: [0, 1], y: [8, 0] }, { duration: 0.22, ease: EASE_OUT }).finished;
+    }
+  }
+
+  async switchTab(tabName) {
     const selectedButton = document.querySelector(`[data-tab="${tabName}"]`);
-    if (selectedButton) {
+    const selectedTab = document.getElementById(`tab-${tabName}`);
+    if (!selectedButton || !selectedTab) return;
+    if (selectedButton.classList.contains('is-active')) return;
+    if (this._tabAnimating) return;
+
+    const applyChrome = () => {
+      document.querySelectorAll('.tab-button').forEach((btn) => {
+        btn.classList.remove('is-active');
+        btn.removeAttribute('aria-current');
+      });
       selectedButton.classList.add('is-active');
       selectedButton.setAttribute('aria-current', 'page');
+    };
+
+    if (this.shouldReduceMotion()) {
+      applyChrome();
+      document.querySelectorAll('.tab-content').forEach((c) => {
+        c.classList.add('hidden');
+      });
+      selectedTab.classList.remove('hidden');
+      selectedTab.style.opacity = '';
+      selectedTab.style.transform = '';
+      return;
+    }
+
+    this._tabAnimating = true;
+    try {
+      const currentPanel = document.querySelector('.tab-content:not(.hidden)');
+      if (currentPanel && currentPanel !== selectedTab) {
+        await animate(
+          currentPanel,
+          { opacity: [null, 0], y: [null, 6] },
+          { duration: 0.18, ease: EASE_IN }
+        ).finished;
+        currentPanel.style.opacity = '';
+        currentPanel.style.transform = '';
+      }
+
+      applyChrome();
+      document.querySelectorAll('.tab-content').forEach((c) => c.classList.add('hidden'));
+      selectedTab.classList.remove('hidden');
+      selectedTab.style.opacity = '0';
+      selectedTab.style.transform = 'translateY(8px)';
+
+      await animate(
+        selectedTab,
+        { opacity: [0, 1], y: [8, 0] },
+        { duration: 0.26, ease: EASE_OUT }
+      ).finished;
+
+      selectedTab.style.opacity = '';
+      selectedTab.style.transform = '';
+    } finally {
+      this._tabAnimating = false;
     }
   }
 
@@ -106,22 +225,40 @@ class OptionsManager {
   populateForm() {
     if (!this.settings) return;
 
-    // API preference
-    const apiPreference = document.querySelector(`input[name="apiPreference"][value="${this.settings.apiPreference}"]`);
+    // API preference — fall back to gemini if stored value has no matching radio
+    let apiPreference = document.querySelector(`input[name="apiPreference"][value="${this.settings.apiPreference}"]`);
+    if (!apiPreference) {
+      apiPreference = document.querySelector(`input[name="apiPreference"][value="gemini"]`);
+    }
     if (apiPreference) {
       apiPreference.checked = true;
     }
 
     // API keys
     const geminiApiKey = document.getElementById('geminiApiKey');
-    const openrouterApiKey = document.getElementById('openrouterApiKey');
+    const deeplApiKey = document.getElementById('deeplApiKey');
+    const azureApiKey = document.getElementById('azureApiKey');
+    const azureRegion = document.getElementById('azureRegion');
+    const altoCloudApiKey = document.getElementById('altoCloudApiKey');
     
     if (geminiApiKey) {
       geminiApiKey.value = this.settings.geminiApiKey || '';
     }
     
-    if (openrouterApiKey) {
-      openrouterApiKey.value = this.settings.openrouterApiKey || '';
+    if (deeplApiKey) {
+      deeplApiKey.value = this.settings.deeplApiKey || '';
+    }
+    
+    if (azureApiKey) {
+      azureApiKey.value = this.settings.azureApiKey || '';
+    }
+    
+    if (azureRegion) {
+      azureRegion.value = this.settings.azureRegion || '';
+    }
+    
+    if (altoCloudApiKey) {
+      altoCloudApiKey.value = this.settings.apiKey_alto || '';
     }
 
     // Languages
@@ -170,9 +307,13 @@ class OptionsManager {
 
   updateApiCardStatus() {
     const geminiInput = document.getElementById('geminiApiKey');
-    const openrouterInput = document.getElementById('openrouterApiKey');
+    const deeplInput = document.getElementById('deeplApiKey');
+    const azureInput = document.getElementById('azureApiKey');
+    const altoCloudInput = document.getElementById('altoCloudApiKey');
     const gemini = geminiInput?.value?.trim() ?? '';
-    const openrouter = openrouterInput?.value?.trim() ?? '';
+    const deepl = deeplInput?.value?.trim() ?? '';
+    const azure = azureInput?.value?.trim() ?? '';
+    const alto = altoCloudInput?.value?.trim() ?? '';
 
     const setRow = (forName, dotClass, labelText) => {
       const wrap = document.querySelector(`[data-status-for="${forName}"]`);
@@ -188,15 +329,39 @@ class OptionsManager {
     };
 
     setRow('gemini', gemini ? 'status-dot--ok' : 'status-dot--muted', gemini ? 'Key saved' : 'No key');
-    setRow('openrouter', openrouter ? 'status-dot--ok' : 'status-dot--muted', openrouter ? 'Key saved' : 'No key');
+    setRow('deepl', deepl ? 'status-dot--ok' : 'status-dot--muted', deepl ? 'Key saved' : 'No key');
+    setRow('azure', azure ? 'status-dot--ok' : 'status-dot--muted', azure ? 'Key saved' : 'No key');
+    setRow('alto-cloud', alto ? 'status-dot--ok' : 'status-dot--muted', alto ? 'Key saved' : 'No key');
 
-    const keyCount = (gemini ? 1 : 0) + (openrouter ? 1 : 0);
+    const keyCount = (gemini ? 1 : 0) + (deepl ? 1 : 0) + (azure ? 1 : 0) + (alto ? 1 : 0);
     if (keyCount === 0) {
       setRow('both', 'status-dot--muted', 'No keys');
-    } else if (keyCount === 1) {
-      setRow('both', 'status-dot--warn', '1 key');
     } else {
-      setRow('both', 'status-dot--ok', '2 keys');
+      setRow('both', 'status-dot--ok', `${keyCount} key${keyCount !== 1 ? 's' : ''}`);
+    }
+
+    this.updateFallbackSummary();
+  }
+
+  updateFallbackSummary() {
+    const container = document.getElementById('fallbackKeySummary');
+    if (!container) return;
+
+    const gemini = document.getElementById('geminiApiKey')?.value?.trim() ?? '';
+    const deepl = document.getElementById('deeplApiKey')?.value?.trim() ?? '';
+    const azure = document.getElementById('azureApiKey')?.value?.trim() ?? '';
+    const alto = document.getElementById('altoCloudApiKey')?.value?.trim() ?? '';
+
+    const saved = [];
+    if (gemini) saved.push('Gemini');
+    if (deepl) saved.push('DeepL');
+    if (azure) saved.push('Azure');
+    if (alto) saved.push('Alto Cloud');
+
+    if (saved.length === 0) {
+      container.textContent = 'No paid keys saved — behaves like MyMemory.';
+    } else {
+      container.textContent = `Saved: ${saved.join(', ')}`;
     }
   }
 
@@ -288,6 +453,16 @@ class OptionsManager {
   }
 
   addEventListeners() {
+    try {
+    // Form submission — set up first so it always works even if later bindings fail
+    const form = document.getElementById('settingsForm');
+    if (form) {
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        this.saveSettings();
+      });
+    }
+
     // Tab switching
     const tabButtons = document.querySelectorAll('.tab-button');
     tabButtons.forEach(button => {
@@ -299,18 +474,10 @@ class OptionsManager {
       });
     });
 
-    // Form submission
-    const form = document.getElementById('settingsForm');
-    if (form) {
-      form.addEventListener('submit', (e) => {
-        e.preventDefault();
-        this.saveSettings();
-      });
-    }
-
     // API key visibility toggles
     const toggleGeminiKey = document.getElementById('toggleGeminiKey');
-    const toggleOpenRouterKey = document.getElementById('toggleOpenRouterKey');
+    const toggleDeepLKey = document.getElementById('toggleDeepLKey');
+    const toggleAzureKey = document.getElementById('toggleAzureKey');
     
     if (toggleGeminiKey) {
       toggleGeminiKey.addEventListener('click', () => {
@@ -318,9 +485,15 @@ class OptionsManager {
       });
     }
     
-    if (toggleOpenRouterKey) {
-      toggleOpenRouterKey.addEventListener('click', () => {
-        this.togglePasswordVisibility('openrouterApiKey', toggleOpenRouterKey);
+    if (toggleDeepLKey) {
+      toggleDeepLKey.addEventListener('click', () => {
+        this.togglePasswordVisibility('deeplApiKey', toggleDeepLKey);
+      });
+    }
+    
+    if (toggleAzureKey) {
+      toggleAzureKey.addEventListener('click', () => {
+        this.togglePasswordVisibility('azureApiKey', toggleAzureKey);
       });
     }
 
@@ -342,22 +515,43 @@ class OptionsManager {
 
     // API key validation
     const geminiApiKey = document.getElementById('geminiApiKey');
-    const openrouterApiKey = document.getElementById('openrouterApiKey');
+    const deeplApiKey = document.getElementById('deeplApiKey');
+    const azureApiKey = document.getElementById('azureApiKey');
+    const azureRegion = document.getElementById('azureRegion');
     const validateGeminiBtn = document.getElementById('validateGeminiBtn');
-    const validateOpenRouterBtn = document.getElementById('validateOpenRouterBtn');
+    const validateDeepLBtn = document.getElementById('validateDeepLBtn');
+    const validateAzureBtn = document.getElementById('validateAzureBtn');
     const validateLibreTranslateBtn = document.getElementById('validateLibreTranslateBtn');
     
     if (geminiApiKey) {
       geminiApiKey.addEventListener('input', () => {
         this.validateApiKey('gemini', geminiApiKey.value);
         this.updateApiCardStatus();
+        this.updateFallbackSummary();
       });
     }
     
-    if (openrouterApiKey) {
-      openrouterApiKey.addEventListener('input', () => {
-        this.validateApiKey('openrouter', openrouterApiKey.value);
+    if (deeplApiKey) {
+      deeplApiKey.addEventListener('input', () => {
+        this.validateApiKey('deepl', deeplApiKey.value);
         this.updateApiCardStatus();
+        this.updateFallbackSummary();
+      });
+    }
+    
+    if (azureApiKey) {
+      azureApiKey.addEventListener('input', () => {
+        this.validateApiKey('azure', azureApiKey.value);
+        this.updateApiCardStatus();
+        this.updateFallbackSummary();
+      });
+    }
+
+    const altoCloudApiKeyInput = document.getElementById('altoCloudApiKey');
+    if (altoCloudApiKeyInput) {
+      altoCloudApiKeyInput.addEventListener('input', () => {
+        this.updateApiCardStatus();
+        this.updateFallbackSummary();
       });
     }
 
@@ -367,15 +561,37 @@ class OptionsManager {
       });
     }
 
-    if (validateOpenRouterBtn) {
-      validateOpenRouterBtn.addEventListener('click', () => {
-        this.validateApiKeyWithServer('openrouter', openrouterApiKey.value);
+    if (validateDeepLBtn) {
+      validateDeepLBtn.addEventListener('click', () => {
+        this.validateApiKeyWithServer('deepl', deeplApiKey.value);
+      });
+    }
+
+    if (validateAzureBtn) {
+      validateAzureBtn.addEventListener('click', () => {
+        this.validateApiKeyWithServer('azure', azureApiKey.value, azureRegion?.value || '');
       });
     }
 
     if (validateLibreTranslateBtn) {
       validateLibreTranslateBtn.addEventListener('click', () => {
         this.validateApiKeyWithServer('libretranslate', '');
+      });
+    }
+
+    const validateAltoCloudBtn = document.getElementById('validateAltoCloudBtn');
+    const saveAltoCloudBtn = document.getElementById('saveAltoCloudBtn');
+
+    if (validateAltoCloudBtn) {
+      validateAltoCloudBtn.addEventListener('click', () => {
+        const key = document.getElementById('altoCloudApiKey')?.value?.trim() || '';
+        this.validateAltoCloudKey(key);
+      });
+    }
+
+    if (saveAltoCloudBtn) {
+      saveAltoCloudBtn.addEventListener('click', () => {
+        this.saveAltoCloudKey();
       });
     }
 
@@ -433,11 +649,35 @@ class OptionsManager {
       });
     }
 
+    const replayOnboarding = document.getElementById('replayOnboarding');
+    if (replayOnboarding) {
+      replayOnboarding.addEventListener('click', (e) => {
+        e.preventDefault();
+        chrome.tabs.create({ url: chrome.runtime.getURL('onboarding/onboarding.html') });
+      });
+    }
+
+    const reduceMotionEl = document.getElementById('reduceMotion');
+    if (reduceMotionEl) {
+      reduceMotionEl.checked = this._reduceMotion;
+      reduceMotionEl.addEventListener('change', async () => {
+        try {
+          this._reduceMotion = reduceMotionEl.checked;
+          await chrome.storage.local.set({ altoReduceMotion: reduceMotionEl.checked });
+        } catch (error) {
+          console.error('Error saving reduce-motion preference:', error);
+        }
+      });
+    }
+
     const clearAllVocabBtn = document.getElementById('clearAllVocabularyBtn');
     if (clearAllVocabBtn) {
       clearAllVocabBtn.addEventListener('click', () => {
         void this.clearAllVocabulary();
       });
+    }
+    } catch (e) {
+      console.error('addEventListeners error:', e);
     }
   }
 
@@ -489,9 +729,13 @@ class OptionsManager {
         // Gemini API keys typically start with 'AIza' and are 39 characters long
         isValid = apiKey.startsWith('AIza') && apiKey.length === 39;
         break;
-      case 'openrouter':
-        // OpenRouter API key validation - typically starts with 'sk-or-'
-        isValid = apiKey.startsWith('sk-or-') && apiKey.length > 20;
+      case 'deepl':
+        // DeepL auth keys typically end with ':fx' (free) and are 36+ chars
+        isValid = apiKey.length >= 30 && apiKey.includes(':');
+        break;
+      case 'azure':
+        // Azure keys are typically 32-character hex strings
+        isValid = apiKey.length >= 32;
         break;
     }
 
@@ -502,21 +746,80 @@ class OptionsManager {
     }
   }
 
+  async validateAltoCloudKey(key) {
+    const resultEl = document.getElementById('altoCloudValidationResult');
+    const validateBtn = document.getElementById('validateAltoCloudBtn');
+    if (!key) {
+      if (resultEl) resultEl.textContent = 'Please paste your Alto Cloud key first.';
+      return;
+    }
+
+    const originalText = validateBtn?.textContent || 'Validate';
+    if (validateBtn) { validateBtn.disabled = true; validateBtn.textContent = 'Validating...'; }
+
+    try {
+      const response = await chrome.runtime.sendMessage({
+        action: 'validateApiKey',
+        apiKey: key,
+        apiType: 'alto-cloud'
+      });
+
+      if (response?.success) {
+        if (resultEl) {
+          resultEl.textContent = '✓ Key is valid';
+          resultEl.style.color = '#22c55e';
+        }
+        this.showStatus('success', 'Valid', 'Alto Cloud key is valid');
+      } else {
+        if (resultEl) {
+          resultEl.textContent = response?.error || 'Validation failed.';
+          resultEl.style.color = '#ef4444';
+        }
+      }
+    } catch (error) {
+      if (resultEl) {
+        resultEl.textContent = 'Network error. Check your connection.';
+        resultEl.style.color = '#ef4444';
+      }
+    } finally {
+      if (validateBtn) { validateBtn.disabled = false; validateBtn.textContent = originalText; }
+    }
+  }
+
+  async saveAltoCloudKey() {
+    const input = document.getElementById('altoCloudApiKey');
+    const key = input?.value?.trim() || '';
+
+    try {
+      await chrome.storage.sync.set({ apiKey_alto: key });
+      this.settings.apiKey_alto = key;
+      this.updateApiCardStatus();
+      this.updateFallbackSummary();
+      this.showStatus('success', 'Saved', 'Alto Cloud key saved successfully');
+    } catch (error) {
+      console.error('Error saving Alto Cloud key:', error);
+      this.showStatus('error', 'Error', 'Failed to save Alto Cloud key');
+    }
+  }
+
   async saveSettings() {
     const formData = new FormData(document.getElementById('settingsForm'));
     const disableInputFieldsCheckbox = document.getElementById('disableInputFields');
     const apiPreference = formData.get('apiPreference');
+    const deeplKeyInput = document.getElementById('deeplApiKey');
+    const azureKeyInput = document.getElementById('azureApiKey');
+    const azureRegionInput = document.getElementById('azureRegion');
     const settings = {
       apiPreference,
       geminiApiKey: formData.get('geminiApiKey'),
-      openrouterApiKey: formData.get('openrouterApiKey'),
-      // libretranslateEnabled is true when the user selects libretranslate or "both" mode
-      libretranslateEnabled: apiPreference === 'libretranslate' || apiPreference === 'both',
+      deeplApiKey: deeplKeyInput?.value?.trim() ?? '',
+      azureApiKey: azureKeyInput?.value?.trim() ?? '',
+      azureRegion: azureRegionInput?.value?.trim() ?? '',
+      apiKey_alto: document.getElementById('altoCloudApiKey')?.value?.trim() ?? '',
       sourceLanguage: formData.get('sourceLanguage'),
       targetLanguage: formData.get('targetLanguage'),
       popupTheme: formData.get('popupTheme') || 'default',
       disableInputFields: disableInputFieldsCheckbox ? disableInputFieldsCheckbox.checked : false,
-      // MyMemory is always on (legacy field for storage compatibility)
       libretranslateEnabled: true
     };
 
@@ -559,18 +862,33 @@ class OptionsManager {
       return true;
     }
 
+    if (settings.apiPreference === 'alto-cloud') {
+      const altoKey = document.getElementById('altoCloudApiKey')?.value?.trim() || '';
+      if (!altoKey) {
+        this.showStatus('error', 'Validation Error', 'Please provide an Alto Cloud key');
+        return false;
+      }
+      return true;
+    }
+
     if (settings.apiPreference === 'gemini' && !settings.geminiApiKey) {
       this.showStatus('error', 'Validation Error', 'Please provide a Gemini API key');
       return false;
     }
 
-    if (settings.apiPreference === 'openrouter' && !settings.openrouterApiKey) {
-      this.showStatus('error', 'Validation Error', 'Please provide an OpenRouter API key');
+    if (settings.apiPreference === 'deepl' && !settings.deeplApiKey) {
+      this.showStatus('error', 'Validation Error', 'Please provide a DeepL API key');
+      return false;
+    }
+
+    if (settings.apiPreference === 'azure' && !settings.azureApiKey) {
+      this.showStatus('error', 'Validation Error', 'Please provide an Azure API key');
       return false;
     }
 
     // "Use All" mode works with any combination; MyMemory is always available as fallback
-    if (settings.apiPreference === 'both' && !settings.geminiApiKey && !settings.openrouterApiKey) {
+    const altoKey = document.getElementById('altoCloudApiKey')?.value?.trim() || '';
+    if (settings.apiPreference === 'both' && !settings.geminiApiKey && !settings.deeplApiKey && !settings.azureApiKey && !altoKey) {
       this.showStatus('error', 'Validation Error', 'Please provide at least one API key for "Use All" mode');
       return false;
     }
@@ -634,7 +952,10 @@ class OptionsManager {
     const defaultSettings = {
         apiPreference: 'gemini',
         geminiApiKey: '',
-        openrouterApiKey: '',
+        deeplApiKey: '',
+        azureApiKey: '',
+        azureRegion: '',
+        apiKey_alto: '',
         libretranslateEnabled: false,
         sourceLanguage: 'auto',
         targetLanguage: 'en',
@@ -867,18 +1188,21 @@ class OptionsManager {
     }
   }
 
-  async validateApiKeyWithServer(apiType, apiKey) {
+  async validateApiKeyWithServer(apiType, apiKey, apiRegion) {
     // LibreTranslate doesn't need an API key
     if (apiType !== 'libretranslate' && !apiKey.trim()) {
       this.showStatus('warning', 'Warning', 'Please enter an API key first');
       return;
     }
 
-    // Handle special case for OpenRouter (capital R)
-    const buttonId = apiType === 'openrouter' ? 'validateOpenRouterBtn' : 
-                     apiType === 'libretranslate' ? 'validateLibreTranslateBtn' : 
-                     `validate${apiType.charAt(0).toUpperCase() + apiType.slice(1)}Btn`;
-    const button = document.getElementById(buttonId);
+    const buttonMap = {
+      'gemini': 'validateGeminiBtn',
+      'deepl': 'validateDeepLBtn',
+      'azure': 'validateAzureBtn',
+      'libretranslate': 'validateLibreTranslateBtn',
+      'alto-cloud': 'validateAltoCloudBtn'
+    };
+    const button = document.getElementById(buttonMap[apiType]);
     
     if (!button) {
       this.showStatus('error', 'Error', 'Validation button not found');
@@ -891,11 +1215,15 @@ class OptionsManager {
     button.textContent = apiType === 'libretranslate' ? 'Testing...' : 'Validating...';
 
     try {
-      const response = await chrome.runtime.sendMessage({
+      const msg = {
         action: 'validateApiKey',
         apiKey: apiKey,
         apiType: apiType
-      });
+      };
+      if (apiType === 'azure' && apiRegion) {
+        msg.apiRegion = apiRegion;
+      }
+      const response = await chrome.runtime.sendMessage(msg);
 
       if (response?.success) {
         this.showStatus('success', 'API Key Valid', response.message ?? 'API key is valid');

@@ -1,16 +1,20 @@
-/* Alto Translate — options page (Manrope, sidebar layout) */
+/* ═══════════════════════════════════════════════════════════════════════════
+   Alto Translate — options page (Manrope, sidebar layout)
+   Design tokens aligned with vocabulary.css as source of truth.
+   ═══════════════════════════════════════════════════════════════════════════ */
 
+/* ── Design tokens ── */
 :root {
   --brand: #2563eb;
   --brand-soft: rgba(37, 99, 235, 0.1);
   --brand-soft-border: rgba(37, 99, 235, 0.35);
-  --surface-page: #f3f4f6;
+  --surface-page: #fafafa;
   --surface-card: #ffffff;
   --surface-muted: #f9fafb;
-  --border-subtle: rgba(15, 23, 42, 0.08);
+  --border-subtle: #e5e5e5;
   --border-input: rgba(15, 23, 42, 0.12);
-  --text: #111827;
-  --text-secondary: #6b7280;
+  --text: #1a1a1a;
+  --text-secondary: #737373;
   --text-muted: #9ca3af;
   --sidebar-width: 200px;
   --radius-lg: 16px;
@@ -19,13 +23,13 @@
 }
 
 .dark {
-  --surface-page: #0f1419;
-  --surface-card: #151b23;
+  --surface-page: #141414;
+  --surface-card: #1c1c1c;
   --surface-muted: #1a222c;
-  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-subtle: #2a2a2a;
   --border-input: rgba(255, 255, 255, 0.12);
-  --text: #f3f4f6;
-  --text-secondary: #9ca3af;
+  --text: #f5f5f5;
+  --text-secondary: #a3a3a3;
   --text-muted: #6b7280;
   --brand-soft: rgba(96, 165, 250, 0.12);
   --brand-soft-border: rgba(96, 165, 250, 0.4);
@@ -37,6 +41,7 @@ button:hover {
   transition: none;
 }
 
+/* ── Page body ── */
 .options-body {
   font-family: 'Manrope', sans-serif;
   font-weight: 400;
@@ -60,17 +65,17 @@ button:hover {
   min-height: 800px;
 }
 
+/* ── Settings shell (sidebar + main) ── */
 .settings-shell {
   display: flex;
   min-height: 720px;
   background: var(--surface-card);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-shell);
-  border: 1px solid var(--border-subtle);
   overflow: hidden;
 }
 
-/* Sidebar */
+/* ── Sidebar ── */
 .settings-sidebar {
   width: var(--sidebar-width);
   flex-shrink: 0;
@@ -227,7 +232,7 @@ button:hover {
   color: var(--text-muted);
 }
 
-/* Main */
+/* ── Main content area ── */
 .settings-main {
   flex: 1;
   min-width: 0;
@@ -248,6 +253,7 @@ button:hover {
   margin-top: 0;
 }
 
+/* ── Typography helpers ── */
 .settings-section-title {
   margin: 0 0 0.05rem;
   font-size: 1.125rem;
@@ -281,6 +287,7 @@ button:hover {
   margin-bottom: 0.45rem;
 }
 
+/* ── Form fields ── */
 .settings-field-stack {
   display: flex;
   flex-direction: column;
@@ -299,7 +306,6 @@ button:hover {
 }
 
 .settings-input,
-.settings-select,
 .settings-textarea {
   width: 100%;
   box-sizing: border-box;
@@ -315,14 +321,40 @@ button:hover {
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
+.settings-select {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: var(--text);
+  background: var(--surface-card);
+  border: 1px solid var(--border-input);
+  border-radius: 8px;
+  padding: 0.55rem 0.75rem;
+  padding-right: 2rem;
+  outline: none;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.65rem center;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
 .settings-textarea {
   min-height: 96px;
   resize: vertical;
 }
 
 .settings-input:focus,
-.settings-select:focus,
 .settings-textarea:focus {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px var(--brand-soft);
+}
+
+.settings-select:focus {
   border-color: var(--brand);
   box-shadow: 0 0 0 3px var(--brand-soft);
 }
@@ -369,6 +401,7 @@ button:hover {
   color: var(--text);
 }
 
+/* ── Buttons ── */
 .settings-btn-secondary {
   font-family: inherit;
   font-size: 0.75rem;
@@ -447,6 +480,7 @@ button:hover {
   background: rgba(239, 68, 68, 0.14);
 }
 
+/* ── Callout box ── */
 .settings-callout {
   padding: 1.1rem 1.15rem;
   background: var(--surface-muted);
@@ -462,6 +496,7 @@ button:hover {
   color: var(--text);
 }
 
+/* ── Checkbox rows ── */
 .settings-check-row {
   display: flex;
   align-items: flex-start;
@@ -482,6 +517,7 @@ button:hover {
   color: var(--text);
 }
 
+/* ── Language fields ── */
 .settings-lang-row {
   display: flex;
   gap: 1.25rem;
@@ -493,6 +529,7 @@ button:hover {
   min-width: 200px;
 }
 
+/* ── Status pill ── */
 .settings-status-pill {
   display: inline-flex;
   align-items: center;
@@ -512,49 +549,11 @@ button:hover {
   color: #86efac;
 }
 
-/* API option cards */
+/* ── API option cards ── */
 .api-options-grid {
   display: grid;
   grid-template-columns: 1fr;
   gap: 0.5rem;
-}
-
-@media (max-width: 640px) {
-  .api-options-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .settings-shell {
-    flex-direction: column;
-  }
-
-  .settings-sidebar {
-    width: 100%;
-    border-right: none;
-    border-bottom: 1px solid var(--border-subtle);
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: center;
-  }
-
-  .settings-nav {
-    flex-direction: row;
-    flex-wrap: wrap;
-    flex: 1;
-  }
-
-  .settings-sidebar-spacer {
-    display: none;
-  }
-
-  .settings-sidebar-footer {
-    flex-direction: row;
-    flex-wrap: wrap;
-    border-top: none;
-    padding-top: 0;
-    width: 100%;
-    align-items: center;
-  }
 }
 
 .api-option-card {
@@ -649,6 +648,29 @@ button:hover {
   margin-top: 0.35rem;
 }
 
+.api-option-meta {
+  margin-top: 0.2rem;
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
+/* ── Inline API key panel inside cards ── */
+.api-key-panel {
+  display: none;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-input);
+}
+
+.api-option-card:has(.api-option-radio:checked) .api-key-panel {
+  display: block;
+}
+
+.fallback-key-summary {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
 .api-card-status {
   display: inline-flex;
   align-items: center;
@@ -684,13 +706,12 @@ button:hover {
   color: var(--text);
 }
 
-/* Footer actions */
+/* ── Footer actions bar ── */
 .settings-footer-actions {
   margin-top: 1rem;
   padding: 1rem 1rem;
   background: var(--surface-card);
   border-radius: var(--radius-lg);
-  border: 1px solid var(--border-subtle);
   box-shadow: var(--shadow-shell);
 }
 
@@ -702,8 +723,7 @@ button:hover {
   flex-wrap: wrap;
 }
 
-/* Tab panel enter is handled by Motion in options.mjs */
-/* Theme selector grid */
+/* ── Theme selector grid ── */
 .theme-selector-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(152px, 1fr));
@@ -829,6 +849,7 @@ button:hover {
   letter-spacing: -0.01em;
 }
 
+/* ── Cache stats cards ── */
 .cache-stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -888,7 +909,7 @@ button:hover {
   gap: 0.75rem;
 }
 
-/* Test result */
+/* ── Test result ── */
 .test-result {
   padding: 1rem;
   background: var(--surface-muted);
@@ -924,7 +945,7 @@ button:hover {
   background: rgba(239, 68, 68, 0.12);
 }
 
-/* Toasts */
+/* ── Toasts ── */
 .toast-container {
   position: fixed;
   top: 1rem;
@@ -961,7 +982,7 @@ button:hover {
   transform: scale(0.95);
 }
 
-/* Validation helpers */
+/* ── Validation helpers ── */
 .api-key-valid {
   border-color: #22c55e !important;
 }
@@ -970,7 +991,7 @@ button:hover {
   border-color: #ef4444 !important;
 }
 
-/* Utilities from prior page */
+/* ── Utility classes ── */
 .hidden {
   display: none !important;
 }
@@ -979,7 +1000,15 @@ button:hover {
   font-weight: 500;
 }
 
-/* Spinner (save button) */
+.inline-block {
+  display: inline-block;
+}
+
+.mr-2 {
+  margin-right: 0.5rem;
+}
+
+/* ── Spinner (save button) ── */
 .spinner {
   width: 14px;
   height: 14px;
@@ -991,15 +1020,62 @@ button:hover {
 }
 
 @keyframes spin {
-  to {
-    transform: rotate(360deg);
+  to { transform: rotate(360deg); }
+}
+
+/* ── Responsive: narrow viewport ── */
+@media (max-width: 640px) {
+  .api-options-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-shell {
+    flex-direction: column;
+  }
+
+  .settings-sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--border-subtle);
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .settings-nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+    flex: 1;
+  }
+
+  .settings-sidebar-spacer {
+    display: none;
+  }
+
+  .settings-sidebar-footer {
+    flex-direction: row;
+    flex-wrap: wrap;
+    border-top: none;
+    padding-top: 0;
+    width: 100%;
+    align-items: center;
   }
 }
 
-.inline-block {
-  display: inline-block;
-}
+/* ── Page intro animation ── */
+@media (prefers-reduced-motion: no-preference) {
+  body:not(.is-ready) .settings-shell {
+    opacity: 0;
+  }
 
-.mr-2 {
-  margin-right: 0.5rem;
+  body:not(.is-ready) .settings-brand,
+  body:not(.is-ready) .settings-nav-item,
+  body:not(.is-ready) .tab-content:not(.hidden) {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  body:not(.is-ready) .settings-sidebar-footer {
+    opacity: 0;
+  }
 }

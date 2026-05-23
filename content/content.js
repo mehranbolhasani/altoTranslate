@@ -32,7 +32,7 @@ class AltoTranslate {
     this.handleResize = this.handleResize.bind(this);
     this.handleKeydown = this.handleKeydown.bind(this);
     this.handleRuntimeMessage = this.handleRuntimeMessage.bind(this);
-    
+
     this.init();
   }
 
@@ -45,7 +45,7 @@ class AltoTranslate {
 
     // Detect webpage theme (with caching)
     this.detectedTheme = this.getDetectedTheme();
-    
+
     // Add event listeners
     document.addEventListener('mouseup', this.handleTextSelection);
     document.addEventListener('mousedown', this.handleMouseDown);
@@ -53,11 +53,11 @@ class AltoTranslate {
     window.addEventListener('scroll', this.handleScroll, true);
     window.addEventListener('resize', this.handleResize);
     document.addEventListener('keydown', this.handleKeydown);
-    
+
     // Listen for settings changes
     chrome.runtime.onMessage.addListener(this.handleRuntimeMessage);
     chrome.storage.onChanged.addListener(this.handleStorageChanged);
-    
+
     // Clear theme cache on page visibility change (indicates navigation)
     if (typeof document !== 'undefined' && document.addEventListener) {
       document.addEventListener('visibilitychange', () => {
@@ -75,17 +75,17 @@ class AltoTranslate {
    */
   getDetectedTheme() {
     const currentUrl = window.location.href;
-    
+
     // Check if cache is valid for current page
     if (this.detectedThemeCache && this.themeCachePageUrl === currentUrl) {
       return this.detectedThemeCache;
     }
-    
+
     // Cache miss - detect theme
     const theme = this.detectWebpageTheme();
     this.detectedThemeCache = theme;
     this.themeCachePageUrl = currentUrl;
-    
+
     return theme;
   }
 
@@ -107,22 +107,22 @@ class AltoTranslate {
     const darkModeClasses = ['dark', 'dark-mode', 'theme-dark', 'dark-theme'];
     const htmlElement = document.documentElement;
     const bodyElement = document.body;
-    
+
     for (const className of darkModeClasses) {
-      if (htmlElement.classList.contains(className) || 
+      if (htmlElement.classList.contains(className) ||
           bodyElement.classList.contains(className)) {
         return 'dark';
       }
     }
-    
+
     // Method 2: Check computed background color brightness
     try {
       const bodyStyle = window.getComputedStyle(bodyElement);
       const htmlStyle = window.getComputedStyle(htmlElement);
-      
+
       // Get background color from body or html
       let bgColor = bodyStyle.backgroundColor || htmlStyle.backgroundColor;
-      
+
       // If background is transparent, check parent elements
       if (!bgColor || bgColor === 'rgba(0, 0, 0, 0)' || bgColor === 'transparent') {
         // Try to get color from a visible element
@@ -136,7 +136,7 @@ class AltoTranslate {
           }
         }
       }
-      
+
       if (bgColor && bgColor !== 'rgba(0, 0, 0, 0)' && bgColor !== 'transparent') {
         const brightness = this.calculateBrightness(bgColor);
         // If brightness is less than 128 (midpoint), consider it dark
@@ -145,18 +145,18 @@ class AltoTranslate {
     } catch (error) {
       // Error detecting theme from colors, continue with fallback
     }
-    
+
     // Method 3: Check for dark mode data attributes
     if (htmlElement.getAttribute('data-theme') === 'dark' ||
         bodyElement.getAttribute('data-theme') === 'dark') {
       return 'dark';
     }
-    
+
     // Method 4: Fallback to system preference
     if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
       return 'dark';
     }
-    
+
     // Default to light
     return 'light';
   }
@@ -169,7 +169,7 @@ class AltoTranslate {
   calculateBrightness(color) {
     // Parse color string to RGB values
     let r, g, b;
-    
+
     if (color.startsWith('rgb')) {
       // Parse rgb/rgba string
       const matches = color.match(/\d+/g);
@@ -185,13 +185,13 @@ class AltoTranslate {
       g = parseInt(hex.slice(2, 4), 16);
       b = parseInt(hex.slice(4, 6), 16);
     }
-    
+
     if (r !== undefined && g !== undefined && b !== undefined) {
       // Calculate relative luminance using standard formula
       // Y = 0.299*R + 0.587*G + 0.114*B
       return (r * 0.299 + g * 0.587 + b * 0.114);
     }
-    
+
     // Default to light if we can't parse
     return 255;
   }
@@ -203,7 +203,7 @@ class AltoTranslate {
    */
   applyTheme(element, theme) {
     if (!element) return;
-    
+
     if (theme === 'dark') {
       element.classList.add('alto-dark-theme');
       element.classList.remove('alto-light-theme');
@@ -221,15 +221,15 @@ class AltoTranslate {
     if (!popup || !this.settings) {
       await this.loadSettings();
     }
-    
+
     const themeName = this.settings?.popupTheme || 'default';
-    
+
     try {
       const response = await chrome.runtime.sendMessage({ action: 'getThemes' });
       if (response?.success && response.themes?.[themeName]) {
         const theme = response.themes[themeName];
         const colors = theme.colors;
-        
+
         // Apply theme colors via CSS variables
         popup.style.setProperty('--alto-bg', colors.background);
         popup.style.setProperty('--alto-border', colors.border);
@@ -243,7 +243,7 @@ class AltoTranslate {
         popup.style.setProperty('--alto-error-bg', colors.errorBg);
         popup.style.setProperty('--alto-error-text', colors.errorText);
         popup.style.setProperty('--alto-error-border', colors.errorBorder);
-        
+
         // Add theme class for CSS targeting
         popup.classList.add(`alto-theme-${themeName}`);
       }
@@ -378,7 +378,7 @@ class AltoTranslate {
       this.settings = { disableInputFields: false, showPhoneticsNonLatin: true };
     }
   }
-  
+
   /**
    * Check if the current selection is inside an input field or textarea
    * @returns {boolean} True if selection is in input/textarea
@@ -395,7 +395,7 @@ class AltoTranslate {
         return true;
       }
     }
-    
+
     // Method 2: Check all input and textarea elements to see if any have selection
     const allInputs = document.querySelectorAll('input, textarea');
     for (const input of allInputs) {
@@ -406,24 +406,24 @@ class AltoTranslate {
         }
       }
     }
-    
+
     // Method 3: Check selection range containers
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0) {
       return false;
     }
-    
+
     const range = selection.getRangeAt(0);
     if (!range) {
       return false;
     }
-    
+
     // Check start container
     let element = range.startContainer;
     if (element.nodeType === Node.TEXT_NODE) {
       element = element.parentElement;
     }
-    
+
     // Walk up the DOM tree
     while (element && element !== document.body && element !== document.documentElement) {
       const tagName = element.tagName;
@@ -435,13 +435,13 @@ class AltoTranslate {
       }
       element = element.parentElement;
     }
-    
+
     // Check end container as well
     element = range.endContainer;
     if (element.nodeType === Node.TEXT_NODE) {
       element = element.parentElement;
     }
-    
+
     while (element && element !== document.body && element !== document.documentElement) {
       const tagName = element.tagName;
       if (tagName === 'INPUT' || tagName === 'TEXTAREA') {
@@ -452,14 +452,14 @@ class AltoTranslate {
       }
       element = element.parentElement;
     }
-    
+
     return false;
   }
 
   handleMouseMove(event) {
     // Track mouse position for icon positioning
     this.mousePosition = { x: event.clientX, y: event.clientY };
-    
+
     // Don't move the icon once it's created - it should stay in place
     // The icon position is set when it's first created based on mouse position
   }
@@ -504,10 +504,10 @@ class AltoTranslate {
 
     // Don't hide popup immediately - let the user interact with it
     // Only hide if clicking on a completely different element
-    if (this.isPopupOpen && this.translatePopup && 
-        !this.translatePopup.contains(event.target) && 
+    if (this.isPopupOpen && this.translatePopup &&
+        !this.translatePopup.contains(event.target) &&
         !this.translateIcon?.contains(event.target)) {
-      
+
       if (this.popupPinned) {
         return;
       }
@@ -520,16 +520,16 @@ class AltoTranslate {
         const range = selection.getRangeAt(0);
         const rect = range.getBoundingClientRect();
         const { clientX: clickX, clientY: clickY } = event;
-        
+
         // If click is near the selected text, don't hide popup
-        if (clickX >= rect.left - CLICK_TOLERANCE && 
+        if (clickX >= rect.left - CLICK_TOLERANCE &&
             clickX <= rect.right + CLICK_TOLERANCE &&
-            clickY >= rect.top - CLICK_TOLERANCE && 
+            clickY >= rect.top - CLICK_TOLERANCE &&
             clickY <= rect.bottom + CLICK_TOLERANCE) {
           return;
         }
       }
-      
+
       // Add a longer delay to prevent immediate hiding
       // HIDE_TIMER_DELAY is defined in utils/constants.js (1000ms)
       const HIDE_TIMER_DELAY = 1000; // Matches utils/constants.js
@@ -537,12 +537,12 @@ class AltoTranslate {
         if (this.popupPinned) {
           return;
         }
-        if (this.isPopupOpen && this.translatePopup && 
+        if (this.isPopupOpen && this.translatePopup &&
             !this.translatePopup.contains(event.target) && !this.translationInProgress) {
           this.hidePopup();
         }
       }, HIDE_TIMER_DELAY);
-      
+
       // Store timer reference for potential cleanup
       this.hideTimer = hideTimer;
     }
@@ -584,17 +584,17 @@ class AltoTranslate {
       const activeElement = document.activeElement;
       if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
         // Check if there's actually selected text in the input
-        const hasSelection = activeElement.selectionStart !== undefined && 
+        const hasSelection = activeElement.selectionStart !== undefined &&
                              activeElement.selectionEnd !== undefined &&
                              activeElement.selectionStart !== activeElement.selectionEnd;
-        
+
         if (hasSelection) {
           this.hideIcon();
           this.hidePopup(true);
           return;
         }
       }
-      
+
       // Also check using the helper method for other cases
       if (this.isSelectionInInputField()) {
         this.hideIcon();
@@ -693,7 +693,7 @@ class AltoTranslate {
       clearTimeout(this.autoHideTimer);
       this.autoHideTimer = null;
     }
-    
+
     if (this.translateIcon) {
       this.translateIcon.remove();
       this.translateIcon = null;
@@ -828,10 +828,10 @@ class AltoTranslate {
     // Create popup element
     this.translatePopup = document.createElement('div');
     this.translatePopup.className = 'alto-translate-popup';
-    
+
     // Apply detected theme (for dark/light mode)
     this.applyTheme(this.translatePopup, this.detectedTheme);
-    
+
     // Apply custom theme from settings
     await this.applyCustomTheme(this.translatePopup);
 
@@ -1093,7 +1093,7 @@ class AltoTranslate {
       await this.loadSettings();
     }
 
-    // MyMemory is always available; Gemini/OpenRouter need keys when those APIs are chosen in settings.
+    // MyMemory is always available; other providers need keys when chosen in settings.
 
     // Prevent popup from being hidden during translation
     this.translationInProgress = true;
@@ -1260,11 +1260,11 @@ class AltoTranslate {
 
     // Update translated text
     translatedTextEl.innerHTML = this.escapeHtml(result.translatedText);
-    
+
     // Apply RTL/LTR styling based on target language
     const targetLanguage = result.targetLanguage ?? 'en';
     const isRTL = this.isRTLLanguage(targetLanguage);
-    
+
     translatedTextEl.className = `alto-translate-translated-text ${isRTL ? 'rtl' : 'ltr'}`;
 
     this.updatePhoneticLine(result);
@@ -1283,7 +1283,7 @@ class AltoTranslate {
     // Update API badge
     const apiName = (result.api ?? 'unknown').toUpperCase();
     const isFromCache = result.fromCache === true;
-    
+
     if (isFromCache) {
       apiBadge.innerHTML = `<span style="display: inline-flex; align-items: center; gap: 4px;">
         <span>⚡</span>
@@ -1298,12 +1298,65 @@ class AltoTranslate {
     }
 
     this.scheduleAlignPopupToSelection();
+    this.checkReviewNudge();
   }
 
   isRTLLanguage(languageCode) {
     const base = this.normalizeLangBaseForPhonetics(languageCode);
     const rtlLanguages = ['ar', 'fa', 'he', 'ur'];
     return rtlLanguages.includes(base);
+  }
+
+  async checkReviewNudge() {
+    if (this.translatePopup?.querySelector('.alto-review-nudge')) return;
+    try {
+      const data = await chrome.storage.local.get(['translationCount', 'reviewNudgeDismissed']);
+      const count = typeof data.translationCount === 'number' ? data.translationCount : 0;
+      if (count >= 50 && !data.reviewNudgeDismissed) {
+        this.showReviewNudge();
+      }
+    } catch (_) {
+      // non-critical
+    }
+  }
+
+  showReviewNudge() {
+    if (!this.translatePopup) return;
+    if (this.translatePopup.querySelector('.alto-review-nudge')) return;
+
+    const nudge = document.createElement('div');
+    nudge.className = 'alto-review-nudge';
+
+    const link = document.createElement('a');
+    link.href = '#';
+    link.className = 'alto-review-nudge-link';
+    link.textContent = 'Enjoying Alto? Leave a review \u2197';
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      chrome.runtime.sendMessage({ action: 'openReviewPage' }, () => void chrome.runtime.lastError);
+    });
+
+    const dismiss = document.createElement('button');
+    dismiss.className = 'alto-review-nudge-dismiss';
+    dismiss.textContent = '\u2715';
+    dismiss.setAttribute('aria-label', 'Dismiss');
+    dismiss.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      chrome.storage.local.set({ reviewNudgeDismissed: true }).catch(() => {});
+      nudge.remove();
+    });
+
+    nudge.appendChild(link);
+    nudge.appendChild(dismiss);
+
+    const content = this.translatePopup.querySelector('.alto-translate-popup-content');
+    if (content) {
+      content.appendChild(nudge);
+    }
+
+    this.scheduleAlignPopupToSelection();
   }
 
   showError(errorMessage, errorDetails = null) {
@@ -1331,8 +1384,10 @@ class AltoTranslate {
     }
 
     // Build error HTML with structured message
-    let errorHtml = `<div class="alto-translate-error">${this.escapeHtml(errorMessage)}</div>`;
-    
+    const isQuotaError = errorMessage && errorMessage.includes("daily limit has been reached");
+    const errorClass = isQuotaError ? 'alto-translate-error quota-exceeded' : 'alto-translate-error';
+    let errorHtml = `<div class="${errorClass}">${this.escapeHtml(errorMessage)}</div>`;
+
     // Add actionable steps if available
     if (errorDetails && errorDetails.steps && errorDetails.steps.length > 0) {
       errorHtml += '<div class="alto-translate-error-steps" style="margin-top: 8px; font-size: 12px; color: var(--alto-text-secondary, #6b7280);">';
@@ -1341,7 +1396,7 @@ class AltoTranslate {
       });
       errorHtml += '</div>';
     }
-    
+
     // Add help link if available
     if (errorDetails && errorDetails.helpLink) {
       const helpLink = document.createElement('a');
@@ -1358,7 +1413,7 @@ class AltoTranslate {
     }
 
     // Add settings link for API key errors
-    if (errorMessage.toLowerCase().includes('api key') || 
+    if (errorMessage.toLowerCase().includes('api key') ||
         (errorDetails && errorDetails.steps && errorDetails.steps.some(s => s.toLowerCase().includes('settings')))) {
       const settingsLink = document.createElement('a');
       settingsLink.href = '#';
@@ -1398,14 +1453,14 @@ class AltoTranslate {
       }
 
       await navigator.clipboard.writeText(textToCopy);
-      
+
       // Show success feedback
       // COPY_FEEDBACK_DURATION is defined in utils/constants.js (2000ms)
       const COPY_FEEDBACK_DURATION = 2000; // Matches utils/constants.js
       const originalText = copyBtn.innerHTML;
       copyBtn.innerHTML = 'Copied!';
       copyBtn.style.background = '#10b981';
-      
+
       setTimeout(() => {
         copyBtn.innerHTML = originalText;
         copyBtn.style.background = '';
@@ -1560,7 +1615,7 @@ function initializeExtension() {
   if (altoTranslateInstance) {
     altoTranslateInstance.cleanup();
   }
-  
+
   altoTranslateInstance = new AltoTranslate();
 }
 
