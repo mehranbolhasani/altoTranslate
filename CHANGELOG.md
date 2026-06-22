@@ -4,6 +4,12 @@ All notable changes to Alto Translate are documented in this file.
 
 ## [Unreleased]
 
+## [1.5.1] - 2026-05-28
+
+### Fixed
+
+- **Review page link**: replaced the hardcoded `EXTENSION_ID` placeholder in the review nudge with a dynamic `chrome.runtime.id` URL so the "Leave a review" link opens the correct Chrome Web Store listing ([`background/background.js`](background/background.js)).
+
 ## [1.5.0] - 2026-05-20
 
 ### Added

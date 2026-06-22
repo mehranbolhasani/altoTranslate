@@ -1122,6 +1122,8 @@ class AltoTranslate {
 
       if (response?.success) {
         await this.showTranslation(response);
+      } else if (response?.rateLimited) {
+        this.showRateLimitNudge(response.upgradeUrl);
       } else {
         this.showError(response?.error ?? 'Translation failed', response?.errorDetails ?? null);
       }
@@ -1355,6 +1357,76 @@ class AltoTranslate {
     if (content) {
       content.appendChild(nudge);
     }
+
+    this.scheduleAlignPopupToSelection();
+  }
+
+  showRateLimitNudge(upgradeUrl) {
+    if (!this.translatePopup) return;
+
+    const translatedTextEl = this.translatePopup.querySelector('.alto-translate-translated-text');
+    const copyBtn = this.translatePopup.querySelector('.alto-translate-copy-btn');
+    const saveVocabBtn = this.translatePopup.querySelector('.alto-translate-save-vocab-btn');
+    const apiBadge = this.translatePopup.querySelector('.alto-translate-api-badge');
+    const phoneticEl = this.translatePopup.querySelector('.alto-translate-phonetic');
+
+    if (!translatedTextEl || !copyBtn || !apiBadge) return;
+
+    this.lastTranslationSnapshot = null;
+    this.lastTranslationResult = null;
+
+    if (phoneticEl) {
+      phoneticEl.textContent = '';
+      phoneticEl.hidden = true;
+    }
+    this.hideVocabBanner();
+
+    if (saveVocabBtn) {
+      saveVocabBtn.disabled = true;
+      saveVocabBtn.classList.remove('is-saved');
+    }
+
+    const nudge = document.createElement('div');
+    nudge.className = 'alto-rate-limit-nudge';
+
+    const icon = document.createElement('div');
+    icon.className = 'alto-rate-limit-nudge-icon';
+    icon.textContent = '✦';
+
+    const body = document.createElement('div');
+    body.className = 'alto-rate-limit-nudge-body';
+
+    const heading = document.createElement('div');
+    heading.className = 'alto-rate-limit-nudge-heading';
+    heading.textContent = "You've reached today's limit";
+
+    const sub = document.createElement('div');
+    sub.className = 'alto-rate-limit-nudge-sub';
+    sub.textContent = 'Free tier resets tomorrow. Upgrade for unlimited translations.';
+
+    const link = document.createElement('a');
+    link.className = 'alto-rate-limit-nudge-cta';
+    link.href = upgradeUrl || 'https://altotranslate.xyz/pricing';
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.textContent = 'Upgrade to Alto Cloud →';
+    link.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+
+    body.appendChild(heading);
+    body.appendChild(sub);
+    body.appendChild(link);
+    nudge.appendChild(icon);
+    nudge.appendChild(body);
+
+    translatedTextEl.innerHTML = '';
+    translatedTextEl.appendChild(nudge);
+
+    copyBtn.disabled = true;
+    copyBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-copy-icon lucide-copy" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>';
+
+    apiBadge.textContent = 'ALTO';
 
     this.scheduleAlignPopupToSelection();
   }

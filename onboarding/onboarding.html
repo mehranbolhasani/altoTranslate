@@ -16,12 +16,10 @@
 
                 <div class="onboarding-header">
                     <!-- Progress dots -->
-                    <div class="onboarding-progress" role="progressbar" aria-label="Setup progress" aria-valuenow="1" aria-valuemin="1" aria-valuemax="5">
-                        <span class="onboarding-dot is-active" data-dot="1" aria-label="Step 1 of 5"></span>
-                        <span class="onboarding-dot" data-dot="2" aria-label="Step 2 of 5"></span>
-                        <span class="onboarding-dot" data-dot="3" aria-label="Step 3 of 5"></span>
-                        <span class="onboarding-dot" data-dot="4" aria-label="Step 4 of 5"></span>
-                        <span class="onboarding-dot" data-dot="5" aria-label="Step 5 of 5"></span>
+                    <div class="onboarding-progress" role="progressbar" aria-label="Setup progress" aria-valuenow="1" aria-valuemin="1" aria-valuemax="3">
+                        <span class="onboarding-dot is-active" data-dot="1" aria-label="Step 1 of 3"></span>
+                        <span class="onboarding-dot" data-dot="2" aria-label="Step 2 of 3"></span>
+                        <span class="onboarding-dot" data-dot="3" aria-label="Step 3 of 3"></span>
                     </div>
 
                     <!-- Skip button -->
@@ -144,181 +142,35 @@
                         </div>
                     </div>
 
-                    <!-- Screen 3 — Translation engine -->
+                    <!-- Screen 3 — Ready + upsell -->
                     <div class="onboarding-screen" data-screen="3">
-                        <h1 class="onboarding-screen-headline">Pick your translation engine</h1>
-                        <p class="onboarding-screen-subhead">You can change this any time in settings.</p>
+                        <h1 class="onboarding-screen-headline">You're all set</h1>
+                        <p class="onboarding-screen-subhead">
+                            Alto is ready to translate. Select any text on any page to get started.
+                        </p>
                         <div class="onboarding-screen-body">
-                            <div class="onboarding-api-cards" id="engineCards">
-                                <!-- MyMemory -->
-                                <label class="onboarding-api-card is-selected" data-engine="libretranslate">
-                                    <input type="radio" name="onboardingEngine" value="libretranslate" checked class="onboarding-api-card-radio" />
-                                    <span class="onboarding-api-card-check" aria-hidden="true">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
-                                    </span>
-                                    <div class="onboarding-api-card-content">
-                                        <div class="onboarding-api-card-top">
-                                            <span class="onboarding-api-card-title">MyMemory</span>
-                                            <span class="onboarding-api-card-pill">Ready · Free · No setup</span>
-                                        </div>
-                                        <p class="onboarding-api-card-desc">Good for casual use. Has daily limits.</p>
-                                    </div>
-                                </label>
-                                <!-- DeepL -->
-                                <label class="onboarding-api-card" data-engine="deepl">
-                                    <input type="radio" name="onboardingEngine" value="deepl" class="onboarding-api-card-radio" />
-                                    <span class="onboarding-api-card-check" aria-hidden="true">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
-                                    </span>
-                                    <div class="onboarding-api-card-content">
-                                        <div class="onboarding-api-card-top">
-                                            <span class="onboarding-api-card-title">DeepL</span>
-                                            <span class="onboarding-api-card-pill">Recommended · Free tier</span>
-                                        </div>
-                                        <p class="onboarding-api-card-desc">Best quality, especially for European languages. Needs a free API key (2 min).</p>
-                                    </div>
-                                </label>
-                                <!-- Microsoft Translator -->
-                                <label class="onboarding-api-card" data-engine="azure">
-                                    <input type="radio" name="onboardingEngine" value="azure" class="onboarding-api-card-radio" />
-                                    <span class="onboarding-api-card-check" aria-hidden="true">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
-                                    </span>
-                                    <div class="onboarding-api-card-content">
-                                        <div class="onboarding-api-card-top">
-                                            <span class="onboarding-api-card-title">Microsoft Translator</span>
-                                            <span class="onboarding-api-card-pill">Best free volume</span>
-                                        </div>
-                                        <p class="onboarding-api-card-desc">2M free characters/month. Needs a free Azure key (5 min).</p>
-                                    </div>
-                                </label>
-                                <!-- Gemini -->
-                                <label class="onboarding-api-card" data-engine="gemini">
-                                    <input type="radio" name="onboardingEngine" value="gemini" class="onboarding-api-card-radio" />
-                                    <span class="onboarding-api-card-check" aria-hidden="true">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
-                                    </span>
-                                    <div class="onboarding-api-card-content">
-                                        <div class="onboarding-api-card-top">
-                                            <span class="onboarding-api-card-title">Google Gemini</span>
-                                            <span class="onboarding-api-card-pill">Recommended · Free tier</span>
-                                        </div>
-                                        <p class="onboarding-api-card-desc">Best for long or contextual text. Needs a free API key (2 min).</p>
-                                    </div>
-                                </label>
-                                <!-- Alto Cloud -->
-                                <label class="onboarding-api-card" data-engine="alto-cloud">
-                                    <input type="radio" name="onboardingEngine" value="alto-cloud" class="onboarding-api-card-radio" />
-                                    <span class="onboarding-api-card-check" aria-hidden="true">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
-                                    </span>
-                                    <div class="onboarding-api-card-content">
-                                        <div class="onboarding-api-card-top">
-                                            <span class="onboarding-api-card-title">Alto Cloud</span>
-                                            <span class="onboarding-api-card-pill">☁️ Managed · No setup</span>
-                                        </div>
-                                        <p class="onboarding-api-card-desc">Translations managed by Alto. Paste your Alto Cloud key and you're done. Get a key at altotranslate.xyz/pricing.</p>
-                                    </div>
-                                </label>
+                            <div class="onboarding-ready-card">
+                                <div class="onboarding-ready-tier">
+                                    <span class="onboarding-ready-tier-badge">Free</span>
+                                    <span class="onboarding-ready-tier-label">100 translations/day · No setup</span>
+                                </div>
+                                <div class="onboarding-ready-divider"></div>
+                                <div class="onboarding-ready-upgrade">
+                                    <p class="onboarding-ready-upgrade-text">
+                                        Need more? Alto Cloud gives you unlimited translations for €1.99/month.
+                                    </p>
+                                    <a href="https://altotranslate.xyz/pricing" target="_blank" rel="noopener"
+                                       class="onboarding-btn-ghost onboarding-ready-upgrade-link">
+                                        Upgrade to Alto Cloud →
+                                    </a>
+                                </div>
                             </div>
                         </div>
-                        <div class="onboarding-nav">
+                        <div class="onboarding-nav onboarding-nav--between">
                             <button type="button" class="onboarding-btn-ghost" id="screen3BackBtn">Back</button>
-                            <button type="button" class="onboarding-btn-primary" id="screen3NextBtn">Continue</button>
-                        </div>
-                    </div>
-
-                    <!-- Screen 3.5 — API key (conditional) -->
-                    <div class="onboarding-screen" data-screen="3-5">
-                        <h1 class="onboarding-screen-headline" id="apiKeyHeadline">Let's connect your Gemini key</h1>
-                        <div class="onboarding-screen-body">
-                            <ol class="onboarding-steps" id="apiKeySteps">
-                                <li class="onboarding-step">
-                                    <span id="providerNameStep1">Click the button below to open Google AI Studio in a new tab.</span>
-                                </li>
-                                <li class="onboarding-step">Create a free key and copy it.</li>
-                                <li class="onboarding-step">Paste it here and hit Validate.</li>
-                            </ol>
-                            <div class="onboarding-inline-actions" style="margin-bottom: 1rem">
-                                <a href="#" id="getKeyBtn" target="_blank" rel="noopener noreferrer" class="onboarding-btn-secondary" style="text-decoration: none">
-                                    Get my key &rarr;
-                                </a>
-                                <a href="#" id="openDashboardBtn" target="_blank" rel="noopener noreferrer" class="onboarding-btn-secondary is-hidden" style="text-decoration: none">
-                                    Open dashboard &rarr;
-                                </a>
-                            </div>
-                            <label for="apiKeyInput" class="onboarding-label">Paste your API key</label>
-                            <div class="onboarding-input-row">
-                                <input type="password" id="apiKeyInput" class="onboarding-input" placeholder="Paste your API key here" />
-                                <button type="button" id="toggleApiKey" class="onboarding-input-affix" aria-label="Show or hide API key">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>
-                                </button>
-                            </div>
-                            <div id="apiRegionWrap" class="is-hidden" style="margin-top: 0.75rem">
-                                <label for="apiRegionInput" class="onboarding-label">Azure region</label>
-                                <input type="text" id="apiRegionInput" class="onboarding-input" placeholder="e.g. westeurope" />
-                            </div>
-                            <div class="onboarding-inline-actions">
-                                <button type="button" id="validateApiKeyBtn" class="onboarding-btn-secondary">Validate</button>
-                            </div>
-                            <div id="validationResult" class="onboarding-validation-result"></div>
-                            <div style="margin-top: 0.75rem">
-                                <button type="button" id="skipApiKeyBtn" class="onboarding-link-btn">Skip for now, use MyMemory</button>
-                            </div>
-                        </div>
-                        <div class="onboarding-nav">
-                            <button type="button" class="onboarding-btn-ghost" id="screen35BackBtn">Back</button>
-                            <button type="button" class="onboarding-btn-primary" id="screen35NextBtn" disabled>Continue</button>
-                        </div>
-                    </div>
-
-                    <!-- Screen 4 — Try it -->
-                    <div class="onboarding-screen" data-screen="4">
-                        <h1 class="onboarding-screen-headline">Try it out</h1>
-                        <p class="onboarding-screen-subhead">Select any text below to see Alto in action.</p>
-                        <div class="onboarding-screen-body">
-                            <div class="onboarding-sandbox" id="sandbox">
-                                El pequeño café de la esquina abre todos los días a las siete de la mañana. Su especialidad es un cruasán recién
-                                horneado con café cortado.
-                                <div class="onboarding-sandbox-translation" id="sandboxTranslation" hidden></div>
-                            </div>
-                            <span class="onboarding-sandbox-badge" id="sandboxBadge" hidden></span>
-                            <div class="onboarding-sandbox-confirm" id="sandboxConfirm">
-                                Nice &mdash; that's all there is to it. Alto works on every page now.
-                            </div>
-                        </div>
-                        <div class="onboarding-nav">
-                            <button type="button" class="onboarding-btn-ghost" id="screen4BackBtn">Back</button>
-                            <button type="button" class="onboarding-btn-primary" id="screen4NextBtn">Continue</button>
-                        </div>
-                    </div>
-
-                    <!-- Screen 5 — A few extras -->
-                    <div class="onboarding-screen" data-screen="5">
-                        <h1 class="onboarding-screen-headline">A few extras (all optional)</h1>
-                        <div class="onboarding-screen-body">
-                            <div class="onboarding-toggles">
-                                <label class="onboarding-toggle">
-                                    <input type="checkbox" class="onboarding-toggle-checkbox" id="toggleVocabulary" />
-                                    <div class="onboarding-toggle-text">
-                                        <div class="onboarding-toggle-label">Save words to vocabulary as I translate</div>
-                                        <p class="onboarding-toggle-desc">Build a personal word list. Review later in the vocabulary page.</p>
-                                    </div>
-                                </label>
-                                <label class="onboarding-toggle">
-                                    <input type="checkbox" class="onboarding-toggle-checkbox" id="toggleShortcut" />
-                                    <div class="onboarding-toggle-text">
-                                        <div class="onboarding-toggle-label">Keyboard shortcut: Alt+T to translate selection</div>
-                                        <p class="onboarding-toggle-desc">
-                                            You can change this any time in <code>chrome://extensions/shortcuts</code>.
-                                        </p>
-                                    </div>
-                                </label>
-                            </div>
-                        </div>
-                        <div class="onboarding-nav">
-                            <button type="button" class="onboarding-btn-ghost" id="screen5BackBtn">Back</button>
-                            <button type="button" class="onboarding-btn-primary" id="screen5DoneBtn">Done</button>
+                            <button type="button" class="onboarding-btn-primary" id="screen3NextBtn">
+                                Start translating
+                            </button>
                         </div>
                     </div>
                 </div>

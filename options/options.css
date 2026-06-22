@@ -1079,3 +1079,38 @@ button:hover {
     opacity: 0;
   }
 }
+
+.alto-tier-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  padding: 0.4rem 0.75rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-subtle);
+  margin-bottom: 0.75rem;
+}
+
+.alto-tier-badge--free {
+  color: var(--text-secondary);
+  background: var(--surface-muted);
+}
+
+.alto-tier-badge--paid {
+  color: #0d6e4f;
+  background: rgba(29, 158, 117, 0.08);
+  border-color: rgba(29, 158, 117, 0.25);
+}
+
+.dark .alto-tier-badge--paid {
+  color: #34d399;
+}
+
+.alto-tier-badge-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}

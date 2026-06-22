@@ -22,7 +22,7 @@ importScripts(
  * @type {Object}
  */
 const DEFAULT_SETTINGS = {
-  apiPreference: 'gemini',
+  apiPreference: 'alto-free',
   geminiApiKey: '',
   deeplApiKey: '',
   azureApiKey: '',
@@ -39,22 +39,28 @@ const DEFAULT_SETTINGS = {
 // GEMINI_MODELS, CACHE_TTL, CACHE_PREFIX, MAX_CACHE_SIZE_MB, MAX_CACHE_SIZE_BYTES, EVICTION_THRESHOLD
 
 /**
- * Migrate stored provider from openrouter → mymemory (libretranslate).
- * Runs once per SW load, idempotent: subsequent runs hit the "do nothing" branch.
+ * Migrate any legacy provider setting to the new two-tier model.
+ * - openrouter, libretranslate, deepl, azure, gemini, both → alto-free
+ * - alto-cloud stays as alto-cloud (paid tier, key still valid)
+ * Idempotent -- safe to run on every SW start.
  */
-async function migrateOpenRouterProvider() {
+async function migrateToAltoFree() {
   try {
     const result = await chrome.storage.sync.get('apiPreference');
-    if (result.apiPreference === 'openrouter') {
-      await chrome.storage.sync.set({ apiPreference: 'libretranslate' });
-      console.log('[Alto] Migrated provider from openrouter → mymemory');
+    const current = result.apiPreference;
+    const legacyProviders = new Set([
+      'openrouter', 'libretranslate', 'deepl', 'azure', 'gemini', 'both'
+    ]);
+    if (legacyProviders.has(current)) {
+      await chrome.storage.sync.set({ apiPreference: 'alto-free' });
+      console.log(`[Alto] Migrated provider from ${current} → alto-free`);
     }
   } catch (error) {
-    console.log('[Alto] OpenRouter migration check failed:', error);
+    console.log('[Alto] Provider migration check failed:', error);
   }
 }
 
-migrateOpenRouterProvider();
+migrateToAltoFree();
 
 /**
  * In-memory cache for fast lookups
@@ -166,7 +172,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       sendResponse({ success: true });
       return true;
     case 'openReviewPage':
-      chrome.tabs.create({ url: 'https://chromewebstore.google.com/detail/EXTENSION_ID/reviews' });
+      chrome.tabs.create({ url: `https://chromewebstore.google.com/detail/${chrome.runtime.id}` });
       sendResponse({ success: true });
       return true;
     default:
@@ -388,68 +394,30 @@ async function handleTranslation(request, sendResponse) {
     
     try {
       switch (apiPreference) {
-        case 'gemini':
-          if (!settings.geminiApiKey) {
-            sendResponse({ 
-              success: false, 
-              error: formatErrorMessage('GEMINI_API_KEY_MISSING'),
-              errorDetails: getErrorMessage('GEMINI_API_KEY_MISSING')
-            });
-            return;
-          }
-          result = await translateWithGemini(
+        case 'alto-free':
+          result = await translateWithAltoFree(
             sanitizedText,
             targetLanguage,
-            settings.geminiApiKey,
-            sourceLanguage,
-            llmContext
-          );
-          break;
-          
-        case 'deepl':
-          if (!settings.deeplApiKey) {
-            sendResponse({ 
-              success: false, 
-              error: formatErrorMessage('DEEPL_API_KEY_MISSING'),
-              errorDetails: getErrorMessage('DEEPL_API_KEY_MISSING')
-            });
-            return;
-          }
-          result = await translateWithDeepL(
-            sanitizedText,
-            targetLanguage,
-            settings.deeplApiKey,
             sourceLanguage
           );
-          break;
-          
-        case 'azure':
-          if (!settings.azureApiKey) {
-            sendResponse({ 
-              success: false, 
-              error: formatErrorMessage('AZURE_API_KEY_MISSING'),
-              errorDetails: getErrorMessage('AZURE_API_KEY_MISSING')
+          // Surface rate limit as a special error type for the UI to handle
+          if (!result.success && result.rateLimited) {
+            sendResponse({
+              success: false,
+              error: result.error,
+              rateLimited: true,
+              upgradeUrl: 'https://altotranslate.xyz/pricing',
+              api: 'alto-free'
             });
             return;
           }
-          result = await translateWithAzure(
-            sanitizedText,
-            targetLanguage,
-            settings.azureApiKey,
-            settings.azureRegion,
-            sourceLanguage
-          );
-          break;
-          
-        case 'libretranslate':
-          result = await translateWithLibreTranslate(sanitizedText, targetLanguage, sourceLanguage);
           break;
 
         case 'alto-cloud':
           if (!settings.apiKey_alto) {
             sendResponse({
               success: false,
-              error: 'Alto Cloud key not configured. Go to extension settings to add your Alto Cloud key.',
+              error: 'No Alto Cloud key found. Visit altotranslate.xyz/dashboard to get your key.',
               errorDetails: getErrorMessage('NO_API_KEYS')
             });
             return;
@@ -461,20 +429,16 @@ async function handleTranslation(request, sendResponse) {
             sourceLanguage
           );
           break;
-          
-        case 'both':
-          result = await translateWithAll(
+
+        default:
+          // Unknown or legacy provider value -- treat as alto-free
+          console.warn(`[Alto] Unknown apiPreference "${apiPreference}", falling back to alto-free`);
+          result = await translateWithAltoFree(
             sanitizedText,
             targetLanguage,
-            sourceLanguage,
-            settings,
-            llmContext
+            sourceLanguage
           );
           break;
-          
-        default:
-          sendResponse({ success: false, error: `Invalid API preference: ${apiPreference}` });
-          return;
       }
 
       // Ensure result is an object
@@ -483,17 +447,6 @@ async function handleTranslation(request, sendResponse) {
           success: false,
           error: 'Translation API returned an invalid response'
         };
-      }
-
-      // Handle MyMemory quota exceeded with friendly message
-      if (!result.success && result.api === 'mymemory' && result.quotaExceeded) {
-        const errorMsg = getErrorMessage('MYMEMORY_QUOTA_EXCEEDED');
-        sendResponse({
-          success: false,
-          error: errorMsg.message,
-          errorDetails: errorMsg
-        });
-        return;
       }
 
       // Cache successful translations only
@@ -542,84 +495,6 @@ async function handleTranslation(request, sendResponse) {
       errorDetails: errorMsg
     });
   }
-}
-
-/**
- * Translate using all available APIs and return the first successful result
- * @param {string} text - Text to translate
- * @param {string} targetLanguage - Target language
- * @param {string} sourceLanguage - Source language
- * @param {Object} settings - User settings
- * @returns {Promise<Object>} Translation result
- */
-async function translateWithAll(text, targetLanguage, sourceLanguage, settings, contextSnippet = null) {
-  const geminiKey = String(settings?.geminiApiKey || '').trim();
-  const deeplKey = String(settings?.deeplApiKey || '').trim();
-  const azureKey = String(settings?.azureApiKey || '').trim();
-  const azureRegion = String(settings?.azureRegion || '').trim();
-  const altoCloudKey = String(settings?.apiKey_alto || '').trim();
-  const hasAnyPaidKey = Boolean(deeplKey || geminiKey || azureKey || altoCloudKey);
-  const isLong = text.length > SMART_FALLBACK_LLM_FIRST_MIN_CHARS;
-
-  let steps = [];
-
-  if (!isLong) {
-    // Short text: MyMemory first, then paid services on failure
-    steps.push({ id: 'mymemory', run: () => translateWithLibreTranslate(text, targetLanguage, sourceLanguage) });
-    if (deeplKey) steps.push({ id: 'deepl', run: () => translateWithDeepL(text, targetLanguage, deeplKey, sourceLanguage) });
-    if (geminiKey) steps.push({ id: 'gemini', run: () => translateWithGemini(text, targetLanguage, geminiKey, sourceLanguage, contextSnippet) });
-    if (azureKey) steps.push({ id: 'azure', run: () => translateWithAzure(text, targetLanguage, azureKey, azureRegion, sourceLanguage) });
-    if (altoCloudKey) steps.push({ id: 'alto-cloud', run: () => translateWithAltoCloud(text, targetLanguage, altoCloudKey, sourceLanguage) });
-  } else if (hasAnyPaidKey) {
-    // Long text with at least one key: paid services first
-    if (deeplKey) steps.push({ id: 'deepl', run: () => translateWithDeepL(text, targetLanguage, deeplKey, sourceLanguage) });
-    if (geminiKey) steps.push({ id: 'gemini', run: () => translateWithGemini(text, targetLanguage, geminiKey, sourceLanguage, contextSnippet) });
-    if (azureKey) steps.push({ id: 'azure', run: () => translateWithAzure(text, targetLanguage, azureKey, azureRegion, sourceLanguage) });
-    if (altoCloudKey) steps.push({ id: 'alto-cloud', run: () => translateWithAltoCloud(text, targetLanguage, altoCloudKey, sourceLanguage) });
-  } else {
-    // Long text with no keys: behave like MyMemory-only
-    steps.push({ id: 'mymemory', run: () => translateWithLibreTranslate(text, targetLanguage, sourceLanguage) });
-  }
-
-  if (steps.length === 0) {
-    return {
-      success: false,
-      error: 'Translation unavailable. All configured services failed or have no key.',
-      api: 'both'
-    };
-  }
-
-  let lastFailure = null;
-
-  for (const step of steps) {
-    try {
-      const result = await step.run();
-      if (result?.success) {
-        return {
-          ...result,
-          fallbackMode: true,
-          fallbackWinner: step.id,
-          ...(isLong && hasAnyPaidKey ? { fallbackPreferLlmDueToLength: true } : {})
-        };
-      }
-      lastFailure = result;
-    } catch (error) {
-      console.error(`translateWithAll: ${step.id} threw`, error);
-      lastFailure = {
-        success: false,
-        error: error?.message ?? 'Translation failed',
-        api: step.id
-      };
-    }
-  }
-
-  return (
-    lastFailure ?? {
-      success: false,
-      error: 'Translation unavailable. All configured services failed or have no key.',
-      api: 'both'
-    }
-  );
 }
 
 /**
