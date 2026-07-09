@@ -1,5 +1,24 @@
 # What's New — Alto Translate
 
+## Version 1.6.1 (July 2026)
+
+**Typography & vocabulary refresh**
+- Switched to **Google Sans Flex** across extension pages and the in-page translation bubble.
+- Redesigned the vocabulary page: cleaner layout, fade/blur card reveal, and unified review action buttons.
+- Vocabulary animations now follow the same stagger pattern as the options page.
+
+**Bug fix**
+- Fixed opening the vocabulary page from the translation popup in browsers that block `window.open()` on extension URLs (e.g. Arc/Dia).
+
+**Developer**
+- Added `npm run zip` for Chrome Web Store packaging and `npm run dev` for live-reload during local development.
+
+## Version 1.6.0 (June 2026)
+
+**Major settings & onboarding redesign**
+- Simplified and refreshed the options and onboarding pages with a cleaner layout and smoother animations.
+- Expanded Alto Cloud integration and added vocabulary save/open controls to the translation popup.
+
 ## Version 1.5.1 (May 2026)
 
 **Bug fix**

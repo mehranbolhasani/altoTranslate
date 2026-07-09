@@ -4,6 +4,34 @@ All notable changes to Alto Translate are documented in this file.
 
 ## [Unreleased]
 
+## [1.6.1] - 2026-07-09
+
+### Added
+
+- **Dev tooling**: `npm run dev` (live-reload watcher), `npm run zip` (Chrome Web Store packaging via [`scripts/build-zip.sh`](scripts/build-zip.sh)), and [`utils/dev-reload.js`](utils/dev-reload.js) for local iteration.
+
+### Changed
+
+- **Typography**: **Google Sans Flex** replaces Manrope — Google Fonts on extension pages; bundled latin + latin-ext `.woff2` subsets for the in-page translation bubble ([`content/content.css`](content/content.css), [`utils/fonts/`](utils/fonts/)).
+- **Vocabulary page** ([`vocabulary/vocabulary.html`](vocabulary/vocabulary.html), [`vocabulary/vocabulary.css`](vocabulary/vocabulary.css), [`vocabulary/vocabulary.mjs`](vocabulary/vocabulary.mjs)): layout refresh; fade/blur reveal replaces 3D card flip; Reveal / Got it / Again buttons unified in a single action bar; Motion timings aligned with the options page stagger pattern.
+- **Options & onboarding**: animation and layout refinements carried forward from the 1.6.0 redesign.
+
+### Fixed
+
+- **Open vocabulary from popup**: the translation popup no longer uses `window.open()` for the extension URL (blocked by some browsers); it sends `{ action: 'openVocabulary' }` to the background, which opens the page via `chrome.tabs.create()` ([`content/content.js`](content/content.js), [`background/background.js`](background/background.js)).
+
+## [1.6.0] - 2026-06-22
+
+### Added
+
+- **Alto Cloud**: expanded client integration in [`utils/api-alto-cloud.js`](utils/api-alto-cloud.js).
+- **Translation popup**: vocabulary save/open controls and banner feedback in [`content/content.js`](content/content.js).
+
+### Changed
+
+- **Options & onboarding**: major UI simplification and redesign — leaner markup, shared settings patterns, and refined Motion intro animations.
+- **Background service worker**: streamlined message handling and vocabulary/new-tab logic.
+
 ## [1.5.1] - 2026-05-28
 
 ### Fixed

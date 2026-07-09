@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Alto Translate",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "description": "A minimal Chrome extension for translating selected text using Gemini, DeepL, Azure, and MyMemory APIs",
   "permissions": [
     "storage",

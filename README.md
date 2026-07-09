@@ -221,11 +221,17 @@ For issues, feature requests, or questions:
 
 See [`CHANGELOG.md`](CHANGELOG.md) for full release notes.
 
-### Version 1.4.0 (current)
+### Version 1.6.1 (current)
 
-- Motion-powered UI on extension pages (`popup`, options tab panels, vocabulary).
-- Typography: **Google Sans Flex** — Google Fonts on popup, options, vocabulary, and `privacy.html`; **bundled** `.woff2` (latin + latin-ext subsets) for the in-page translation UI (host CSP–safe).
-- Vocabulary review / “All words” flow fixes; content script opens settings via background message.
+- **Google Sans Flex** typography across extension pages and the in-page translation bubble.
+- Vocabulary page redesign: fade/blur reveal, unified review buttons, animations aligned with options.
+- Fixed vocabulary page link from the translation popup (background `chrome.tabs.create`).
+- Dev tooling: `npm run zip` and `npm run dev`.
+
+### Version 1.6.0
+
+- Major options and onboarding UI redesign; expanded Alto Cloud integration.
+- Vocabulary save/open controls in the translation popup.
 
 ### Version 1.0.0
 
