@@ -1,6 +1,6 @@
-# Alto Translate - Chrome Extension
+# altoTranslate — Chrome Extension
 
-A minimal and elegant Chrome extension for translating selected text using Google Gemini, DeepL, Microsoft Azure Translator, and MyMemory APIs.
+A minimal Chrome extension for translating selected text on any webpage. Powered by altoTranslate infrastructure — free tier with daily limits, or **altoCloud Pro** for unlimited translations.
 
 ## Features
 
@@ -221,7 +221,13 @@ For issues, feature requests, or questions:
 
 See [`CHANGELOG.md`](CHANGELOG.md) for full release notes.
 
-### Version 1.6.2 (current)
+### Version 1.6.3 (current)
+
+- Translations run on altoTranslate infrastructure only — no third-party API keys to configure.
+- **Free**: 100 translations/day. **altoCloud Pro**: unlimited with API key from [altotranslate.xyz/dashboard](https://altotranslate.xyz/dashboard).
+- Updated privacy policy and store listing copy.
+
+### Version 1.6.2
 
 - Renamed to **altoTranslate** across the extension and Chrome Web Store package metadata.
 - Updated store summary for current engines, vocabulary, and smart fallback.

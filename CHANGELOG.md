@@ -4,6 +4,13 @@ All notable changes to Alto Translate are documented in this file.
 
 ## [Unreleased]
 
+## [1.6.3] - 2026-07-09
+
+### Changed
+
+- **Store listing & privacy**: updated `manifest.json` summary, [`privacy.html`](privacy.html), and docs to reflect that altoTranslate now uses **only** altoTranslate infrastructure — free tier (100 translations/day) and **altoCloud Pro** (unlimited with API key). Removed references to Gemini, DeepL, Azure, and MyMemory as user-facing options.
+- **CSP**: extension pages `connect-src` now allows only `api.altotranslate.xyz` (plus localhost for dev).
+
 ## [1.6.2] - 2026-07-09
 
 ### Changed

@@ -23,32 +23,30 @@
   <h2>What the extension can see</h2>
   <ul>
     <li><strong>Selected text on web pages</strong> when you intentionally use the extension (for example after you highlight text and open the translation popup or use the keyboard shortcut). The extension only processes text you select in that way.</li>
-    <li><strong>Your settings</strong> stored in the browser, such as preferred translation API, languages, and optional API keys.</li>
-    <li>The extension can <strong>talk to translation services</strong> you choose (Google Gemini, DeepL, Microsoft Azure, and/or MyMemory), as described below.</li>
+    <li><strong>Your settings</strong> stored in the browser, such as target language, theme, and optional altoCloud API key.</li>
+    <li><strong>Saved vocabulary words</strong> you choose to keep, stored locally in your browser.</li>
   </ul>
-
-  <h2>What we do not collect</h2>
-  <p><strong>We do not operate a server that stores your translations.</strong> altoTranslate has no analytics or user accounts in the extension. We do not sell your data. We do not build a history of your translations on our side—there is no altoTranslate backend receiving your text for storage.</p>
-
-  <h2>Where your API keys stay</h2>
-  <p>If you add API keys for Gemini, DeepL, or Azure, they are saved in <strong>Chrome’s extension storage</strong> (the same kind of protected local storage Chrome uses for extension settings). Keys are not sent to us; they stay on your device and are used only to call the providers you configured.</p>
 
   <h2>Where translation requests go</h2>
-  <p>When you translate, the request goes <strong>directly from your browser</strong> to the service you selected:</p>
+  <p>altoTranslate translates text through <strong>our own translation service</strong> at <a href="https://api.altotranslate.xyz">api.altotranslate.xyz</a> (operated by altoTranslate / altotranslate.xyz).</p>
   <ul>
-    <li><strong>Google Gemini</strong> — Google’s generativelanguage API</li>
-    <li><strong>DeepL</strong> — DeepL’s translation API</li>
-    <li><strong>Microsoft Azure Translator</strong> — Microsoft’s Translator API via Azure Cognitive Services</li>
-    <li><strong>MyMemory</strong> — the MyMemory translation API (no key required for basic use)</li>
+    <li><strong>Free tier</strong> — no API key required. Translations are rate-limited (currently 100 per day). Your browser sends the selected text and language settings to our API to produce a translation.</li>
+    <li><strong>altoCloud Pro</strong> — requires an API key from <a href="https://altotranslate.xyz/dashboard">altotranslate.xyz/dashboard</a>. The key is stored in Chrome extension storage on your device and sent with each translation request. Pro has unlimited translations.</li>
   </ul>
-  <p>Each provider has its own privacy policy and terms; use of those services is subject to their rules.</p>
+  <p>We do not route translations through third-party APIs you configure yourself (such as Gemini, DeepL, or Azure). Those providers are no longer used by the extension.</p>
+
+  <h2>What we store</h2>
+  <ul>
+    <li><strong>On your device</strong>: extension settings, optional altoCloud API key, saved vocabulary, translation cache, and usage counters (for example daily free-tier limits and review prompts).</li>
+    <li><strong>On our servers</strong>: when you translate, we receive the text you selected and the language parameters needed to return a translation. We use this only to provide the translation service and enforce free-tier limits or validate Pro keys. We do not sell your data.</li>
+  </ul>
 
   <h2>Cached translations</h2>
-  <p>To speed up repeat lookups, the extension may cache some successful translation results <strong>locally in your browser</strong>. You can clear translation cache from the extension’s settings when that option is available.</p>
+  <p>To speed up repeat lookups, the extension may cache some successful translation results <strong>locally in your browser</strong>. You can clear the translation cache from the extension settings.</p>
 
   <h2>Contact</h2>
-  <p>For questions about this extension, use the support or repository links from the Chrome Web Store listing or project page.</p>
+  <p>For questions about this extension or privacy, use the support or repository links from the Chrome Web Store listing or visit <a href="https://altotranslate.xyz">altotranslate.xyz</a>.</p>
 
-  <p><small>Last updated: May 2026</small></p>
+  <p><small>Last updated: July 2026</small></p>
 </body>
 </html>

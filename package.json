@@ -1,7 +1,7 @@
 {
   "name": "altotranslate",
-  "version": "1.6.2",
-  "description": "A minimal and elegant Chrome extension for translating selected text using Google Gemini, DeepL, Microsoft Azure, and MyMemory APIs.",
+  "version": "1.6.3",
+  "description": "Instant translation on any page via altoTranslate — free tier with daily limits, altoCloud Pro unlimited.",
   "main": "index.js",
   "directories": {
     "test": "tests"

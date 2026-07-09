@@ -1,4 +1,12 @@
-# What's New — Alto Translate
+# What's New — altoTranslate
+
+## Version 1.6.3 (July 2026)
+
+**Accurate product positioning**
+- altoTranslate now runs entirely on our own translation infrastructure.
+- **Free**: 100 translations/day, no setup required.
+- **altoCloud Pro**: unlimited translations with your API key.
+- Updated privacy policy and Chrome Web Store summary to match.
 
 ## Version 1.6.2 (July 2026)
 
