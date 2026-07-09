@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Alto Translate",
-  "version": "1.6.1",
-  "description": "A minimal Chrome extension for translating selected text using Gemini, DeepL, Azure, and MyMemory APIs",
+  "name": "altoTranslate",
+  "version": "1.6.2",
+  "description": "Translate selected text with Gemini, DeepL, Azure, MyMemory, or Alto Cloud. Vocabulary review, smart fallback, 50+ languages.",
   "permissions": [
     "storage",
     "tabs"
@@ -25,7 +25,7 @@
     }
   ],
   "action": {
-    "default_title": "Alto Translate Settings"
+    "default_title": "altoTranslate Settings"
   },
   "options_page": "options/options.html",
   "commands": {

@@ -4,6 +4,13 @@ All notable changes to Alto Translate are documented in this file.
 
 ## [Unreleased]
 
+## [1.6.2] - 2026-07-09
+
+### Changed
+
+- **Branding**: extension name is now **altoTranslate** in [`manifest.json`](manifest.json) (Chrome Web Store title), toolbar tooltip, page titles, and [`privacy.html`](privacy.html).
+- **Store summary**: updated `manifest.json` `description` to reflect current engines (Gemini, DeepL, Azure, MyMemory, Alto Cloud), vocabulary review, and smart fallback.
+
 ## [1.6.1] - 2026-07-09
 
 ### Added

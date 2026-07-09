@@ -657,7 +657,7 @@ class AltoTranslate {
     this.translateIcon = document.createElement('div');
     this.translateIcon.className = 'alto-translate-icon';
     this.translateIcon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-option-icon lucide-option" viewBox="0 0 24 24"><path d="M3 3h6l6 18h6M14 3h7"/></svg>';
-    this.translateIcon.title = 'Translate with Alto Translate';
+    this.translateIcon.title = 'Translate with altoTranslate';
 
     // Apply detected theme
     this.applyTheme(this.translateIcon, this.detectedTheme);

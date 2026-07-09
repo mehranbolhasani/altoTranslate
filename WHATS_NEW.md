@@ -1,5 +1,11 @@
 # What's New — Alto Translate
 
+## Version 1.6.2 (July 2026)
+
+**Branding & store listing**
+- Renamed the extension to **altoTranslate** (Chrome Web Store title, page titles, privacy page).
+- Updated the store summary to reflect current translation engines and vocabulary features.
+
 ## Version 1.6.1 (July 2026)
 
 **Typography & vocabulary refresh**

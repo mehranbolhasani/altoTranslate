@@ -221,7 +221,12 @@ For issues, feature requests, or questions:
 
 See [`CHANGELOG.md`](CHANGELOG.md) for full release notes.
 
-### Version 1.6.1 (current)
+### Version 1.6.2 (current)
+
+- Renamed to **altoTranslate** across the extension and Chrome Web Store package metadata.
+- Updated store summary for current engines, vocabulary, and smart fallback.
+
+### Version 1.6.1
 
 - **Google Sans Flex** typography across extension pages and the in-page translation bubble.
 - Vocabulary page redesign: fade/blur reveal, unified review buttons, animations aligned with options.
