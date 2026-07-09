@@ -166,7 +166,7 @@ class VocabularyPageApp {
 
       const c = document.getElementById('reviewComplete');
       if (c && !c.hidden && buildQueue(this.list, this.reviewedIds).length === 0) {
-        animate(c, { opacity: 0, y: 22 }, { duration: 0 });
+        animate(c, { opacity: 0, y: 12 }, { duration: 0 });
       }
 
       await this.runPageIntroMotion();
@@ -255,6 +255,10 @@ class VocabularyPageApp {
       applyChrome();
       reviewPanel.hidden = isWords;
       wordsPanel.hidden = !isWords;
+      reviewPanel.style.opacity = '';
+      reviewPanel.style.transform = '';
+      wordsPanel.style.opacity = '';
+      wordsPanel.style.transform = '';
       return;
     }
 
@@ -263,24 +267,21 @@ class VocabularyPageApp {
     this._tabAnimating = true;
 
     try {
-      await animate(
-        outgoing,
-        { opacity: [1, 0], y: [0, 10] },
-        { duration: 0.2, ease: EASE_IN }
-      ).finished;
+      if (!outgoing.hidden) {
+        await animate(
+          outgoing,
+          { opacity: [null, 0], y: [null, 10] },
+          { duration: 0.28, ease: EASE_IN }
+        ).finished;
+        outgoing.style.opacity = '';
+        outgoing.style.transform = '';
+      }
 
       applyChrome();
       outgoing.hidden = true;
       incoming.hidden = false;
 
-      await animate(
-        incoming,
-        { opacity: [0, 1], y: [14, 0] },
-        { duration: 0.28, ease: EASE_OUT }
-      ).finished;
-
-      animate(outgoing, { opacity: 1, y: 0 }, { duration: 0 });
-      animate(incoming, { opacity: 1, y: 0 }, { duration: 0 });
+      await this.staggerPanelContent(incoming);
     } finally {
       this._tabAnimating = false;
     }
@@ -308,17 +309,94 @@ class VocabularyPageApp {
 
     const rows = [...document.querySelectorAll('#vocabRows tr')];
     const maxRows = 20;
-    const duration = 0.14;
-    const y = 3;
+    const baseDelay = 0.06;
+    const step = 0.04;
 
-    rows.slice(0, maxRows).forEach((tr) => {
+    rows.slice(0, maxRows).forEach((tr, i) => {
       const ctl = animate(
         tr,
-        { opacity: [0.92, 1], y: [y, 0] },
-        { duration, delay: 0, ease: EASE_OUT }
+        { opacity: [0, 1], y: [12, 0] },
+        { duration: 0.42, ease: EASE_OUT, delay: baseDelay + step * i }
       );
       this._rowAnimControls.push(ctl);
     });
+  }
+
+  // ── Stagger helpers (aligned with options page) ─────────────────────────
+
+  /**
+   * Collect discrete blocks inside a tab panel to stagger in.
+   * @param {HTMLElement} panel
+   * @returns {HTMLElement[]}
+   */
+  collectStaggerTargets(panel) {
+    if (!panel) return [];
+
+    if (panel.id === 'tabPanelReview') {
+      const complete = document.getElementById('reviewComplete');
+      if (complete && !complete.hidden) return [complete];
+
+      const active = document.getElementById('reviewActive');
+      if (!active || active.hidden) return [];
+
+      const anim = active.querySelector('.vocab-review-card-anim');
+      if (!anim) return [];
+      return [...anim.children];
+    }
+
+    if (panel.id === 'tabPanelWords') {
+      const section = panel.querySelector('.vocab-list-section');
+      if (!section) return [];
+      return [...section.children];
+    }
+
+    return [];
+  }
+
+  /**
+   * Reveal elements by fading inner blocks in sequence.
+   * @param {HTMLElement[]} targets
+   * @param {{ baseDelay?: number; step?: number }} [opts]
+   */
+  async staggerElements(targets, { baseDelay = 0.06, step = 0.08 } = {}) {
+    if (!targets.length) return;
+
+    targets.forEach((el) => {
+      el.style.opacity = '0';
+      el.style.transform = 'translateY(12px)';
+    });
+
+    const jobs = targets.map((el, i) =>
+      animate(
+        el,
+        { opacity: [0, 1], y: [12, 0] },
+        { duration: 0.42, ease: EASE_OUT, delay: baseDelay + step * i }
+      ).finished
+    );
+    await Promise.all(jobs);
+
+    targets.forEach((el) => {
+      el.style.opacity = '';
+      el.style.transform = '';
+    });
+  }
+
+  /**
+   * Reveal a panel by staggering its inner blocks instead of sliding the whole panel.
+   * @param {HTMLElement} panel
+   */
+  async staggerPanelContent(panel) {
+    if (!panel) return;
+    const targets = this.collectStaggerTargets(panel);
+    if (targets.length === 0) return;
+
+    panel.style.opacity = '1';
+    panel.style.transform = 'none';
+
+    await this.staggerElements(targets);
+
+    panel.style.opacity = '';
+    panel.style.transform = '';
   }
 
   // ── Page intro (shell card presents itself) ──────────────────────────────
@@ -328,64 +406,46 @@ class VocabularyPageApp {
 
     const shell = document.querySelector('.vocab-shell');
     const brand = document.querySelector('.vocab-brand');
-    const headerText = document.querySelector('.vocab-header-text');
-    const mainTitleIcon = document.querySelector('.main-title-icon');
-    const heading = document.getElementById('reviewHeading');
     const tabsStrip = document.getElementById('vocabTabBar');
     const settingsLink = document.getElementById('vocabSettingsLink');
-    const reveal = document.querySelector('.vocab-review-reveal');
-    const face = document.querySelector('.vocab-review-card-stack .vocab-review-content');
+    const mainTitle = document.querySelector('.main-title');
+    const panel = document.querySelector('.vocab-tab-panel:not([hidden])');
 
     /** @type {Promise<unknown>[]} */
     const jobs = [];
 
     if (shell) {
       jobs.push(
-        animate(shell, { opacity: [0, 1], scale: [0.97, 1] }, { duration: 0.35, ease: EASE_OUT }).finished
+        animate(shell, { opacity: [0, 1], scale: [0.985, 1] }, { duration: 0.6, ease: EASE_OUT }).finished
       );
     }
 
-    await Promise.all(jobs);
-    jobs.length = 0;
-
-    if (brand) jobs.push(animate(brand, { opacity: [0, 1], y: [8, 0] }, { duration: 0.28, ease: EASE_OUT }).finished);
-
-    if (headerText)
+    if (brand) {
       jobs.push(
-        animate(headerText, { opacity: [0, 1], y: [8, 0] }, { duration: 0.28, ease: EASE_OUT, delay: 0.05 }).finished
+        animate(brand, { opacity: [0, 1], y: [12, 0] }, { duration: 0.46, ease: EASE_OUT, delay: 0.08 }).finished
       );
+    }
 
-    if (mainTitleIcon)
+    const headerChrome = [tabsStrip, settingsLink].filter(Boolean);
+    headerChrome.forEach((el, i) => {
       jobs.push(
-        animate(mainTitleIcon, { opacity: [0, 1], y: [8, 0] }, { duration: 0.28, ease: EASE_OUT, delay: 0.07 }).finished
+        animate(el, { opacity: [0, 1], y: [10, 0] }, { duration: 0.4, ease: EASE_OUT, delay: 0.07 * i + 0.1 }).finished
       );
+    });
 
-    if (heading && !heading.hidden)
-      jobs.push(
-        animate(heading, { opacity: [0, 1], y: [8, 0] }, { duration: 0.28, ease: EASE_OUT, delay: 0.09 }).finished
-      );
-
-    if (tabsStrip)
-      jobs.push(
-        animate(tabsStrip, { opacity: [0, 1], y: [8, 0] }, { duration: 0.26, ease: EASE_OUT, delay: 0.11 }).finished
-      );
-
-    if (settingsLink)
-      jobs.push(
-        animate(settingsLink, { opacity: [0, 1], scale: [0.85, 1] }, { duration: 0.24, ease: EASE_OUT, delay: 0.12 }).finished
-      );
-
-    if (face)
-      jobs.push(
-        animate(face, { opacity: [0, 1], y: [8, 0] }, { duration: 0.3, ease: EASE_OUT, delay: 0.13 }).finished
-      );
-
-    if (reveal)
-      jobs.push(
-        animate(reveal, { opacity: [0, 1], y: [8, 0] }, { duration: 0.28, ease: EASE_OUT, delay: 0.16 }).finished
-      );
+    if (mainTitle) {
+      [...mainTitle.children].forEach((el, i) => {
+        jobs.push(
+          animate(el, { opacity: [0, 1], y: [10, 0] }, { duration: 0.4, ease: EASE_OUT, delay: 0.07 * i + 0.1 }).finished
+        );
+      });
+    }
 
     await Promise.all(jobs);
+
+    if (panel) {
+      await this.staggerPanelContent(panel);
+    }
   }
 
   // ── Card exit / enter (no deck layers in new design) ─────────────────────
@@ -395,7 +455,7 @@ class VocabularyPageApp {
   }
 
   /**
-   * Exit animation: fade card face and reveal button out (slide up slightly).
+   * Exit animation: fade card blocks out (aligned with options tab exit).
    */
   async runCardExit() {
     if (prefersReducedMotion()) return;
@@ -403,27 +463,23 @@ class VocabularyPageApp {
     const root = this.getReviewCardAnimEl();
     if (!root) return;
 
-    const face = root.querySelector('.vocab-review-card-stack .vocab-review-content');
-    const reveal = root.querySelector('.vocab-review-reveal');
-    if (!face && !reveal) return;
+    const targets = [...root.children];
+    if (targets.length === 0) return;
 
     /** @type {Promise<unknown>[]} */
-    const jobs = [];
-    if (face) {
-      jobs.push(
-        animate(face, { opacity: [null, 0], y: [null, -12], scale: [null, 0.98] }, { duration: 0.24, ease: EASE_IN }).finished
-      );
-    }
-    if (reveal) {
-      jobs.push(
-        animate(reveal, { opacity: [null, 0], y: [null, -6] }, { duration: 0.2, ease: EASE_IN }).finished
-      );
-    }
+    const jobs = targets.map((el) =>
+      animate(el, { opacity: [null, 0], y: [null, 10] }, { duration: 0.28, ease: EASE_IN }).finished
+    );
     await Promise.all(jobs);
+
+    targets.forEach((el) => {
+      el.style.opacity = '';
+      el.style.transform = '';
+    });
   }
 
   /**
-   * Enter animation: fade card face and reveal button in (slide up into place).
+   * Enter animation: stagger card blocks in (aligned with options panel stagger).
    */
   async runCardEnter() {
     if (prefersReducedMotion()) return;
@@ -437,25 +493,10 @@ class VocabularyPageApp {
     const reviewPanel = document.getElementById('tabPanelReview');
     if (!reviewPanel || reviewPanel.hidden) return;
 
-    const face = root.querySelector('.vocab-review-card-stack .vocab-review-content');
-    const reveal = root.querySelector('.vocab-review-reveal');
-    if (!face) return;
+    const targets = [...root.children];
+    if (targets.length === 0) return;
 
-    /** @type {Promise<unknown>[]} */
-    const jobs = [];
-    jobs.push(
-      animate(face, { opacity: [0, 1], y: [12, 0], scale: [0.98, 1] }, { duration: 0.28, ease: EASE_OUT }).finished
-    );
-    if (reveal) {
-      jobs.push(
-        animate(reveal, { opacity: [0, 1], y: [6, 0] }, { duration: 0.24, ease: EASE_OUT, delay: 0.05 }).finished
-      );
-    }
-    await Promise.all(jobs);
-
-    /** Reset Motion offsets leaking into layout */
-    animate(face, { y: 0, scale: 1 }, { duration: 0 });
-    if (reveal) animate(reveal, { y: 0 }, { duration: 0 });
+    await this.staggerElements(targets);
   }
 
   /**
@@ -484,47 +525,98 @@ class VocabularyPageApp {
 
   async revealTranslationMotion() {
     const flipInner = document.getElementById('reviewFlipInner');
-    const answer = document.getElementById('reviewAnswer');
     const revealBtn = document.getElementById('reviewReveal');
+    const gotItBtn = document.getElementById('reviewGotIt');
+    const againBtn = document.getElementById('reviewAgain');
     const trans = document.getElementById('reviewTranslation');
+    const front = flipInner?.querySelector('.vocab-flip-front');
+    const back = flipInner?.querySelector('.vocab-flip-back');
     if (!flipInner) return;
 
     if (flipInner.classList.contains('is-flipped')) return;
 
+    const showAnswerButtons = () => {
+      if (revealBtn) revealBtn.hidden = true;
+      if (gotItBtn) gotItBtn.hidden = false;
+      if (againBtn) againBtn.hidden = false;
+      if (trans) trans.hidden = false;
+    };
+
     if (prefersReducedMotion()) {
       flipInner.classList.add('is-flipped');
-      if (answer) answer.hidden = false;
-      if (revealBtn) revealBtn.hidden = true;
-      if (trans) trans.hidden = false;
+      showAnswerButtons();
       return;
     }
 
     flipInner.classList.add('is-flipped');
-    if (answer) answer.hidden = false;
-    if (revealBtn) revealBtn.hidden = true;
-    if (trans) trans.hidden = false;
+    showAnswerButtons();
 
-    await animate(flipInner, { rotateY: [0, 180] }, { duration: 0.5, ease: EASE_OUT }).finished;
+    /** @type {Promise<unknown>[]} */
+    const jobs = [];
+    if (front) {
+      jobs.push(
+        animate(
+          front,
+          { opacity: [1, 0], filter: ['blur(0px)', 'blur(12px)'] },
+          { duration: 0.28, ease: EASE_IN }
+        ).finished
+      );
+    }
+    if (back) {
+      jobs.push(
+        animate(
+          back,
+          { opacity: [0, 1], filter: ['blur(12px)', 'blur(0px)'] },
+          { duration: 0.42, ease: EASE_OUT, delay: 0.06 }
+        ).finished
+      );
+    }
+    await Promise.all(jobs);
   }
 
   resetRevealUi() {
     const flipInner = document.getElementById('reviewFlipInner');
-    const answer = document.getElementById('reviewAnswer');
     const revealBtn = document.getElementById('reviewReveal');
+    const gotItBtn = document.getElementById('reviewGotIt');
+    const againBtn = document.getElementById('reviewAgain');
     const trans = document.getElementById('reviewTranslation');
+    const front = flipInner?.querySelector('.vocab-flip-front');
+    const back = flipInner?.querySelector('.vocab-flip-back');
 
     flipInner?.classList.remove('is-flipped');
 
-    const dur = prefersReducedMotion() ? 0 : 0.38;
-    if (flipInner) {
-      animate(flipInner, { rotateY: 0 }, { duration: dur }).finished.catch(() => {
-        /**/
-      });
-    }
-
-    if (answer) answer.hidden = true;
     if (revealBtn) revealBtn.hidden = false;
+    if (gotItBtn) gotItBtn.hidden = true;
+    if (againBtn) againBtn.hidden = true;
     if (trans) trans.hidden = true;
+
+    if (prefersReducedMotion() || !flipInner) return;
+
+    /** @type {Promise<unknown>[]} */
+    const jobs = [];
+    if (front) {
+      jobs.push(
+        animate(
+          front,
+          { opacity: [0, 1], filter: ['blur(12px)', 'blur(0px)'] },
+          { duration: 0.42, ease: EASE_OUT, delay: 0.06 }
+        ).finished.catch(() => {
+          /**/
+        })
+      );
+    }
+    if (back) {
+      jobs.push(
+        animate(
+          back,
+          { opacity: [1, 0], filter: ['blur(0px)', 'blur(12px)'] },
+          { duration: 0.28, ease: EASE_IN }
+        ).finished.catch(() => {
+          /**/
+        })
+      );
+    }
+    Promise.all(jobs);
   }
 
   // ── All caught up celebration ────────────────────────────────────────────
@@ -542,9 +634,9 @@ class VocabularyPageApp {
 
     this._completeMotionBusy = true;
     try {
-      animate(el, { opacity: 0, y: 22 }, { duration: 0 });
+      animate(el, { opacity: 0, y: 12 }, { duration: 0 });
 
-      await animate(el, { opacity: [0, 1], y: [22, 0] }, { duration: 0.42, ease: EASE_OUT }).finished;
+      await animate(el, { opacity: [0, 1], y: [12, 0] }, { duration: 0.42, ease: EASE_OUT }).finished;
     } finally {
       this._completeMotionBusy = false;
       this._completeHasShown = true;
@@ -560,20 +652,14 @@ class VocabularyPageApp {
     if (!reviewTab || reviewTab.hidden) return;
 
     const active = document.getElementById('reviewActive');
-    const heading = document.getElementById('reviewHeading');
     if (!active || active.hidden) return;
 
-    /** @type {Promise<unknown>[]} */
-    const jobs = [];
-    if (heading && !heading.hidden) {
-      jobs.push(
-        animate(heading, { opacity: [0, 1], y: [12, 0] }, { duration: 0.34, ease: EASE_OUT }).finished
-      );
-    }
-    jobs.push(
-      animate(active, { opacity: [0, 1], y: [16, 0] }, { duration: 0.38, ease: EASE_OUT, delay: 0.04 }).finished
-    );
-    await Promise.all(jobs);
+    const targets = [];
+    const mainTitle = document.querySelector('.main-title');
+    if (mainTitle) targets.push(...mainTitle.children);
+    targets.push(active);
+
+    await this.staggerElements(targets);
   }
 
   // ── Persist & refresh ────────────────────────────────────────────────────
@@ -755,7 +841,7 @@ class VocabularyPageApp {
 
     this.reviewAnimBusy = true;
     try {
-      await animate(anim, { x: [0, -10, 10, -8, 8, 0] }, { duration: 0.4, ease: 'easeInOut' }).finished;
+      await animate(anim, { x: [0, -12, 12, -10, 10, 0] }, { duration: 0.5, ease: 'easeInOut' }).finished;
       await this.runCardExit();
 
       await this.runSwapPhaseThenEnter(async () => {

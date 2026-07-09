@@ -134,7 +134,7 @@ altoTranslate/
 ├── package.json
 ├── package-lock.json
 └── utils/                   # Utility modules
-│   ├── fonts/               # Bundled .woff2 (Estedad, Manrope variable for content UI)
+│   ├── fonts/               # Bundled .woff2 (Estedad, Google Sans Flex latin subsets for content UI)
 │   ├── tailwind.css         # Tailwind CSS utilities
 │   ├── dark-mode.js         # Dark mode functionality
 │   ├── storage.js           # Settings storage utilities
@@ -224,7 +224,7 @@ See [`CHANGELOG.md`](CHANGELOG.md) for full release notes.
 ### Version 1.4.0 (current)
 
 - Motion-powered UI on extension pages (`popup`, options tab panels, vocabulary).
-- Typography: **Manrope** — Google Fonts on popup, options, vocabulary, and `privacy.html`; **bundled** variable **`.woff2`** for the in-page translation UI (host CSP–safe).
+- Typography: **Google Sans Flex** — Google Fonts on popup, options, vocabulary, and `privacy.html`; **bundled** `.woff2` (latin + latin-ext subsets) for the in-page translation UI (host CSP–safe).
 - Vocabulary review / “All words” flow fixes; content script opens settings via background message.
 
 ### Version 1.0.0

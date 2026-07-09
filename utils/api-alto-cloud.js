@@ -3,6 +3,10 @@
 
 const ALTO_CLOUD_API_BASE = 'https://api.altotranslate.xyz/v1/chat/completions';
 
+const ALTO_CHUNK_MAX_CHARS = 400;   // chunk target size; below this, no chunking happens at all
+const ALTO_CHUNK_MAX_COUNT = 8;     // hard cap on number of chunks for very long selections
+const ALTO_RETRY_MODEL = 'google/gemini-2.5-flash'; // forced model for contamination retry
+
 /**
  * Build a tight system prompt for Alto Cloud translation.
  * Explicit source/target language and a hard list of forbidden output types.
@@ -150,6 +154,188 @@ function sanitizeAltoCloudTranslation(text) {
 }
 
 /**
+ * Split text into paragraph-aware chunks, each roughly under maxChunkChars,
+ * capped at maxChunks total. Returns [{ text, joinAfter }] where joinAfter is
+ * the separator to insert after this chunk when reassembling translated output
+ * ('' for the last chunk).
+ */
+function chunkText(text, { maxChunkChars = ALTO_CHUNK_MAX_CHARS, maxChunks = ALTO_CHUNK_MAX_COUNT } = {}) {
+  const trimmed = (text || '').trim();
+  if (trimmed.length <= maxChunkChars) {
+    return [{ text: trimmed, joinAfter: '' }];
+  }
+
+  const paragraphs = trimmed.split(/\n{2,}/).map(p => p.trim()).filter(Boolean);
+  const rawChunks = []; // { text, isParagraphEnd }
+
+  paragraphs.forEach((para) => {
+    if (para.length <= maxChunkChars) {
+      rawChunks.push({ text: para, isParagraphEnd: true });
+      return;
+    }
+
+    // Simple sentence split -- good enough, doesn't need to be perfect NLP
+    const sentences = para.match(/[^.!?]+[.!?]+(\s+|$)|[^.!?]+$/g) || [para];
+
+    let current = '';
+    sentences.forEach((sentence) => {
+      const trimmedSentence = sentence.trim();
+      const candidate = current ? `${current} ${trimmedSentence}` : trimmedSentence;
+      if (candidate.length > maxChunkChars && current) {
+        rawChunks.push({ text: current, isParagraphEnd: false });
+        current = trimmedSentence;
+      } else {
+        current = candidate;
+      }
+    });
+    if (current) rawChunks.push({ text: current, isParagraphEnd: true });
+  });
+
+  // Hard cap: merge smallest adjacent pair until under the limit
+  while (rawChunks.length > maxChunks) {
+    let smallestIdx = 0;
+    let smallestCombinedLen = Infinity;
+    for (let i = 0; i < rawChunks.length - 1; i++) {
+      const combinedLen = rawChunks[i].text.length + rawChunks[i + 1].text.length;
+      if (combinedLen < smallestCombinedLen) {
+        smallestCombinedLen = combinedLen;
+        smallestIdx = i;
+      }
+    }
+    const a = rawChunks[smallestIdx];
+    const b = rawChunks[smallestIdx + 1];
+    const joiner = a.isParagraphEnd ? '\n\n' : ' ';
+    rawChunks.splice(smallestIdx, 2, {
+      text: `${a.text}${joiner}${b.text}`,
+      isParagraphEnd: b.isParagraphEnd
+    });
+  }
+
+  return rawChunks.map((chunk, idx) => ({
+    text: chunk.text,
+    joinAfter: idx === rawChunks.length - 1 ? '' : (chunk.isParagraphEnd ? '\n\n' : ' ')
+  }));
+}
+
+/**
+ * Low-level single-request helper. Both the free and cloud paths, and the chunk
+ * retry logic, funnel through this. Handles fetch, 429 handling, sanitization,
+ * and status-code error mapping via a caller-supplied errorMessages object.
+ */
+async function performAltoTranslationRequest({ endpoint, authHeader, text, targetLanguage, sourceLanguage, model = 'auto', errorMessages }) {
+  const targetLangName = getLanguageName(targetLanguage);
+  const sourceLangName = (sourceLanguage && sourceLanguage !== 'auto')
+    ? getLanguageName(sourceLanguage)
+    : null;
+  const systemPrompt = buildAltoCloudSystemPrompt(targetLangName, sourceLangName);
+
+  const headers = { 'Content-Type': 'application/json' };
+  if (authHeader) headers.Authorization = authHeader;
+
+  try {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: text }
+        ]
+      })
+    });
+
+    if (response.status === 429) {
+      let rateLimitMessage = "You've reached the free daily limit. Upgrade to Alto Cloud for unlimited translations.";
+      try {
+        const errorData = await response.json();
+        if (errorData?.error?.message) rateLimitMessage = errorData.error.message;
+      } catch (_) { /* ignore parse errors */ }
+      return { success: false, error: rateLimitMessage, rateLimited: true };
+    }
+
+    if (!response.ok) {
+      const msg = errorMessages?.[response.status] ?? (errorMessages?.default?.(response.status) ?? `Alto error (HTTP ${response.status}).`);
+      return { success: false, error: msg };
+    }
+
+    const data = await response.json();
+    const translatedText = data?.choices?.[0]?.message?.content;
+    if (!translatedText) {
+      return { success: false, error: 'Empty response from Alto' };
+    }
+
+    return { success: true, translatedText: sanitizeAltoCloudTranslation(translatedText) };
+  } catch (error) {
+    return { success: false, error: error?.message || 'Network error reaching Alto' };
+  }
+}
+
+/**
+ * Wrap a single chunk translation with a silent contamination retry against a
+ * forced Gemini model. Never surfaces contamination as an error -- if the retry
+ * fails outright, falls back to the original (possibly contaminated) result
+ * rather than erroring out.
+ */
+async function translateChunkWithRetry({ endpoint, authHeader, text, targetLanguage, sourceLanguage, errorMessages }) {
+  const first = await performAltoTranslationRequest({
+    endpoint, authHeader, text, targetLanguage, sourceLanguage, model: 'auto', errorMessages
+  });
+
+  if (!first.success) return first; // propagate rate limit / auth / network errors untouched
+
+  if (hasScriptContamination(first.translatedText, targetLanguage)) {
+    console.debug('[Alto] Contamination detected in chunk, retrying with forced Gemini');
+    const retry = await performAltoTranslationRequest({
+      endpoint, authHeader, text, targetLanguage, sourceLanguage, model: ALTO_RETRY_MODEL, errorMessages
+    });
+    if (retry.success) return retry; // best effort -- use retry result even if it were somehow still flagged
+    return first; // retry failed outright (e.g. Gemini rate limited) -- fall back to original rather than erroring
+  }
+
+  return first;
+}
+
+/**
+ * Orchestrate chunking + parallel per-chunk translation + reassembly. This is
+ * what translateWithAltoCloud and translateWithAltoFree call. Short inputs
+ * (<= ALTO_CHUNK_MAX_CHARS) take the fast path: a single request, no chunking
+ * overhead and no behavior change vs. pre-refactor.
+ */
+async function translateLongText({ endpoint, authHeader, text, targetLanguage, sourceLanguage, apiLabel, errorMessages }) {
+  const chunks = chunkText(text);
+
+  if (chunks.length === 1) {
+    const result = await translateChunkWithRetry({
+      endpoint, authHeader, text: chunks[0].text, targetLanguage, sourceLanguage, errorMessages
+    });
+    if (!result.success) return { ...result, api: apiLabel };
+    return {
+      success: true,
+      translatedText: result.translatedText,
+      sourceLanguage,
+      targetLanguage,
+      api: apiLabel
+    };
+  }
+
+  const results = await Promise.all(
+    chunks.map((c) => translateChunkWithRetry({
+      endpoint, authHeader, text: c.text, targetLanguage, sourceLanguage, errorMessages
+    }))
+  );
+
+  const firstFailure = results.find((r) => !r.success);
+  if (firstFailure) return { ...firstFailure, api: apiLabel };
+
+  const translatedText = results
+    .map((r, idx) => r.translatedText + (chunks[idx].joinAfter || ''))
+    .join('');
+
+  return { success: true, translatedText, sourceLanguage, targetLanguage, api: apiLabel };
+}
+
+/**
  * Translate text using the Alto free tier (no API key required).
  * Hits /v1/free/chat/completions on the VPS -- rate-limited to 100 req/day per IP.
  * Returns { success, translatedText, sourceLanguage, targetLanguage, api }
@@ -162,158 +348,43 @@ function sanitizeAltoCloudTranslation(text) {
 async function translateWithAltoFree(text, targetLanguage, sourceLanguage = 'auto') {
   const FREE_ENDPOINT = 'https://api.altotranslate.xyz/v1/free/chat/completions';
 
-  const targetLangName = getLanguageName(targetLanguage);
-  const sourceLangName = (sourceLanguage && sourceLanguage !== 'auto')
-    ? getLanguageName(sourceLanguage)
-    : null;
-  const systemPrompt = buildAltoCloudSystemPrompt(targetLangName, sourceLangName);
+  const errorMessages = {
+    default: (status) => `Alto translation failed (${status})`
+  };
 
-  try {
-    const response = await fetch(FREE_ENDPOINT, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'auto',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: text }
-        ]
-      })
-    });
-
-    // Rate limit hit
-    if (response.status === 429) {
-      let rateLimitMessage = 'You\'ve reached the free daily limit. Upgrade to Alto Cloud for unlimited translations.';
-      try {
-        const errorData = await response.json();
-        if (errorData?.error?.message) {
-          rateLimitMessage = errorData.error.message;
-        }
-      } catch (_) { /* ignore parse errors */ }
-
-      return {
-        success: false,
-        error: rateLimitMessage,
-        rateLimited: true,
-        api: 'alto-free'
-      };
-    }
-
-    if (!response.ok) {
-      return {
-        success: false,
-        error: `Alto translation failed (${response.status})`,
-        api: 'alto-free'
-      };
-    }
-
-    const data = await response.json();
-    const translatedText = data?.choices?.[0]?.message?.content;
-
-    if (translatedText) {
-      const cleaned = sanitizeAltoCloudTranslation(translatedText);
-
-      return {
-        success: true,
-        translatedText: cleaned,
-        sourceLanguage,
-        targetLanguage,
-        api: 'alto-free'
-      };
-    }
-
-    return {
-      success: false,
-      error: 'Empty response from Alto',
-      api: 'alto-free'
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: error?.message || 'Network error reaching Alto',
-      api: 'alto-free'
-    };
-  }
+  // upgradeUrl is attached by background.js on rate-limited responses -- do not
+  // add it here, the contract is preserved via the rateLimited flag passthrough.
+  return translateLongText({
+    endpoint: FREE_ENDPOINT,
+    authHeader: null,
+    text,
+    targetLanguage,
+    sourceLanguage,
+    apiLabel: 'alto-free',
+    errorMessages
+  });
 }
 
 async function translateWithAltoCloud(text, targetLanguage, apiKey, sourceLanguage = 'auto') {
+  const errorMessages = {
+    401: 'Invalid or expired Alto Cloud key. Visit altotranslate.xyz/dashboard to check your subscription.',
+    403: 'Access denied. Visit altotranslate.xyz/dashboard to check your subscription.',
+    default: (status) => `Alto Cloud error (HTTP ${status}).`
+  };
+
   try {
-    const targetLangName = getLanguageName(targetLanguage);
-    const sourceLangName = (sourceLanguage && sourceLanguage !== 'auto')
-      ? getLanguageName(sourceLanguage)
-      : null;
-    const systemPrompt = buildAltoCloudSystemPrompt(targetLangName, sourceLangName);
-
-    const body = {
-      model: 'auto',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: text }
-      ]
-    };
-
-    const response = await fetch(ALTO_CLOUD_API_BASE, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`
-      },
-      body: JSON.stringify(body)
+    return await translateLongText({
+      endpoint: ALTO_CLOUD_API_BASE,
+      authHeader: `Bearer ${apiKey}`,
+      text,
+      targetLanguage,
+      sourceLanguage,
+      apiLabel: 'alto-cloud',
+      errorMessages
     });
-
-    if (response.ok) {
-      const data = await response.json();
-      const translatedText = data?.choices?.[0]?.message?.content;
-
-      if (translatedText) {
-        const cleaned = translatedText.trim();
-
-        return {
-          success: true,
-          translatedText: cleaned,
-          sourceLanguage,
-          targetLanguage,
-          api: 'alto-cloud'
-        };
-      }
-
-      return {
-        success: false,
-        error: 'Invalid response format from Alto Cloud API',
-        api: 'alto-cloud'
-      };
-    }
-
-    if (response.status === 401) {
-      return {
-        success: false,
-        error: 'Invalid or expired Alto Cloud key. Visit altotranslate.xyz/dashboard to check your subscription.',
-        api: 'alto-cloud'
-      };
-    }
-
-    if (response.status === 403) {
-      return {
-        success: false,
-        error: 'Access denied. Visit altotranslate.xyz/dashboard to check your subscription.',
-        api: 'alto-cloud'
-      };
-    }
-
-    return {
-      success: false,
-      error: `Alto Cloud error (HTTP ${response.status}).`,
-      api: 'alto-cloud'
-    };
   } catch (error) {
     console.error('Alto Cloud API failed:', error);
-    return {
-      success: false,
-      error: 'Network error. Check your connection.',
-      api: 'alto-cloud'
-    };
+    return { success: false, error: 'Network error. Check your connection.', api: 'alto-cloud' };
   }
 }
 

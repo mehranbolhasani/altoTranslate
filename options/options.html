@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="../utils/tailwind.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@8..144,100..900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="options.css">
 </head>
 <body class="options-body min-h-screen is-ready">
@@ -26,11 +26,8 @@
 
           <nav class="settings-nav" aria-label="Settings sections">
             <button type="button" data-tab="api" class="tab-button settings-nav-item is-active">
-              <svg xmlns="http://www.w3.org/2000/svg" class="settings-nav-icon" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              <span>API Settings</span>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-cloud-icon lucide-cloud"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
+              <span>altoCloud</span>
             </button>
             <button type="button" data-tab="languages" class="tab-button settings-nav-item">
               <svg xmlns="http://www.w3.org/2000/svg" class="settings-nav-icon" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
@@ -67,7 +64,11 @@
           <div class="settings-sidebar-spacer" aria-hidden="true"></div>
 
           <footer class="settings-sidebar-footer">
-            <button type="button" id="toggleDarkMode" class="settings-footer-dark">Dark mode</button>
+            <div id="themeSwitcher" class="theme-switcher" role="group" aria-label="Color theme">
+              <button type="button" class="theme-switcher-btn" data-theme="light" aria-pressed="false"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sun-icon lucide-sun"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg></button>
+              <button type="button" class="theme-switcher-btn" data-theme="dark" aria-pressed="false"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-moon-icon lucide-moon"><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/></svg></button>
+              <button type="button" class="theme-switcher-btn" data-theme="auto" aria-pressed="true"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-monitor-icon lucide-monitor"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg></button>
+            </div>
             <a href="#" id="openVocabularyPageFooter" class="settings-footer-link">Open Vocabulary Page</a>
             <a href="../privacy.html" target="_blank" rel="noopener noreferrer" class="settings-footer-link">Privacy Policy</a>
             <a href="#" id="replayOnboarding" class="settings-footer-link">Replay setup tour</a>
@@ -80,23 +81,26 @@
           <div id="tab-api" class="tab-content settings-panel">
             <!-- Alto Cloud key section -->
             <section class="settings-section settings-section--first" id="altoCloudSection">
-              <div class="settings-section-header">
-                <h2 class="settings-section-title">Alto Cloud</h2>
-                <p class="settings-section-desc">
-                  Upgrade for unlimited translations.
-                  <a href="https://altotranslate.xyz/pricing" target="_blank" rel="noopener"
-                     class="settings-link">Get Alto Cloud →</a>
-                </p>
-              </div>
-
-              <div class="settings-field">
-                <div id="altoFreeBadge" class="alto-tier-badge alto-tier-badge--free" style="display:none">
-                  <span class="alto-tier-badge-dot"></span>
-                  Alto free tier · 100 translations/day
+              <div class="settings-section-header-container">
+                <div class="settings-section-header">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 195 127" class="altocloud-svg"><path fill="#165DFC" d="M194.287 71.821c0-15.096-10.523-27.725-24.632-30.973.005-.214.016-.426.016-.64 0-14.65-11.876-26.526-26.526-26.526-3.348 0-6.546.626-9.495 1.757C128.095 6.191 117.969 0 106.396 0 93.928 0 83.143 7.185 77.941 17.636a24.9 24.9 0 0 0-14.914-4.933c-12.049 0-22.105 8.523-24.473 19.869a31.6 31.6 0 0 0-7.042-.799C14.109 31.773 0 45.881 0 63.286S14.109 94.8 31.512 94.8c.286 0 .569-.014.853-.022 3.437 16.849 18.34 29.527 36.204 29.527a36.8 36.8 0 0 0 18.311-4.861c3.833 4.437 9.488 7.257 15.812 7.257 8.621 0 16.02-5.222 19.214-12.675a26.6 26.6 0 0 0 16.262 5.528c10.92 0 20.302-6.556 24.442-15.944 17.506-.063 31.677-14.269 31.677-31.789"></path></svg>
+                  <h2 class="settings-section-title altocloud-title">altoCloud</h2>
+                  <p class="settings-section-desc">
+                    Upgrade for unlimited translations.
+                    <a href="https://altotranslate.xyz/pricing" target="_blank" rel="noopener"
+                       class="settings-link">Get Alto Cloud →</a>
+                  </p>
                 </div>
-                <div id="altoCloudBadge" class="alto-tier-badge alto-tier-badge--paid" style="display:none">
-                  <span class="alto-tier-badge-dot"></span>
-                  Alto Cloud · Unlimited
+  
+                <div class="settings-field">
+                  <div id="altoFreeBadge" class="alto-tier-badge alto-tier-badge--free" style="display:none">
+                    <span class="alto-tier-badge-dot"></span>
+                    Alto free tier · 100 translations/day
+                  </div>
+                  <div id="altoCloudBadge" class="alto-tier-badge alto-tier-badge--paid" style="display:none">
+                    <span class="alto-tier-badge-dot"></span>
+                    Alto Cloud · Unlimited
+                  </div>
                 </div>
               </div>
 
@@ -112,10 +116,10 @@
                     autocomplete="off"
                     spellcheck="false"
                   />
-                  <button type="button" class="settings-btn-inline" id="validateAltoCloudBtn">
+                  <button type="button" class="settings-btn-inline settings-btn-secondary" id="validateAltoCloudBtn">
                     Validate
                   </button>
-                  <button type="button" class="settings-btn-inline settings-btn-inline--save"
+                  <button type="button" class="settings-btn-inline settings-btn-inline--save settings-btn-secondary"
                           id="saveAltoCloudBtn">
                     Save
                   </button>
@@ -132,8 +136,10 @@
           <!-- Languages -->
           <div id="tab-languages" class="tab-content settings-panel hidden">
             <div class="settings-section settings-section--first">
-              <h3 class="settings-section-title">Language Settings</h3>
-              <p class="settings-helper settings-helper--below-title">Configure source and target languages</p>
+              <div class="settings-section-header">
+                <h3 class="settings-section-title">Language Settings</h3>
+                <p class="settings-helper settings-helper--below-title">Configure source and target languages</p>
+              </div>
               <div class="settings-callout">
                 <h4 class="settings-callout-title">Behavior</h4>
                 <label class="settings-check-row">
@@ -278,8 +284,10 @@
           <!-- Vocabulary -->
           <div id="tab-vocabulary" class="tab-content settings-panel hidden">
             <div class="settings-section settings-section--first">
-              <h3 class="settings-section-title">Vocabulary</h3>
-              <p class="settings-helper settings-helper--below-title">Saved words and daily review live on the vocabulary page</p>
+              <div class="settings-section-header">
+                <h3 class="settings-section-title">Vocabulary</h3>
+                <p class="settings-helper settings-helper--below-title">Saved words and daily review live on the vocabulary page</p>
+              </div>
               <div class="settings-callout">
                 <label class="settings-check-row">
                   <input type="checkbox" id="openVocabNewTab" name="openVocabNewTab" class="settings-checkbox">
@@ -309,8 +317,10 @@
           <!-- Theme -->
           <div id="tab-theme" class="tab-content settings-panel hidden">
             <div class="settings-section settings-section--first">
-              <h3 class="settings-section-title">Popup Theme</h3>
-              <p class="settings-helper settings-helper--below-title">Choose a color theme for the translation popup</p>
+              <div class="settings-section-header">
+                <h3 class="settings-section-title">Popup Theme</h3>
+                <p class="settings-helper settings-helper--below-title">Choose a color theme for the translation popup</p>
+              </div>
               <div id="themeSelector" class="theme-selector-grid"></div>
             </div>
           </div>
@@ -318,8 +328,10 @@
           <!-- Cache -->
           <div id="tab-cache" class="tab-content settings-panel hidden">
             <div class="settings-section settings-section--first">
-              <h3 class="settings-section-title">Translation Cache</h3>
-              <p class="settings-helper settings-helper--below-title">Manage cached translations for faster performance</p>
+              <div class="settings-section-header">
+                <h3 class="settings-section-title">Translation Cache</h3>
+                <p class="settings-helper settings-helper--below-title">Manage cached translations for faster performance</p>
+              </div>
               <div id="cacheStats" class="cache-stats-grid">
                 <div class="cache-stat-card">
                   <div class="cache-stat-label">Total Entries</div>
@@ -359,8 +371,10 @@
           <!-- Test -->
           <div id="tab-test" class="tab-content settings-panel hidden">
             <div class="settings-section settings-section--first">
-              <h3 class="settings-section-title">Test Translation</h3>
-              <p class="settings-helper settings-helper--below-title">Test your configuration with a sample translation</p>
+              <div class="settings-section-header">
+                <h3 class="settings-section-title">Test Translation</h3>
+                <p class="settings-helper settings-helper--below-title">Test your configuration with a sample translation</p>
+              </div>
               <div class="settings-field-stack">
                 <div class="settings-field">
                   <label for="testText" class="settings-label">Test Text</label>
@@ -390,5 +404,6 @@
 
   <script type="module" src="options.mjs"></script>
   <script src="../utils/dark-mode.js"></script>
+  <script src="../utils/dev-reload.js"></script>
 </body>
 </html>

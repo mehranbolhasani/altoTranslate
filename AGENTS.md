@@ -47,7 +47,7 @@ Other test files (`validation.test.js`, `cache.test.js`, `languages.test.js`) ar
 - In extension pages (popup/options/vocabulary), open settings via `chrome.runtime.openOptionsPage()`.
 - In the **content script**, `chrome.runtime.openOptionsPage` is not available — send a message instead: `chrome.runtime.sendMessage({ action: 'openSettings' })`. The background SW handles it.
 - **MyMemory is always enabled** — the options "Save Rules" logic normalizes `libretranslateEnabled` to `true` regardless of UI checkbox state.
-- **CSP-safe fonts**: The content script translation bubble uses a bundled `.woff2` font (`utils/fonts/Manrope-Variable.woff2`) with `@font-face` in `content/content.css`. Extension pages (popup/options/vocabulary) load Manrope from Google Fonts (allowed by `style-src` CSP exception).
+- **CSP-safe fonts**: The content script translation bubble uses bundled `.woff2` fonts (`utils/fonts/GoogleSansFlex-Latin.woff2` + `GoogleSansFlex-LatinExt.woff2`) with `@font-face` (latin + latin-ext subsets) in `content/content.css`. Extension pages (popup/options/vocabulary) load Google Sans Flex from Google Fonts (allowed by `style-src` CSP exception).
 - **Motion animations** respect `prefers-reduced-motion` — each page checks this before running intro animations.
 - `package.json` `type` is `commonjs`, so `.js` files default to CJS, `.mjs` files are ESM.
 - `manifest.json` version must stay in sync with `package.json` version.

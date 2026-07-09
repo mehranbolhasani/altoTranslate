@@ -119,33 +119,95 @@ class OptionsManager {
 
     if (shell) {
       jobs.push(
-        animate(shell, { opacity: [0, 1], scale: [0.97, 1] }, { duration: 0.3, ease: EASE_OUT }).finished
+        animate(shell, { opacity: [0, 1], scale: [0.985, 1] }, { duration: 0.6, ease: EASE_OUT }).finished
       );
     }
 
     if (brand) {
       jobs.push(
-        animate(brand, { opacity: [0, 1], y: [8, 0] }, { duration: 0.24, ease: EASE_OUT, delay: 0.03 }).finished
+        animate(brand, { opacity: [0, 1], y: [12, 0] }, { duration: 0.46, ease: EASE_OUT, delay: 0.08 }).finished
       );
     }
 
     navItems.forEach((el, i) => {
       jobs.push(
-        animate(el, { opacity: [0, 1], y: [6, 0] }, { duration: 0.2, ease: EASE_OUT, delay: 0.04 * i + 0.04 }).finished
+        animate(el, { opacity: [0, 1], y: [10, 0] }, { duration: 0.4, ease: EASE_OUT, delay: 0.07 * i + 0.1 }).finished
       );
     });
 
     if (footer) {
       jobs.push(
-        animate(footer, { opacity: [0, 1] }, { duration: 0.2, ease: EASE_OUT, delay: 0.1 }).finished
+        animate(footer, { opacity: [0, 1] }, { duration: 0.4, ease: EASE_OUT, delay: 0.2 }).finished
       );
     }
 
     await Promise.all(jobs);
 
     if (panel) {
-      await animate(panel, { opacity: [0, 1], y: [8, 0] }, { duration: 0.22, ease: EASE_OUT }).finished;
+      await this.staggerPanelContent(panel, { includeFooter: true });
     }
+  }
+
+  /**
+   * Collect the discrete top-level blocks inside a panel to stagger in.
+   * Falls back to the panel's own children if no `.settings-section` exists.
+   * @param {HTMLElement} panel
+   * @param {{ includeFooter?: boolean }} [opts]
+   * @returns {HTMLElement[]}
+   */
+  collectStaggerTargets(panel, { includeFooter = false } = {}) {
+    const targets = [];
+    if (panel) {
+      const section = panel.querySelector('.settings-section') || panel;
+      for (const child of section.children) targets.push(child);
+    }
+    if (includeFooter) {
+      const footer = document.querySelector('.settings-footer-actions');
+      if (footer) targets.push(footer);
+    }
+    return targets;
+  }
+
+  /**
+   * Reveal a panel by fading its inner blocks in sequence instead of sliding
+   * the whole panel as one block. The panel container is made visible
+   * immediately so the children can animate; inline styles are cleared after.
+   * @param {HTMLElement} panel
+   * @param {{ includeFooter?: boolean }} [opts]
+   */
+  async staggerPanelContent(panel, opts = {}) {
+    if (!panel) return;
+    const targets = this.collectStaggerTargets(panel, opts);
+    if (targets.length === 0) return;
+
+    // Hold the container steady so only the inner blocks animate.
+    panel.style.opacity = '1';
+    panel.style.transform = 'none';
+
+    // Pre-hide each block to avoid a flash before Motion takes over.
+    targets.forEach((el) => {
+      el.style.opacity = '0';
+      el.style.transform = 'translateY(12px)';
+    });
+
+    const baseDelay = 0.06;
+    const step = 0.08;
+    const jobs = targets.map((el, i) =>
+      animate(
+        el,
+        { opacity: [0, 1], y: [12, 0] },
+        { duration: 0.42, ease: EASE_OUT, delay: baseDelay + step * i }
+      ).finished
+    );
+    await Promise.all(jobs);
+
+    // Clear inline styles so nothing leaks into layout or future CSS state.
+    targets.forEach((el) => {
+      el.style.opacity = '';
+      el.style.transform = '';
+    });
+    panel.style.opacity = '';
+    panel.style.transform = '';
   }
 
   async switchTab(tabName) {
@@ -181,8 +243,8 @@ class OptionsManager {
       if (currentPanel && currentPanel !== selectedTab) {
         await animate(
           currentPanel,
-          { opacity: [null, 0], y: [null, 6] },
-          { duration: 0.18, ease: EASE_IN }
+          { opacity: [null, 0], y: [null, 10] },
+          { duration: 0.28, ease: EASE_IN }
         ).finished;
         currentPanel.style.opacity = '';
         currentPanel.style.transform = '';
@@ -191,17 +253,8 @@ class OptionsManager {
       applyChrome();
       document.querySelectorAll('.tab-content').forEach((c) => c.classList.add('hidden'));
       selectedTab.classList.remove('hidden');
-      selectedTab.style.opacity = '0';
-      selectedTab.style.transform = 'translateY(8px)';
 
-      await animate(
-        selectedTab,
-        { opacity: [0, 1], y: [8, 0] },
-        { duration: 0.26, ease: EASE_OUT }
-      ).finished;
-
-      selectedTab.style.opacity = '';
-      selectedTab.style.transform = '';
+      await this.staggerPanelContent(selectedTab, { includeFooter: false });
     } finally {
       this._tabAnimating = false;
     }
@@ -852,7 +905,7 @@ class OptionsManager {
       if (toast.parentNode) {
         toast.parentNode.removeChild(toast);
       }
-    }, 300);
+    }, 400);
   }
 
   async loadCacheStats() {

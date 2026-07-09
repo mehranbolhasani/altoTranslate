@@ -1,14 +1,14 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   Alto Translate — options page (Manrope, sidebar layout)
+   Alto Translate — options page (Google Sans Flex, sidebar layout)
    Design tokens aligned with vocabulary.css as source of truth.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* ── Design tokens ── */
 :root {
-  --brand: #2563eb;
+  --brand: oklch(54.6% 0.245 262.881);
   --brand-soft: rgba(37, 99, 235, 0.1);
   --brand-soft-border: rgba(37, 99, 235, 0.35);
-  --surface-page: #fafafa;
+  --surface-page: oklch(97% 0 0);
   --surface-card: #ffffff;
   --surface-muted: #f9fafb;
   --border-subtle: #e5e5e5;
@@ -43,20 +43,22 @@ button:hover {
 
 /* ── Page body ── */
 .options-body {
-  font-family: 'Manrope', sans-serif;
+  font-family: 'Google Sans Flex', sans-serif;
   font-weight: 400;
   margin: 0;
   background: var(--surface-page);
   color: var(--text);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  display: grid;
+  place-items: center;
 }
 
 .options-layout {
-  max-width: 860px;
-  min-height: 800px;
-  margin: 0 auto;
-  padding: 2rem 1.25rem 2.5rem;
+  max-width: 1024px;
+  min-height: 700px;
+  width: calc(100vw - 32px);
+  padding: 2rem 0;
   box-sizing: border-box;
 }
 
@@ -69,10 +71,7 @@ button:hover {
 .settings-shell {
   display: flex;
   min-height: 720px;
-  background: var(--surface-card);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-shell);
-  overflow: hidden;
+  gap: 1rem;
 }
 
 /* ── Sidebar ── */
@@ -81,10 +80,9 @@ button:hover {
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  padding: 1.25rem 0.75rem 1rem;
-  border-right: 1px solid var(--border-subtle);
-  background: var(--surface-card);
   box-sizing: border-box;
+  min-height: 720px;
+  justify-content: space-between;
 }
 
 .settings-brand {
@@ -138,13 +136,13 @@ button:hover {
 .settings-nav {
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
+  gap: 0.5rem;
 }
 
 .settings-nav-item {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.35rem;
   width: 100%;
   border: none;
   background: transparent;
@@ -154,7 +152,7 @@ button:hover {
   font-weight: 500;
   color: var(--text-secondary);
   text-align: left;
-  padding: 0.5rem 0.65rem;
+  padding: 0.65rem 0.65rem;
   border-radius: var(--radius-pill);
   transition: background 0.15s ease, color 0.15s ease;
 }
@@ -165,8 +163,8 @@ button:hover {
 }
 
 .settings-nav-item.is-active {
-  background: var(--brand-soft);
-  color: var(--brand);
+  background: var(--brand);
+  color: #fff;
 }
 
 .dark .settings-nav-item.is-active {
@@ -181,37 +179,59 @@ button:hover {
 .settings-sidebar-spacer {
   flex: 1;
   min-height: 1rem;
+  max-height: 120px;
 }
 
 .settings-sidebar-footer {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--border-subtle);
-  margin-top: 0.5rem;
 }
 
-.settings-footer-dark {
-  font-family: inherit;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: var(--text-secondary);
+.theme-switcher {
+  display: flex;
+  gap: 0;
   background: var(--surface-muted);
-  border: 1px solid var(--border-subtle);
-  border-radius: 8px;
-  padding: 0.45rem 0.65rem;
+  border-radius: 100vw;
+  padding: 0.2rem;
+  width: fit-content;
+  margin-bottom: 1rem;
+}
+
+.theme-switcher-btn {
+  flex: 1;
+  font-family: inherit;
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  border-radius: 100vw;
+  width: 42px;
+  height: 24px;
   cursor: pointer;
-  text-align: left;
-  transition: background 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease;
+  display: grid;
+  place-items: center;
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
 }
 
-.settings-footer-dark:hover {
-  background: var(--surface-page);
+.theme-switcher-btn:hover {
+  color: var(--text);
 }
 
-.dark .settings-footer-dark:hover {
-  background: #1f2937;
+.theme-switcher-btn.is-active {
+  background: var(--brand-soft);
+  color: var(--brand);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+
+.dark .theme-switcher-btn.is-active {
+  background: #2a2a2a;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 
 .settings-footer-link {
@@ -239,6 +259,9 @@ button:hover {
   padding: 1.75rem 1.75rem 2rem;
   overflow: auto;
   max-height: min(78vh, 720px);
+  min-height: 720px;
+  background: var(--surface-card);
+  border-radius: var(--radius-lg);
 }
 
 .settings-panel {
@@ -254,12 +277,55 @@ button:hover {
 }
 
 /* ── Typography helpers ── */
+
+.settings-section-header-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 3rem;
+}
+
+.settings-section-header {
+  position: relative;
+
+  svg {
+    width: 100px;
+    height: auto;
+    position: absolute;
+    top: -60px;
+    left: 0;
+    animation: float 3s ease-in-out infinite;
+  }
+}
+
+@keyframes float {  
+  0% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
 .settings-section-title {
-  margin: 0 0 0.05rem;
+  margin: 0 0 0.02rem;
   font-size: 1.125rem;
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--text);
+
+  &.altocloud-title {
+    padding-top: 12px;
+    font-size: 1.5rem;
+
+    &+.settings-section-desc {
+      margin-top: 0;
+      opacity: 0.5;
+    }
+  }
 }
 
 .settings-helper {
@@ -482,10 +548,8 @@ button:hover {
 
 /* ── Callout box ── */
 .settings-callout {
-  padding: 1.1rem 1.15rem;
-  background: var(--surface-muted);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 1.75rem;
   margin-bottom: 1.75rem;
 }
 
@@ -709,10 +773,6 @@ button:hover {
 /* ── Footer actions bar ── */
 .settings-footer-actions {
   margin-top: 1rem;
-  padding: 1rem 1rem;
-  background: var(--surface-card);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-shell);
 }
 
 .settings-footer-actions-inner {
@@ -961,7 +1021,7 @@ button:hover {
 .toast {
   opacity: 0;
   transform: translateX(100%);
-  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: opacity 0.4s cubic-bezier(0.22, 1, 0.36, 1), transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .toast-show {
@@ -1020,7 +1080,9 @@ button:hover {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ── Responsive: narrow viewport ── */
@@ -1040,6 +1102,7 @@ button:hover {
     flex-direction: row;
     flex-wrap: wrap;
     align-items: center;
+    justify-content: space-between;
   }
 
   .settings-nav {

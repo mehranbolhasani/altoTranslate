@@ -137,6 +137,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       chrome.runtime.openOptionsPage();
       sendResponse({ success: true });
       return true;
+    case 'openVocabulary':
+      chrome.tabs.create({ url: chrome.runtime.getURL('vocabulary/vocabulary.html') });
+      sendResponse({ success: true });
+      return true;
     case 'validateApiKey':
       handleValidateApiKey(request, sendResponse);
       return true;

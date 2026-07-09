@@ -8,6 +8,8 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "node scripts/dev-watch.mjs",
+    "zip": "bash scripts/build-zip.sh",
     "build:motion": "node scripts/build-motion.mjs"
   },
   "repository": {

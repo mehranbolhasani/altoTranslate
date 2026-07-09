@@ -57,7 +57,7 @@ class OnboardingWizard {
     const jobs = [];
     if (shell) {
       jobs.push(
-        animate(shell, { opacity: [0, 1], scale: [0.97, 1] }, { duration: 0.35, ease: EASE_OUT }).finished
+        animate(shell, { opacity: [0, 1], scale: [0.98, 1] }, { duration: 0.45, ease: EASE_OUT }).finished
       );
     }
     await Promise.all(jobs);
@@ -68,7 +68,7 @@ class OnboardingWizard {
 
     if (header) {
       jobs.push(
-        animate(header, { opacity: [0, 1], y: [-4, 0] }, { duration: 0.2, ease: EASE_OUT, delay: 0.02 }).finished
+        animate(header, { opacity: [0, 1], y: [-6, 0] }, { duration: 0.28, ease: EASE_OUT, delay: 0.04 }).finished
       );
     }
 
@@ -79,16 +79,16 @@ class OnboardingWizard {
       const nav = screen.querySelector('.onboarding-nav');
 
       if (heading) jobs.push(
-        animate(heading, { opacity: [0, 1], y: [8, 0] }, { duration: 0.24, ease: EASE_OUT }).finished
+        animate(heading, { opacity: [0, 1], y: [10, 0] }, { duration: 0.34, ease: EASE_OUT }).finished
       );
       if (subhead) jobs.push(
-        animate(subhead, { opacity: [0, 1], y: [6, 0] }, { duration: 0.2, ease: EASE_OUT, delay: 0.04 }).finished
+        animate(subhead, { opacity: [0, 1], y: [8, 0] }, { duration: 0.28, ease: EASE_OUT, delay: 0.06 }).finished
       );
       if (body) jobs.push(
-        animate(body, { opacity: [0, 1], y: [4, 0] }, { duration: 0.2, ease: EASE_OUT, delay: 0.07 }).finished
+        animate(body, { opacity: [0, 1], y: [6, 0] }, { duration: 0.28, ease: EASE_OUT, delay: 0.1 }).finished
       );
       if (nav) jobs.push(
-        animate(nav, { opacity: [0, 1], y: [6, 0] }, { duration: 0.22, ease: EASE_OUT, delay: 0.11 }).finished
+        animate(nav, { opacity: [0, 1], y: [8, 0] }, { duration: 0.3, ease: EASE_OUT, delay: 0.15 }).finished
       );
     }
 
@@ -227,8 +227,8 @@ class OnboardingWizard {
 
       await animate(
         current,
-        { opacity: [null, 0], y: [null, 6] },
-        { duration: 0.16, ease: EASE_IN }
+        { opacity: [null, 0], y: [null, 8] },
+        { duration: 0.22, ease: EASE_IN }
       ).finished;
 
       current.classList.remove('is-active');
@@ -237,12 +237,12 @@ class OnboardingWizard {
 
       next.classList.add('is-active');
       next.style.opacity = '0';
-      next.style.transform = 'translateY(8px)';
+      next.style.transform = 'translateY(10px)';
 
       await animate(
         next,
-        { opacity: [0, 1], y: [8, 0] },
-        { duration: 0.24, ease: EASE_OUT }
+        { opacity: [0, 1], y: [10, 0] },
+        { duration: 0.32, ease: EASE_OUT }
       ).finished;
 
       next.style.opacity = '';

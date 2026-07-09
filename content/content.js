@@ -935,8 +935,12 @@ class AltoTranslate {
       openVocabBtn.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        const url = chrome.runtime.getURL('vocabulary/vocabulary.html');
-        window.open(url, '_blank', 'noopener,noreferrer');
+        chrome.runtime.sendMessage({ action: 'openVocabulary' }, () => {
+          const err = chrome.runtime.lastError;
+          if (err) {
+            console.warn('Alto Translate: open vocabulary failed', err.message);
+          }
+        });
       });
       openVocabBtn.addEventListener('mousedown', (e) => {
         e.stopPropagation();
@@ -1532,10 +1536,12 @@ class AltoTranslate {
       const originalText = copyBtn.innerHTML;
       copyBtn.innerHTML = 'Copied!';
       copyBtn.style.background = '#10b981';
+      copyBtn.style.color = '#fff';
 
       setTimeout(() => {
         copyBtn.innerHTML = originalText;
         copyBtn.style.background = '';
+        copyBtn.style.color = '';
       }, COPY_FEEDBACK_DURATION);
     } catch (error) {
       console.error('Copy failed:', error);
