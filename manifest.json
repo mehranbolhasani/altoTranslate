@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "altoTranslate",
-  "version": "1.6.3",
+  "version": "1.6.5",
   "description": "Instant translation on any page. Free: 100/day. altoCloud Pro: unlimited. Vocabulary review, 50+ languages.",
   "permissions": [
     "storage",

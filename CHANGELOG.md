@@ -4,6 +4,18 @@ All notable changes to Alto Translate are documented in this file.
 
 ## [Unreleased]
 
+## [1.6.5] - 2026-07-13
+
+### Fixed
+
+- **Alto Cloud routing** ([`background/background.js`](background/background.js)): derive free-vs-cloud tier at translate time from `apiKey_alto` instead of stored `apiPreference`, so paying users are never silently routed to the rate-limited free tier when storage fields desync.
+
+## [1.6.4] - 2026-07-13
+
+### Fixed
+
+- **Alto Cloud contamination retry** ([`utils/api-alto-cloud.js`](utils/api-alto-cloud.js)): detect plain-ASCII loanword drift in non-Latin targets (e.g. `teknoloj`, `resultados`) via `hasSuspiciousLowercaseLatinWord`; log contamination checks at `console.log` with per-attempt diagnostics; retry up to 3 times (auto + 2 forced Gemini) before returning best-effort output.
+
 ## [1.6.3] - 2026-07-09
 
 ### Changed

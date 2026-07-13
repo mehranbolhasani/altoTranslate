@@ -1,6 +1,6 @@
 {
   "name": "altotranslate",
-  "version": "1.6.3",
+  "version": "1.6.5",
   "description": "Instant translation on any page via altoTranslate — free tier with daily limits, altoCloud Pro unlimited.",
   "main": "index.js",
   "directories": {

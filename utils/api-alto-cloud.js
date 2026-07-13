@@ -33,6 +33,40 @@ function buildAltoCloudSystemPrompt(targetLangName, sourceLangName) {
 }
 
 /**
+ * Detect a Latin-alphabet word in non-Latin-script output that is neither an
+ * acronym (ALL CAPS) nor a proper noun (Title Case) -- i.e. a plain lowercase
+ * or irregularly-cased word, which in a target language like Persian, Arabic,
+ * Hebrew, Russian, or Chinese should not exist except as an intentionally
+ * preserved acronym or name. Catches loanword contamination that has no
+ * accented characters (e.g. "teknoloj", "resultados", "puede").
+ *
+ * URLs, emails, and bare domains are masked out first so they are never
+ * mistaken for stray words.
+ *
+ * False positives are acceptable and expected (e.g. "iPhone", "eBay" style
+ * mixed-case brand names) -- the caller only uses this to trigger a silent
+ * best-effort retry, never to reject or error.
+ *
+ * @param {string} text
+ * @returns {boolean}
+ */
+function hasSuspiciousLowercaseLatinWord(text) {
+  if (!text) return false;
+
+  const masked = text
+    .replace(/\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b/g, ' ')
+    .replace(/\b(?:https?:\/\/)?(?:www\.)?[a-zA-Z0-9-]+\.[a-zA-Z]{2,}(?:\/\S*)?\b/g, ' ');
+
+  const words = masked.match(/[A-Za-z]{3,}/g) || [];
+
+  return words.some((word) => {
+    const isAllCaps = word === word.toUpperCase();
+    const isTitleCase = /^[A-Z][a-z]+$/.test(word);
+    return !isAllCaps && !isTitleCase;
+  });
+}
+
+/**
  * Detect likely language contamination in a translation result.
  * Returns true if the output contains a significant number of characters
  * from a script that does not belong to the target language.
@@ -54,8 +88,18 @@ function hasScriptContamination(text, targetLanguage) {
 
   const RATIO_THRESHOLD = 0.03;
 
-  // Arabic-script targets (Arabic, Persian/Farsi, Urdu)
   const arabicScriptTargets = new Set(['ar', 'fa', 'ur']);
+  const cyrillicTargets = new Set(['ru', 'uk', 'bg', 'sr', 'mk']);
+  const cjkTargets = new Set(['zh', 'ja', 'ko']);
+  const nonLatinTargets = new Set([
+    ...arabicScriptTargets, 'he', ...cyrillicTargets, ...cjkTargets
+  ]);
+
+  if (nonLatinTargets.has(targetLanguage) && hasSuspiciousLowercaseLatinWord(text)) {
+    return true;
+  }
+
+  // Arabic-script targets (Arabic, Persian/Farsi, Urdu)
   if (arabicScriptTargets.has(targetLanguage)) {
     // Any CJK character is unambiguous contamination
     const cjkCount = (text.match(/[\u3040-\u30FF\u4E00-\u9FFF\uAC00-\uD7AF]/g) || []).length;
@@ -77,7 +121,6 @@ function hasScriptContamination(text, targetLanguage) {
   }
 
   // Cyrillic targets (Russian, Ukrainian, Bulgarian, etc.)
-  const cyrillicTargets = new Set(['ru', 'uk', 'bg', 'sr', 'mk']);
   if (cyrillicTargets.has(targetLanguage)) {
     const cjkCount = (text.match(/[\u3040-\u30FF\u4E00-\u9FFF\uAC00-\uD7AF]/g) || []).length;
     if (cjkCount / len > RATIO_THRESHOLD) return true;
@@ -87,7 +130,6 @@ function hasScriptContamination(text, targetLanguage) {
   }
 
   // CJK targets
-  const cjkTargets = new Set(['zh', 'ja', 'ko']);
   if (cjkTargets.has(targetLanguage)) {
     const arabicCount = (text.match(/[\u0600-\u06FF]/g) || []).length;
     if (arabicCount / len > RATIO_THRESHOLD) return true;
@@ -272,28 +314,41 @@ async function performAltoTranslationRequest({ endpoint, authHeader, text, targe
 }
 
 /**
- * Wrap a single chunk translation with a silent contamination retry against a
- * forced Gemini model. Never surfaces contamination as an error -- if the retry
- * fails outright, falls back to the original (possibly contaminated) result
- * rather than erroring out.
+ * Wrap a single chunk translation with up to 3 attempts (auto + 2 forced-Gemini
+ * retries) on contamination. Never surfaces contamination as an error -- if all
+ * attempts are still flagged, returns the last result as best effort.
  */
 async function translateChunkWithRetry({ endpoint, authHeader, text, targetLanguage, sourceLanguage, errorMessages }) {
-  const first = await performAltoTranslationRequest({
-    endpoint, authHeader, text, targetLanguage, sourceLanguage, model: 'auto', errorMessages
-  });
+  const MAX_ATTEMPTS = 3; // original 'auto' attempt + up to 2 forced-Gemini retries
+  let lastResult = null;
 
-  if (!first.success) return first; // propagate rate limit / auth / network errors untouched
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    const model = attempt === 1 ? 'auto' : ALTO_RETRY_MODEL;
 
-  if (hasScriptContamination(first.translatedText, targetLanguage)) {
-    console.debug('[Alto] Contamination detected in chunk, retrying with forced Gemini');
-    const retry = await performAltoTranslationRequest({
-      endpoint, authHeader, text, targetLanguage, sourceLanguage, model: ALTO_RETRY_MODEL, errorMessages
+    const result = await performAltoTranslationRequest({
+      endpoint, authHeader, text, targetLanguage, sourceLanguage, model, errorMessages
     });
-    if (retry.success) return retry; // best effort -- use retry result even if it were somehow still flagged
-    return first; // retry failed outright (e.g. Gemini rate limited) -- fall back to original rather than erroring
+
+    // Real errors (rate limit, auth, network) propagate immediately -- never retry these
+    if (!result.success) return result;
+
+    lastResult = result;
+
+    const contaminated = hasScriptContamination(result.translatedText, targetLanguage);
+    console.log(`[Alto] contamination check — attempt: ${attempt}/${MAX_ATTEMPTS}, target: ${targetLanguage}, flagged: ${contaminated}`);
+
+    if (!contaminated) return result; // clean -- done, no further attempts needed
+
+    if (attempt < MAX_ATTEMPTS) {
+      console.log(`[Alto] Contamination on attempt ${attempt}, retrying with forced Gemini (attempt ${attempt + 1}/${MAX_ATTEMPTS})`);
+    }
   }
 
-  return first;
+  // All attempts exhausted -- return the last result as best effort, even if still flagged.
+  // This should be extremely rare given how unlikely repeated contamination is across
+  // independent generations against the same reliable model.
+  console.log('[Alto] Contamination persisted after all retry attempts — returning best-effort result');
+  return lastResult;
 }
 
 /**

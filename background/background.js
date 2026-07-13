@@ -378,7 +378,8 @@ async function handleTranslation(request, sendResponse) {
         : null;
 
     settings = await getSettings();
-    apiPreference = settings.apiPreference;
+    const hasCloudKey = !!(settings.apiKey_alto && settings.apiKey_alto.trim());
+    apiPreference = hasCloudKey ? 'alto-cloud' : 'alto-free';
 
     // MyMemory is always available (no toggle). Other providers need keys when selected.
 
@@ -397,52 +398,29 @@ async function handleTranslation(request, sendResponse) {
     let result;
     
     try {
-      switch (apiPreference) {
-        case 'alto-free':
-          result = await translateWithAltoFree(
-            sanitizedText,
-            targetLanguage,
-            sourceLanguage
-          );
-          // Surface rate limit as a special error type for the UI to handle
-          if (!result.success && result.rateLimited) {
-            sendResponse({
-              success: false,
-              error: result.error,
-              rateLimited: true,
-              upgradeUrl: 'https://altotranslate.xyz/pricing',
-              api: 'alto-free'
-            });
-            return;
-          }
-          break;
-
-        case 'alto-cloud':
-          if (!settings.apiKey_alto) {
-            sendResponse({
-              success: false,
-              error: 'No Alto Cloud key found. Visit altotranslate.xyz/dashboard to get your key.',
-              errorDetails: getErrorMessage('NO_API_KEYS')
-            });
-            return;
-          }
-          result = await translateWithAltoCloud(
-            sanitizedText,
-            targetLanguage,
-            settings.apiKey_alto,
-            sourceLanguage
-          );
-          break;
-
-        default:
-          // Unknown or legacy provider value -- treat as alto-free
-          console.warn(`[Alto] Unknown apiPreference "${apiPreference}", falling back to alto-free`);
-          result = await translateWithAltoFree(
-            sanitizedText,
-            targetLanguage,
-            sourceLanguage
-          );
-          break;
+      if (hasCloudKey) {
+        result = await translateWithAltoCloud(
+          sanitizedText,
+          targetLanguage,
+          settings.apiKey_alto,
+          sourceLanguage
+        );
+      } else {
+        result = await translateWithAltoFree(
+          sanitizedText,
+          targetLanguage,
+          sourceLanguage
+        );
+        if (!result.success && result.rateLimited) {
+          sendResponse({
+            success: false,
+            error: result.error,
+            rateLimited: true,
+            upgradeUrl: 'https://altotranslate.xyz/pricing',
+            api: 'alto-free'
+          });
+          return;
+        }
       }
 
       // Ensure result is an object
